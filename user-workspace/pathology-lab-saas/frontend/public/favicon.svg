@@ -1,0 +1,8 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Lab Flask Icon -->
+  <rect width="32" height="32" rx="6" fill="#0284c7"/>
+  <path d="M16 8 L20 24 L12 24 L16 8" stroke="white" stroke-width="2" fill="none"/>
+  <path d="M14 16 L18 16" stroke="white" stroke-width="2"/>
+  <path d="M13 19 L19 19" stroke="white" stroke-width="2"/>
+  <path d="M12 22 L20 22" stroke="white" stroke-width="2"/>
+</svg>
