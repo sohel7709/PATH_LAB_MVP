@@ -16,6 +16,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
+        console.log('No token found');
         setLoading(false);
         return;
       }
@@ -29,9 +30,10 @@ export const AuthProvider = ({ children }) => {
 
       if (response.ok) {
         const data = await response.json();
+        console.log('User verified:', data.user);
         setUser(data.user);
       } else {
-        // If token is invalid, clear it
+        console.log('Token verification failed');
         localStorage.removeItem('token');
       }
     } catch (error) {
@@ -54,9 +56,11 @@ export const AuthProvider = ({ children }) => {
     const data = await response.json();
 
     if (!response.ok) {
+      console.log('Login failed:', data.message);
       throw new Error(data.message || 'Login failed');
     }
 
+    console.log('Login successful, user:', data.user);
     localStorage.setItem('token', data.token);
     setUser(data.user);
     navigate('/');

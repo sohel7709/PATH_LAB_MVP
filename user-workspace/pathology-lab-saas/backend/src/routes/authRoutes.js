@@ -17,6 +17,7 @@ router.post('/login', login);
 // Protected routes
 router.use(protect); // All routes below this will be protected
 router.get('/me', getMe);
+router.get('/verify', getMe);
 router.put('/updatedetails', updateDetails);
 router.put('/updatepassword', updatePassword);
 router.get('/logout', logout);

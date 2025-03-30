@@ -21,11 +21,11 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('Form submitted');
     setError('');
     setIsLoading(true);
 
     try {
-      // TODO: Implement actual login logic with API
       const response = await fetch('http://localhost:5000/api/auth/login', {
         method: 'POST',
         headers: {
@@ -34,18 +34,19 @@ export default function Login() {
         body: JSON.stringify(formData),
       });
 
+      console.log('Response received:', response);
       const data = await response.json();
 
       if (!response.ok) {
+        console.log('Login failed:', data.message);
         throw new Error(data.message || 'Login failed');
       }
 
-      // Store token in localStorage
+      console.log('Login successful, token:', data.token);
       localStorage.setItem('token', data.token);
-      
-      // Redirect to dashboard
       navigate('/');
     } catch (err) {
+      console.log('Error during login:', err.message);
       setError(err.message);
     } finally {
       setIsLoading(false);
