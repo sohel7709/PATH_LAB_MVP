@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ExclamationCircleIcon } from '@heroicons/react/20/solid';
+import { useAuth } from '../../context/AuthContext';
 
 export default function Login() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -21,32 +23,13 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Form submitted');
     setError('');
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      console.log('Response received:', response);
-      const data = await response.json();
-
-      if (!response.ok) {
-        console.log('Login failed:', data.message);
-        throw new Error(data.message || 'Login failed');
-      }
-
-      console.log('Login successful, token:', data.token);
-      localStorage.setItem('token', data.token);
+      await login(formData.email, formData.password);
       navigate('/');
     } catch (err) {
-      console.log('Error during login:', err.message);
       setError(err.message);
     } finally {
       setIsLoading(false);

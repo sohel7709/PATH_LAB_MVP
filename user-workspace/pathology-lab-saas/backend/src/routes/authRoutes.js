@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { protect } = require('../middleware/auth');
+const { protect, verifyToken } = require('../middleware/auth');
+
 const {
   register,
   login,
@@ -17,7 +18,9 @@ router.post('/login', login);
 // Protected routes
 router.use(protect); // All routes below this will be protected
 router.get('/me', getMe);
-router.get('/verify', getMe);
+router.get('/verify', verifyToken);
+
+
 router.put('/updatedetails', updateDetails);
 router.put('/updatepassword', updatePassword);
 router.get('/logout', logout);

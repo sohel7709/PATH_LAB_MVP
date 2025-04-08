@@ -45,6 +45,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const login = async (email, password) => {
+    console.log('Attempting to log in with:', { email, password }); // Log the login attempt
     const response = await fetch('http://localhost:5000/api/auth/login', {
       method: 'POST',
       headers: {
@@ -56,14 +57,38 @@ export const AuthProvider = ({ children }) => {
     const data = await response.json();
 
     if (!response.ok) {
-      console.log('Login failed:', data.message);
+    console.log('Login failed:', data.message || 'Invalid credentials');
+
       throw new Error(data.message || 'Login failed');
     }
 
     console.log('Login successful, user:', data.user);
-    localStorage.setItem('token', data.token);
+    console.log('Token received:', data.token); // Log the token received
+    if (data.token) {
+      localStorage.setItem('token', data.token); // Store the token in local storage
+    console.log('Token stored in local storage'); // Log when token is successfully stored
+
+    } else {
+    console.log('No token received from the server'); // Log if no token is received
+
+
+
+
+    }
+
     setUser(data.user);
-    navigate('/');
+    await checkAuth(); // Ensure user state is updated after login
+    const userRole = data.user.role; // Assuming the user object contains a role property
+    if (userRole === 'super-admin') {
+      navigate('/dashboard/super-admin');
+    } else if (userRole === 'admin') {
+      navigate('/dashboard/admin');
+    } else if (userRole === 'lab-technician') {
+      navigate('/dashboard/lab-technician');
+    } else {
+      navigate('/'); // Fallback if role is not recognized
+    }
+
   };
 
   const logout = () => {

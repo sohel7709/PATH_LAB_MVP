@@ -1,4 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import UserList from './pages/users/UserList';
+import CreateUser from './pages/users/CreateUser';
+import EditUser from './pages/users/EditUser';
+
 import { Suspense, lazy } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -13,6 +17,9 @@ const Register = lazy(() => import('./pages/auth/Register'));
 const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword'));
 
 // Dashboard Pages
+const SuperAdminDashboard = lazy(() => import('./pages/dashboard/SuperAdminDashboard'));
+const AdminDashboard = lazy(() => import('./pages/dashboard/AdminDashboard'));
+const LabTechnicianDashboard = lazy(() => import('./pages/dashboard/LabTechnicianDashboard'));
 const Dashboard = lazy(() => import('./pages/dashboard/Dashboard'));
 const Reports = lazy(() => import('./pages/reports/Reports'));
 const CreateReport = lazy(() => import('./pages/reports/CreateReport'));
@@ -36,8 +43,22 @@ function App() {
             {/* Public Routes */}
             <Route element={<AuthLayout />}>
               <Route path="/login" element={<Login />} />
+              <Route path="/dashboard/super-admin" element={<SuperAdminDashboard />} />
+              <Route path="/dashboard/admin" element={<AdminDashboard />} />
+              <Route path="/dashboard/lab-technician" element={<LabTechnicianDashboard />} />
               <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
+            </Route>
+
+            {/* User Management Routes */}
+            <Route element={
+              <ProtectedRoute>
+                <UserList />
+              </ProtectedRoute>
+            }>
+              <Route path="/users" element={<UserList />} />
+              <Route path="/users/create" element={<CreateUser />} />
+              <Route path="/users/:id" element={<EditUser />} />
             </Route>
 
             {/* Protected Routes */}
@@ -46,7 +67,7 @@ function App() {
                 <DashboardLayout />
               </ProtectedRoute>
             }>
-              <Route path="/" element={<Dashboard />} />
+              <Route path="/" element={<Navigate to="/login" replace />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/reports/create" element={<CreateReport />} />
               <Route path="/reports/:id" element={<ViewReport />} />

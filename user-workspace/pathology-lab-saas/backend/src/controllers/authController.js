@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const Lab = require('../models/Lab');
+const { validateEmail, validatePassword } = require('../utils/validators');
 
 // @desc    Register user
 // @route   POST /api/auth/register
@@ -7,6 +8,20 @@ const Lab = require('../models/Lab');
 exports.register = async (req, res, next) => {
   try {
     const { name, email, password, role, labId } = req.body;
+
+    // Validate email and password
+    if (!validateEmail(email)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid email format'
+      });
+    }
+    if (!validatePassword(password)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password does not meet requirements'
+      });
+    }
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -71,10 +86,10 @@ exports.login = async (req, res, next) => {
     const { email, password } = req.body;
 
     // Validate email & password
-    if (!email || !password) {
+    if (!validateEmail(email) || !validatePassword(password)) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide email and password'
+        message: 'Invalid email or password format'
       });
     }
 
@@ -219,12 +234,19 @@ exports.logout = async (req, res, next) => {
 exports.verifyToken = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
+    console.log('Verifying token for user:', user); // Log the user being verified
+
+    console.log('Verifying token for user:', user); // Log the user being verified
+
 
     if (!user) {
+      console.log('User not found for token verification'); // Log if user is not found
       return res.status(404).json({
         success: false,
         message: 'User not found'
       });
+
+
     }
 
     res.status(200).json({

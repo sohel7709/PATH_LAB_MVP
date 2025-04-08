@@ -6,8 +6,11 @@ require('dotenv').config();
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
+const labManagementRoutes = require('./routes/labManagementRoutes');
 const labRoutes = require('./routes/labRoutes');
 const reportRoutes = require('./routes/reportRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes'); // Add this line
+
 
 const app = express();
 
@@ -32,8 +35,12 @@ app.use(require('express-rate-limit')({
 
 // Mount routes
 app.use('/api/auth', authRoutes);
+app.use('/api/labs', labManagementRoutes);
 app.use('/api/labs', labRoutes);
+app.use('/api/users',labManagementRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/dashboard', dashboardRoutes); // Add this line
+
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -63,7 +70,6 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5001;
-
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
