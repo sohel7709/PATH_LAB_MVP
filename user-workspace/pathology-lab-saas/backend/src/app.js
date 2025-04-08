@@ -9,7 +9,10 @@ const authRoutes = require('./routes/authRoutes');
 const labManagementRoutes = require('./routes/labManagementRoutes');
 const labRoutes = require('./routes/labRoutes');
 const reportRoutes = require('./routes/reportRoutes');
-const dashboardRoutes = require('./routes/dashboardRoutes'); // Add this line
+const dashboardRoutes = require('./routes/dashboardRoutes');
+const patientRoutes = require('./routes/patientRoutes');
+const exportRoutes = require('./routes/exportRoutes');
+const userManagementRoutes = require('./routes/userManagementRoutes');
 
 
 const app = express();
@@ -30,16 +33,18 @@ app.use(require('helmet')());
 app.use(require('xss-clean')());
 app.use(require('express-rate-limit')({
   windowMs: 10 * 60 * 1000, // 10 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
+  max: 1000 // limit each IP to 1000 requests per windowMs
 }));
 
 // Mount routes
 app.use('/api/auth', authRoutes);
-app.use('/api/labs', labManagementRoutes);
+app.use('/api/lab-management', labManagementRoutes);
 app.use('/api/labs', labRoutes);
-app.use('/api/users',labManagementRoutes);
+app.use('/api/user-management', userManagementRoutes);
 app.use('/api/reports', reportRoutes);
-app.use('/api/dashboard', dashboardRoutes); // Add this line
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/patients', patientRoutes);
+app.use('/api/export', exportRoutes);
 
 
 // Health check endpoint

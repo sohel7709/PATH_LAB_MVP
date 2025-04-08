@@ -35,11 +35,6 @@ exports.getReports = async (req, res, next) => {
   try {
     let query = { lab: req.user.lab };
 
-    // If technician, only show their reports
-    if (req.user.role === 'technician') {
-      query.technician = req.user.id;
-    }
-
     // Add filters from query parameters
     if (req.query.status) {
       query.status = req.query.status;
@@ -130,10 +125,7 @@ exports.getReport = async (req, res, next) => {
     }
 
     // Check if user has access to this report
-    if (
-      report.lab.toString() !== req.user.lab.toString() ||
-      (req.user.role === 'technician' && report.technician.toString() !== req.user.id)
-    ) {
+    if (report.lab.toString() !== req.user.lab.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to access this report'
@@ -164,10 +156,7 @@ exports.updateReport = async (req, res, next) => {
     }
 
     // Check if user has access to update this report
-    if (
-      report.lab.toString() !== req.user.lab.toString() ||
-      (req.user.role === 'technician' && report.technician.toString() !== req.user.id)
-    ) {
+    if (report.lab.toString() !== req.user.lab.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to update this report'
@@ -295,10 +284,7 @@ exports.addComment = async (req, res, next) => {
     }
 
     // Check if user has access to this report
-    if (
-      report.lab.toString() !== req.user.lab.toString() ||
-      (req.user.role === 'technician' && report.technician.toString() !== req.user.id)
-    ) {
+    if (report.lab.toString() !== req.user.lab.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to comment on this report'

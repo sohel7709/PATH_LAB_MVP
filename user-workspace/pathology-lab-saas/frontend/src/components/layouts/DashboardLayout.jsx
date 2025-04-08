@@ -9,15 +9,53 @@ import {
   CogIcon,
   XMarkIcon,
   BeakerIcon,
+  ClipboardDocumentCheckIcon,
 } from '@heroicons/react/24/outline';
 import { ChevronDownIcon } from '@heroicons/react/20/solid';
+import { useAuth } from '../../context/AuthContext';
 
-const navigation = [
-  { name: 'Dashboard', href: '/', icon: HomeIcon },
-  { name: 'Reports', href: '/reports', icon: DocumentTextIcon },
-  { name: 'Lab Settings', href: '/settings/lab', icon: BeakerIcon },
-  { name: 'User Management', href: '/settings/users', icon: UserGroupIcon },
-];
+// Navigation items based on user role
+const getNavigationItems = (role) => {
+  const commonItems = [
+    { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
+    { name: 'Reports', href: '/reports', icon: DocumentTextIcon },
+  ];
+
+  const superAdminItems = [
+    ...commonItems,
+    { name: 'Labs', href: '/labs', icon: BeakerIcon },
+    { name: 'User Management', href: '/settings/users', icon: UserGroupIcon },
+    { name: 'Subscription Plans', href: '/settings/subscription', icon: CogIcon },
+    { name: 'Audit Logs', href: '/audit-logs', icon: DocumentTextIcon },
+  ];
+
+  const adminItems = [
+    ...commonItems,
+    { name: 'Technicians', href: '/settings/users', icon: UserGroupIcon },
+    { name: 'Patients', href: '/patients', icon: UserGroupIcon },
+    { name: 'Lab Settings', href: '/settings/lab', icon: BeakerIcon },
+    { name: 'Inventory', href: '/inventory', icon: BeakerIcon },
+    { name: 'Financial Reports', href: '/finance/reports', icon: DocumentTextIcon },
+  ];
+
+  const technicianItems = [
+    ...commonItems,
+    { name: 'Patients', href: '/patients', icon: UserGroupIcon },
+    { name: 'Test Samples', href: '/samples', icon: BeakerIcon },
+    { name: 'Tasks', href: '/tasks', icon: ClipboardDocumentCheckIcon },
+  ];
+
+  switch (role) {
+    case 'super-admin':
+      return superAdminItems;
+    case 'admin':
+      return adminItems;
+    case 'technician':
+      return technicianItems;
+    default:
+      return commonItems;
+  }
+};
 
 function classNames(...classes) {
   return classes.filter(Boolean).join(' ');
@@ -27,6 +65,10 @@ export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  
+  // Default to admin navigation if user role is not available
+  const navigation = getNavigationItems(user?.role || 'admin');
 
   const handleLogout = () => {
     // TODO: Implement logout logic
@@ -60,7 +102,7 @@ export default function DashboardLayout() {
               leaveTo="-translate-x-full"
             >
               <Dialog.Panel className="relative mr-16 flex w-full max-w-xs flex-1">
-                <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-primary-600 px-6 pb-4">
+                <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-blue-800 px-6 pb-4">
                   <div className="flex h-16 shrink-0 items-center">
                     <img
                       className="h-8 w-auto"
@@ -78,14 +120,14 @@ export default function DashboardLayout() {
                                 to={item.href}
                                 className={classNames(
                                   location.pathname === item.href
-                                    ? 'bg-primary-700 text-white'
-                                    : 'text-primary-200 hover:text-white hover:bg-primary-700',
-                                  'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
+                                    ? 'bg-blue-900 text-white'
+                                    : 'text-white hover:text-white hover:bg-blue-700',
+                                  'group flex gap-x-3 rounded-md p-3 text-base leading-6 font-semibold transition-all duration-200'
                                 )}
                               >
                                 <item.icon
                                   className={classNames(
-                                    location.pathname === item.href ? 'text-white' : 'text-primary-200 group-hover:text-white',
+                                    location.pathname === item.href ? 'text-white' : 'text-white group-hover:text-white',
                                     'h-6 w-6 shrink-0'
                                   )}
                                   aria-hidden="true"
@@ -107,7 +149,7 @@ export default function DashboardLayout() {
 
       {/* Static sidebar for desktop */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
-        <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-primary-600 px-6 pb-4">
+        <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-blue-800 px-6 pb-4">
           <div className="flex h-16 shrink-0 items-center">
             <img
               className="h-8 w-auto"
@@ -125,14 +167,14 @@ export default function DashboardLayout() {
                         to={item.href}
                         className={classNames(
                           location.pathname === item.href
-                            ? 'bg-primary-700 text-white'
-                            : 'text-primary-200 hover:text-white hover:bg-primary-700',
-                          'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
+                            ? 'bg-blue-900 text-white'
+                            : 'text-white hover:text-white hover:bg-blue-700',
+                          'group flex gap-x-3 rounded-md p-3 text-base leading-6 font-semibold transition-all duration-200'
                         )}
                       >
                         <item.icon
                           className={classNames(
-                            location.pathname === item.href ? 'text-white' : 'text-primary-200 group-hover:text-white',
+                            location.pathname === item.href ? 'text-white' : 'text-white group-hover:text-white',
                             'h-6 w-6 shrink-0'
                           )}
                           aria-hidden="true"
@@ -177,7 +219,7 @@ export default function DashboardLayout() {
                   />
                   <span className="hidden lg:flex lg:items-center">
                     <span className="ml-4 text-sm font-semibold leading-6 text-gray-900" aria-hidden="true">
-                      John Doe
+                      {user?.name || 'User'}
                     </span>
                     <ChevronDownIcon className="ml-2 h-5 w-5 text-gray-400" aria-hidden="true" />
                   </span>

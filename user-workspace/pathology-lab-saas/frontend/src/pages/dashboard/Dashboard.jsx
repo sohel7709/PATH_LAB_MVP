@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import {
   DocumentTextIcon,
   UserGroupIcon,
@@ -27,6 +28,7 @@ const recentReports = [
 ];
 
 export default function Dashboard() {
+  const { user } = useAuth();
   const [dashboardStats, setDashboardStats] = useState({
     totalReports: 0,
     activeUsers: 0,
@@ -38,17 +40,12 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        // TODO: Replace with actual API call
-        const response = await fetch(
-          "http://localhost:5000/api/dashboard/stats",
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          }
-        );
-        const data = await response.json();
-
+        // Import API utilities
+        const { dashboard } = await import('../../utils/api');
+        
+        // Fetch dashboard stats
+        const data = await dashboard.getStats();
+        
         setDashboardStats({
           totalReports: data.totalReports || 0,
           activeUsers: data.activeUsers || 0,
@@ -57,6 +54,13 @@ export default function Dashboard() {
         });
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
+        // Set default values when API call fails
+        setDashboardStats({
+          totalReports: 0,
+          activeUsers: 0,
+          reportsToday: 0,
+          completionRate: 0,
+        });
       } finally {
         setIsLoading(false);
       }
@@ -79,6 +83,17 @@ export default function Dashboard() {
         return 0;
     }
   };
+
+  // Redirect based on user role
+  if (user) {
+    if (user.role === 'super-admin') {
+      return <Navigate to="/dashboard/super-admin" replace />;
+    } else if (user.role === 'admin') {
+      return <Navigate to="/dashboard/admin" replace />;
+    } else if (user.role === 'technician') {
+      return <Navigate to="/dashboard/lab-technician" replace />;
+    }
+  }
 
   return (
     <div>

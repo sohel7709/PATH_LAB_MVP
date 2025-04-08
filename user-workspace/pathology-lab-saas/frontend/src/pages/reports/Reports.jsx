@@ -5,7 +5,8 @@ import {
   MagnifyingGlassIcon,
   FunnelIcon,
   ArrowUpIcon,
-  ArrowDownIcon 
+  ArrowDownIcon,
+  ArrowPathIcon
 } from '@heroicons/react/24/outline';
 import { reports } from '../../utils/api';
 import { formatDate, getStatusColor } from '../../utils/helpers';
@@ -26,11 +27,25 @@ export default function Reports() {
   const fetchReports = async () => {
     try {
       setIsLoading(true);
+      console.log('Fetching reports from API...');
       const data = await reports.getAll();
-      setReportsData(data);
-      setError(null);
+      console.log('Reports data received:', data);
+      
+      // Check if data is in the expected format
+      if (data && (Array.isArray(data) || Array.isArray(data.data))) {
+        const reportsArray = Array.isArray(data) ? data : data.data || [];
+        console.log('Setting reports data:', reportsArray);
+        setReportsData(reportsArray);
+        setError(null);
+      } else {
+        console.error('Invalid reports data format:', data);
+        setReportsData([]);
+        setError('Received invalid reports data format. Please check the console for details.');
+      }
     } catch (err) {
-      setError(err.message);
+      console.error('Error fetching reports:', err);
+      setError(`Failed to load reports: ${err.message}`);
+      setReportsData([]);
     } finally {
       setIsLoading(false);
     }
@@ -52,8 +67,12 @@ export default function Reports() {
   });
 
   const filteredReports = sortedReports.filter((report) => {
-    const matchesSearch = report.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         report.testName.toLowerCase().includes(searchTerm.toLowerCase());
+    // Handle both old and new report data structures
+    const patientName = report.patientInfo?.name || report.patientName || '';
+    const testName = report.testInfo?.name || report.testName || '';
+    
+    const matchesSearch = patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         testName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterStatus === 'all' || report.status === filterStatus;
     return matchesSearch && matchesFilter;
   });
@@ -91,7 +110,15 @@ export default function Reports() {
             A list of all laboratory reports including patient details and status.
           </p>
         </div>
-        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none flex space-x-3">
+          <button
+            onClick={fetchReports}
+            className="btn-secondary inline-flex items-center"
+            disabled={isLoading}
+          >
+            <ArrowPathIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+            {isLoading ? 'Refreshing...' : 'Refresh'}
+          </button>
           <Link
             to="/reports/create"
             className="btn-primary inline-flex items-center"
@@ -201,32 +228,56 @@ export default function Reports() {
                       </td>
                     </tr>
                   ) : (
-                    filteredReports.map((report) => (
-                      <tr key={report.id}>
-                        <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6 lg:pl-8">
-                          {report.patientName}
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          {report.testName}
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          {formatDate(report.createdAt)}
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm">
-                          <span className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${getStatusColor(report.status)}`}>
-                            {report.status}
-                          </span>
-                        </td>
-                        <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6 lg:pr-8">
-                          <Link
-                            to={`/reports/${report.id}`}
-                            className="text-primary-600 hover:text-primary-900"
-                          >
-                            View<span className="sr-only">, {report.patientName}</span>
-                          </Link>
-                        </td>
-                      </tr>
-                    ))
+                    filteredReports.map((report) => {
+                      // Handle both old and new report data structures
+                      const patientName = report.patientInfo?.name || report.patientName || 'N/A';
+                      const testName = report.testInfo?.name || report.testName || 'N/A';
+                      const reportId = report._id || report.id;
+                      
+                      return (
+                        <tr key={reportId}>
+                          <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6 lg:pl-8">
+                            {patientName}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                            {testName}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                            {formatDate(report.createdAt || report.reportMeta?.generatedAt)}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-4 text-sm">
+                            <span className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${getStatusColor(report.status)}`}>
+                              {report.status}
+                            </span>
+                          </td>
+                          <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6 lg:pr-8">
+                          <div className="flex space-x-3">
+                            <Link
+                              to={`/reports/${reportId}`}
+                              className="text-blue-600 hover:text-blue-900"
+                              title="View Report"
+                            >
+                              View
+                            </Link>
+                            <Link
+                              to={`/reports/${reportId}/edit`}
+                              className="text-green-600 hover:text-green-900"
+                              title="Edit Report"
+                            >
+                              Edit
+                            </Link>
+                            <Link
+                              to={`/reports/${reportId}/print`}
+                              className="text-gray-600 hover:text-gray-900"
+                              title="Print Report"
+                            >
+                              Print
+                            </Link>
+                          </div>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>

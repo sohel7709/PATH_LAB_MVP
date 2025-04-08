@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { ExclamationCircleIcon } from '@heroicons/react/20/solid';
 import { useAuth } from '../../context/AuthContext';
 
 export default function Login() {
-  const navigate = useNavigate();
   const { login } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
@@ -28,7 +27,7 @@ export default function Login() {
 
     try {
       await login(formData.email, formData.password);
-      navigate('/');
+      // Removed navigation here as AuthContext.jsx already handles role-based navigation
     } catch (err) {
       setError(err.message);
     } finally {

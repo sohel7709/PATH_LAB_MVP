@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { ExclamationCircleIcon, PrinterIcon, PencilIcon } from '@heroicons/react/24/outline';
 import { reports } from '../../utils/api';
 import { formatDate, getStatusColor } from '../../utils/helpers';
@@ -7,7 +7,6 @@ import { REPORT_STATUS } from '../../utils/constants';
 
 export default function ViewReport() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const [report, setReport] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -87,11 +86,18 @@ export default function ViewReport() {
             Report Details
           </h2>
         </div>
-        <div className="mt-4 flex md:ml-4 md:mt-0">
+        <div className="mt-4 flex md:ml-4 md:mt-0 space-x-3">
+          <Link
+            to={`/reports/${id}/edit`}
+            className="btn-primary"
+          >
+            <PencilIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+            Edit Report
+          </Link>
           <button
             type="button"
             onClick={handlePrint}
-            className="btn-secondary ml-3"
+            className="btn-secondary"
           >
             <PrinterIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
             Print

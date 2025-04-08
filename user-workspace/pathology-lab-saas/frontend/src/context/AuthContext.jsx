@@ -21,19 +21,27 @@ export const AuthProvider = ({ children }) => {
         return;
       }
 
-      // Verify token with backend
-      const response = await fetch('http://localhost:5000/api/auth/verify', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('User verified:', data.user);
-        setUser(data.user);
-      } else {
-        console.log('Token verification failed');
+      try {
+        // Parse the token to get user information
+        // This is a temporary solution until the backend verify endpoint is fixed
+        const tokenParts = token.split('.');
+        if (tokenParts.length === 3) {
+          const payload = JSON.parse(atob(tokenParts[1]));
+          console.log('Token payload:', payload);
+          
+          // Set user from token payload
+          setUser({
+            id: payload.id,
+            role: payload.role,
+            lab: payload.lab
+          });
+          
+          console.log('User set from token payload:', payload);
+        } else {
+          throw new Error('Invalid token format');
+        }
+      } catch (error) {
+        console.log('Token verification failed:', error.message);
         localStorage.removeItem('token');
       }
     } catch (error) {
@@ -46,49 +54,74 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     console.log('Attempting to log in with:', { email, password }); // Log the login attempt
-    const response = await fetch('http://localhost:5000/api/auth/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, password }),
-    });
+    
+    try {
+      // Import the API utility
+      const { auth } = await import('../utils/api');
+      
+      // Use the API utility to login
+      const data = await auth.login({ email, password });
+      
+      console.log('Login successful, user:', data.user);
+      console.log('Token received:', data.token); // Log the token received
+      
+      if (data.token) {
+        localStorage.setItem('token', data.token); // Store the token in local storage
+        console.log('Token stored in local storage'); // Log when token is successfully stored
+      } else {
+        console.log('No token received from the server'); // Log if no token is received
+        throw new Error('No token received from the server');
+      }
 
-    const data = await response.json();
-
-    if (!response.ok) {
-    console.log('Login failed:', data.message || 'Invalid credentials');
-
-      throw new Error(data.message || 'Login failed');
+      // Set user directly from login response
+      setUser(data.user);
+      
+      // Parse token to get role information
+      try {
+        const tokenParts = data.token.split('.');
+        if (tokenParts.length === 3) {
+          const payload = JSON.parse(atob(tokenParts[1]));
+          console.log('Token payload for navigation:', payload, 'User role:', payload.role);
+          
+          // Set user from token payload to ensure we have the role
+          setUser({
+            id: payload.id,
+            role: payload.role,
+            lab: payload.lab,
+            ...data.user // Include any additional user data from the response
+          });
+          
+          // Navigate based on role from token
+          const userRole = payload.role;
+          console.log('Navigating based on role:', userRole);
+          
+          // Use setTimeout to ensure the user state is updated before navigation
+          setTimeout(() => {
+            if (userRole === 'super-admin') {
+              console.log('Navigating to super-admin dashboard');
+              navigate('/dashboard/super-admin');
+            } else if (userRole === 'admin') {
+              console.log('Navigating to admin dashboard');
+              navigate('/dashboard/admin');
+            } else if (userRole === 'technician') {
+              console.log('Navigating to lab-technician dashboard');
+              navigate('/dashboard/lab-technician');
+            } else {
+              console.log('Navigating to default dashboard');
+              navigate('/dashboard'); // Fallback if role is not recognized
+            }
+          }, 100);
+        } else {
+          throw new Error('Invalid token format');
+        }
+      } catch (error) {
+        console.error('Error parsing token for navigation:', error);
+        navigate('/dashboard'); // Fallback to dashboard
+      }
+    } catch (error) {
+      console.log('Login failed:', error.message || 'Invalid credentials');
+      throw error;
     }
-
-    console.log('Login successful, user:', data.user);
-    console.log('Token received:', data.token); // Log the token received
-    if (data.token) {
-      localStorage.setItem('token', data.token); // Store the token in local storage
-    console.log('Token stored in local storage'); // Log when token is successfully stored
-
-    } else {
-    console.log('No token received from the server'); // Log if no token is received
-
-
-
-
-    }
-
-    setUser(data.user);
-    await checkAuth(); // Ensure user state is updated after login
-    const userRole = data.user.role; // Assuming the user object contains a role property
-    if (userRole === 'super-admin') {
-      navigate('/dashboard/super-admin');
-    } else if (userRole === 'admin') {
-      navigate('/dashboard/admin');
-    } else if (userRole === 'lab-technician') {
-      navigate('/dashboard/lab-technician');
-    } else {
-      navigate('/'); // Fallback if role is not recognized
-    }
-
   };
 
   const logout = () => {
