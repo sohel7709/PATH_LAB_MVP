@@ -1,0 +1,250 @@
+const TestTemplate = require('../models/TestTemplate');
+
+// @desc    Create new test template
+// @route   POST /api/admin/test-templates
+// @access  Private/Admin
+exports.createTestTemplate = async (req, res, next) => {
+  try {
+    // Add lab and creator info to template
+    req.body.lab = req.user.lab;
+    req.body.createdBy = req.user.id;
+
+    const template = await TestTemplate.create(req.body);
+
+    res.status(201).json({
+      success: true,
+      data: template
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get all test templates for a lab
+// @route   GET /api/admin/test-templates or /api/technician/test-templates
+// @access  Private/Admin/Technician
+exports.getTestTemplates = async (req, res, next) => {
+  try {
+    let query = { $or: [{ lab: req.user.lab }, { isDefault: true }] };
+
+    // Add filters from query parameters
+    if (req.query.category) {
+      query.category = req.query.category;
+    }
+    if (req.query.name) {
+      query.name = new RegExp(req.query.name, 'i');
+    }
+
+    // Pagination
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 50;
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+    const total = await TestTemplate.countDocuments(query);
+
+    const templates = await TestTemplate.find(query)
+      .populate({
+        path: 'createdBy',
+        select: 'name email'
+      })
+      .skip(startIndex)
+      .limit(limit)
+      .sort({ name: 1 });
+
+    // Pagination result
+    const pagination = {};
+
+    if (endIndex < total) {
+      pagination.next = {
+        page: page + 1,
+        limit
+      };
+    }
+
+    if (startIndex > 0) {
+      pagination.prev = {
+        page: page - 1,
+        limit
+      };
+    }
+
+    res.status(200).json({
+      success: true,
+      count: templates.length,
+      pagination,
+      data: templates
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get single test template
+// @route   GET /api/admin/test-templates/:id or /api/technician/test-templates/:id
+// @access  Private/Admin/Technician
+exports.getTestTemplate = async (req, res, next) => {
+  try {
+    const template = await TestTemplate.findById(req.params.id)
+      .populate({
+        path: 'createdBy',
+        select: 'name email'
+      });
+
+    if (!template) {
+      return res.status(404).json({
+        success: false,
+        message: 'Test template not found'
+      });
+    }
+
+    // Check if user has access to this template
+    if (!template.isDefault && template.lab.toString() !== req.user.lab.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to access this test template'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: template
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Update test template
+// @route   PUT /api/admin/test-templates/:id
+// @access  Private/Admin
+exports.updateTestTemplate = async (req, res, next) => {
+  try {
+    let template = await TestTemplate.findById(req.params.id);
+
+    if (!template) {
+      return res.status(404).json({
+        success: false,
+        message: 'Test template not found'
+      });
+    }
+
+    // Check if user has access to update this template
+    if (template.isDefault) {
+      return res.status(403).json({
+        success: false,
+        message: 'Default templates cannot be modified'
+      });
+    }
+
+    if (template.lab.toString() !== req.user.lab.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to update this test template'
+      });
+    }
+
+    // Preserve existing data that shouldn't be overwritten
+    const updateData = {
+      ...req.body,
+      lab: template.lab, // Ensure lab cannot be changed
+      createdBy: template.createdBy, // Ensure creator cannot be changed
+      isDefault: template.isDefault // Ensure default status cannot be changed
+    };
+
+    template = await TestTemplate.findByIdAndUpdate(req.params.id, updateData, {
+      new: true,
+      runValidators: true
+    });
+
+    res.status(200).json({
+      success: true,
+      data: template
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Delete test template
+// @route   DELETE /api/admin/test-templates/:id
+// @access  Private/Admin
+exports.deleteTestTemplate = async (req, res, next) => {
+  try {
+    const template = await TestTemplate.findById(req.params.id);
+
+    if (!template) {
+      return res.status(404).json({
+        success: false,
+        message: 'Test template not found'
+      });
+    }
+
+    // Check if user has access to delete this template
+    if (template.isDefault) {
+      return res.status(403).json({
+        success: false,
+        message: 'Default templates cannot be deleted'
+      });
+    }
+
+    if (template.lab.toString() !== req.user.lab.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to delete this test template'
+      });
+    }
+
+    await TestTemplate.findByIdAndDelete(template._id);
+
+    res.status(200).json({
+      success: true,
+      message: 'Test template deleted successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Create default test templates
+// @route   POST /api/super-admin/test-templates/create-defaults
+// @access  Private/Super-Admin
+exports.createDefaultTemplates = async (req, res, next) => {
+  try {
+    // Check if default templates already exist
+    const existingDefaults = await TestTemplate.find({ isDefault: true });
+    
+    if (existingDefaults.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Default templates already exist'
+      });
+    }
+
+    // Create default templates
+    const defaultTemplates = req.body.templates;
+    
+    if (!defaultTemplates || !Array.isArray(defaultTemplates) || defaultTemplates.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No templates provided'
+      });
+    }
+
+    // Mark all templates as default
+    const templatesWithDefaults = defaultTemplates.map(template => ({
+      ...template,
+      isDefault: true,
+      createdBy: req.user.id
+    }));
+
+    const createdTemplates = await TestTemplate.create(templatesWithDefaults);
+
+    res.status(201).json({
+      success: true,
+      count: createdTemplates.length,
+      data: createdTemplates
+    });
+  } catch (error) {
+    next(error);
+  }
+};

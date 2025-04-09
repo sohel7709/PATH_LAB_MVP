@@ -22,7 +22,17 @@ Backend API for Pathology Lab SaaS Application.
   ```
 
 ## API Endpoints
-- The API provides various endpoints for managing pathology lab operations. Refer to the routes defined in the backend for detailed information.
+- **GET /api/labs**: Retrieve a list of labs.
+- **POST /api/labs**: Create a new lab.
+- **GET /api/patients**: Retrieve a list of patients.
+- **POST /api/patients**: Create a new patient.
+- Refer to the routes defined in the backend for detailed information.
+
+## Frontend Overview
+The frontend is built using React and includes the following key components:
+- **CreateLab**: Component for creating new labs.
+- **CreateUser**: Component for creating new users.
+- **ProtectedRoute**: Component for protecting routes that require authentication.
 
 ## Dependencies
 - **Express**: Web framework for Node.js.

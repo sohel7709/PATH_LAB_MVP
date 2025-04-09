@@ -16,19 +16,19 @@ router.use(protect);
 
 // Routes for both Admin and Technician
 router.route('/')
-  .get(authorize('admin', 'technician'), getReports)
-  .post(authorize('technician'), createReport);
+  .get(authorize('admin', 'technician'), checkLabAccess, getReports)
+  .post(authorize('admin', 'technician'), checkLabAccess, createReport);
 
 router.route('/:id')
-  .get(authorize('admin', 'technician'), getReport)
-  .put(authorize('technician'), updateReport)
-  .delete(authorize('admin'), deleteReport);
+  .get(authorize('admin', 'technician'), checkLabAccess, getReport)
+  .put(authorize('admin', 'technician'), checkLabAccess, updateReport)
+  .delete(authorize('admin'), checkLabAccess, deleteReport);
 
 // Admin only routes
-router.put('/:id/verify', authorize('admin'), verifyReport);
+router.put('/:id/verify', authorize('admin'), checkLabAccess, verifyReport);
 
 // Comment routes (both Admin and Technician)
-router.post('/:id/comments', authorize('admin', 'technician'), addComment);
+router.post('/:id/comments', authorize('admin', 'technician'), checkLabAccess, addComment);
 
 // Additional routes can be added here for features like:
 // - Bulk report operations

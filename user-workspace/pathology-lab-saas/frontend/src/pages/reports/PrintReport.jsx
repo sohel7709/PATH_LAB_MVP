@@ -23,10 +23,16 @@ export default function PrintReport() {
   const fetchReport = async () => {
     try {
       setIsLoading(true);
-      const data = await reports.getById(id);
+      const response = await reports.getById(id);
+      
+      // Check if the response has a data property (API might return {success: true, data: {...}})
+      const data = response.data || response;
+      
+      console.log('Fetched report data:', data);
       setReport(data);
       setError('');
     } catch (err) {
+      console.error('Error fetching report:', err);
       setError(err.message);
     } finally {
       setIsLoading(false);
@@ -250,6 +256,12 @@ export default function PrintReport() {
                     : 'N/A'}
               </p>
             </div>
+            <div className="sm:col-span-2">
+              <p className="text-sm font-medium text-gray-500">Reference Doctor</p>
+              <p className="mt-1 text-sm text-gray-900">
+                {report.referenceDoctor || report.testInfo?.referenceDoctor || 'Not specified'}
+              </p>
+            </div>
           </div>
         </div>
 
@@ -267,16 +279,7 @@ export default function PrintReport() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
-                {report.testParameters && report.testParameters.length > 0 ? (
-                  report.testParameters.map((param, index) => (
-                    <tr key={index}>
-                      <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900">{param.name}</td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{param.value}</td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{param.unit}</td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{param.referenceRange}</td>
-                    </tr>
-                  ))
-                ) : report.results && report.results.length > 0 ? (
+                {report.results && report.results.length > 0 ? (
                   report.results.map((param, index) => (
                     <tr key={index}>
                       <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900">{param.parameter}</td>

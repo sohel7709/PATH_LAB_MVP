@@ -25,6 +25,8 @@ const LabTechnicianDashboard = () => {
   const [recentPatients, setRecentPatients] = useState([]);
   const [recentReports, setRecentReports] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [labDetails, setLabDetails] = useState(null);
+  // const [searchTerm, setSearchTerm] = useState('');
 
   const { user } = useAuth();
   
@@ -35,11 +37,11 @@ const LabTechnicianDashboard = () => {
         setIsLoading(true);
         
         // Import API utilities
-        const { dashboard, patients, reports } = await import('../../utils/api');
+        const { dashboard, patients, reports, superAdmin } = await import('../../utils/api');
         
         try {
-          // Fetch dashboard stats
-          const statsData = await dashboard.getStats();
+          // Fetch dashboard stats for the current lab
+          const statsData = await dashboard.getStats(user?.lab);
           setStats({
             pendingReports: statsData.pendingReports || 0,
             completedReports: statsData.completedReports || 0,
@@ -51,30 +53,76 @@ const LabTechnicianDashboard = () => {
         }
         
         try {
+          // Fetch lab details if user has a lab ID
+          if (user?.lab) {
+            try {
+              const labResponse = await superAdmin.getLab(user.lab);
+              if (labResponse.success) {
+                setLabDetails(labResponse.data);
+              } else {
+                console.error('Failed to fetch lab details:', labResponse.message);
+              }
+            } catch (labErr) {
+              console.error('Error fetching lab details:', labErr);
+            }
+          }
+        } catch (error) {
+          console.error('Error in lab details section:', error);
+        }
+        
+        try {
           // Fetch recent patients for the current lab
           const patientsData = await patients.getAll(user?.lab);
-          setRecentPatients(patientsData.slice(0, 5).map(patient => ({
-            id: patient.id,
-            name: patient.fullName,
-            age: patient.age,
-            gender: patient.gender,
-            contact: patient.phone,
-            testType: patient.lastTestType || 'N/A',
-          })));
+          
+          // Check if patientsData is an array before using slice
+          if (Array.isArray(patientsData)) {
+            setRecentPatients(patientsData.slice(0, 5).map(patient => ({
+              id: patient.id || patient._id,
+              name: patient.fullName,
+              age: patient.age,
+              gender: patient.gender,
+              contact: patient.phone,
+              testType: patient.lastTestType || 'N/A',
+            })));
+          } else {
+            console.error('Patients data is not an array:', patientsData);
+            setRecentPatients([]);
+          }
         } catch (error) {
           console.error('Error fetching patients data:', error);
         }
         
         try {
           // Fetch recent reports for the current lab
-          const reportsData = await reports.getAll();
-          setRecentReports(reportsData.slice(0, 5).map(report => ({
-            id: report.id,
-            patientName: report.patientName,
-            testName: report.testName,
-            status: report.status,
-            date: report.createdAt,
-          })));
+          const response = await reports.getAll({ lab: user?.lab });
+          console.log('Reports response:', response);
+          
+          // Handle different response formats
+          let reportsArray = [];
+          
+          if (response && response.data && Array.isArray(response.data)) {
+            // New API format with { success, data, pagination }
+            reportsArray = response.data;
+          } else if (Array.isArray(response)) {
+            // Old API format with direct array
+            reportsArray = response;
+          } else if (response && response.success && Array.isArray(response.data)) {
+            // Another possible format
+            reportsArray = response.data;
+          }
+          
+          if (reportsArray.length > 0) {
+            setRecentReports(reportsArray.slice(0, 5).map(report => ({
+              id: report.id || report._id,
+              patientName: report.patientName || (report.patientInfo ? report.patientInfo.name : 'Unknown'),
+              testName: report.testName || (report.testInfo ? report.testInfo.name : 'Unknown'),
+              status: report.status || 'pending',
+              date: report.createdAt || report.reportMeta?.generatedAt || new Date(),
+            })));
+          } else {
+            console.log('No reports found or empty array');
+            setRecentReports([]);
+          }
         } catch (error) {
           console.error('Error fetching reports data:', error);
         }
@@ -89,6 +137,14 @@ const LabTechnicianDashboard = () => {
     fetchDashboardData();
   }, [user]);
 
+  // const handleSearchChange = (e) => {
+  //   setSearchTerm(e.target.value);
+  // };
+
+  // const filteredPatients = recentPatients.filter(patient =>
+  //   patient.name.toLowerCase().includes(searchTerm.toLowerCase())
+  // );
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -98,11 +154,29 @@ const LabTechnicianDashboard = () => {
   }
 
   return (
-    <div className="space-y-8">
+      <div className="space-y-8 p-4">
+
       {/* Header with Welcome Message */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-lg shadow-lg p-8 text-white">
         <h1 className="text-3xl font-bold">Welcome, {user?.name || 'Lab Technician'}</h1>
         <p className="mt-2 text-lg opacity-90">Manage patients, reports, and test samples efficiently</p>
+        
+        {/* User and Lab Information */}
+        <div className="mt-4 p-4 bg-white bg-opacity-10 rounded-lg">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <h3 className="text-lg font-semibold">Your Profile</h3>
+              <p className="text-sm opacity-90">ID: {user?.id || 'N/A'}</p>
+              <p className="text-sm opacity-90">Role: {user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'N/A'}</p>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold">Lab Information</h3>
+              <p className="text-sm opacity-90">Lab ID: {user?.lab || 'N/A'}</p>
+              <p className="text-sm opacity-90">Lab Name: {labDetails?.name || 'Loading...'}</p>
+            </div>
+          </div>
+        </div>
+        
         <div className="mt-6 flex flex-wrap gap-4">
           <Link
             to="/patients/add"
@@ -122,7 +196,8 @@ const LabTechnicianDashboard = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 p-4">
+
         {/* Pending Reports */}
         <div className="overflow-hidden rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow duration-300">
           <div className="p-5 border-b-4 border-yellow-500">
@@ -142,7 +217,8 @@ const LabTechnicianDashboard = () => {
           </div>
           <div className="bg-gray-50 px-5 py-3">
             <div className="text-sm">
-              <Link to="/reports?status=pending" className="font-medium text-blue-700 hover:text-blue-900">
+          <Link to="/reports?status=pending" className="font-medium text-blue-700 hover:text-blue-900 transition duration-200">
+
                 View all pending reports
               </Link>
             </div>
@@ -168,7 +244,8 @@ const LabTechnicianDashboard = () => {
           </div>
           <div className="bg-gray-50 px-5 py-3">
             <div className="text-sm">
-              <Link to="/reports?status=completed" className="font-medium text-blue-700 hover:text-blue-900">
+          <Link to="/reports?status=completed" className="font-medium text-blue-700 hover:text-blue-900 transition duration-200">
+
                 View all completed reports
               </Link>
             </div>

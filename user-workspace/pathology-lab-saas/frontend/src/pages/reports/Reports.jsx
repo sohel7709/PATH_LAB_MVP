@@ -28,20 +28,29 @@ export default function Reports() {
     try {
       setIsLoading(true);
       console.log('Fetching reports from API...');
-      const data = await reports.getAll();
-      console.log('Reports data received:', data);
+      const response = await reports.getAll(); // Fetch all reports
+      console.log('Reports response received:', response);
       
-      // Check if data is in the expected format
-      if (data && (Array.isArray(data) || Array.isArray(data.data))) {
-        const reportsArray = Array.isArray(data) ? data : data.data || [];
-        console.log('Setting reports data:', reportsArray);
-        setReportsData(reportsArray);
-        setError(null);
-      } else {
-        console.error('Invalid reports data format:', data);
-        setReportsData([]);
-        setError('Received invalid reports data format. Please check the console for details.');
+      // Handle different response formats
+      let reportsArray = [];
+      
+      if (response && response.data && Array.isArray(response.data)) {
+        // New API format with { success, data, pagination }
+        reportsArray = response.data;
+      } else if (Array.isArray(response)) {
+        // Old API format with direct array
+        reportsArray = response;
+      } else if (response && response.success && Array.isArray(response.data)) {
+        // Another possible format
+        reportsArray = response.data;
+      } else if (response && Array.isArray(response.data)) {
+        // Yet another format
+        reportsArray = response.data;
       }
+      
+      console.log('Processed reports array:', reportsArray);
+      setReportsData(reportsArray || []);
+      setError(null);
     } catch (err) {
       console.error('Error fetching reports:', err);
       setError(`Failed to load reports: ${err.message}`);

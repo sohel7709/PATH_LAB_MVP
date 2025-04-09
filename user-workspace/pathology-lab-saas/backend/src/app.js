@@ -13,7 +13,8 @@ const dashboardRoutes = require('./routes/dashboardRoutes');
 const patientRoutes = require('./routes/patientRoutes');
 const exportRoutes = require('./routes/exportRoutes');
 const userManagementRoutes = require('./routes/userManagementRoutes');
-
+const testTemplateRoutes = require('./routes/testTemplateRoutes');
+const labReportSettingsRoutes = require('./routes/labReportSettingsRoutes');
 
 const app = express();
 
@@ -45,7 +46,8 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/patients', patientRoutes);
 app.use('/api/export', exportRoutes);
-
+app.use('/api', testTemplateRoutes);
+app.use('/api', labReportSettingsRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

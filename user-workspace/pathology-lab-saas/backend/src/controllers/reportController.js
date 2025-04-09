@@ -171,15 +171,42 @@ exports.updateReport = async (req, res, next) => {
       });
     }
 
-    // Update report metadata
-    req.body.reportMeta = {
-      ...report.reportMeta,
-      lastModifiedAt: Date.now(),
-      lastModifiedBy: req.user.id,
-      version: (report.reportMeta.version || 1) + 1
-    };
+    // Log the incoming data for debugging
+    console.log('Update report request body:', req.body);
 
-    report = await Report.findByIdAndUpdate(req.params.id, req.body, {
+    // Preserve existing data that shouldn't be overwritten
+    const updateData = {
+      ...req.body,
+      lab: report.lab, // Ensure lab cannot be changed
+      technician: report.technician, // Ensure technician cannot be changed
+      
+      // Make sure patientInfo is properly updated
+      patientInfo: req.body.patientInfo ? {
+        ...report.patientInfo, // Keep existing data
+        ...req.body.patientInfo, // Override with new data
+        patientId: req.body.patientInfo?.patientId || report.patientInfo?.patientId // Preserve ID
+      } : report.patientInfo,
+      
+      // Make sure testInfo is properly updated
+      testInfo: req.body.testInfo ? {
+        ...report.testInfo, // Keep existing data
+        ...req.body.testInfo, // Override with new data
+        sampleId: req.body.testInfo?.sampleId || report.testInfo?.sampleId // Preserve ID
+      } : report.testInfo,
+      
+      // Update report metadata
+      reportMeta: {
+        ...report.reportMeta,
+        lastModifiedAt: Date.now(),
+        lastModifiedBy: req.user.id,
+        version: (report.reportMeta?.version || 1) + 1
+      }
+    };
+    
+    // Log the update data for debugging
+    console.log('Updating report with data:', JSON.stringify(updateData, null, 2));
+
+    report = await Report.findByIdAndUpdate(req.params.id, updateData, {
       new: true,
       runValidators: true
     });
@@ -189,6 +216,7 @@ exports.updateReport = async (req, res, next) => {
       data: report
     });
   } catch (error) {
+    console.error('Error updating report:', error);
     next(error);
   }
 };
@@ -215,7 +243,7 @@ exports.deleteReport = async (req, res, next) => {
       });
     }
 
-    await report.remove();
+    await Report.findByIdAndDelete(report._id);
 
     // Update lab statistics
     await Lab.findByIdAndUpdate(req.user.lab, {

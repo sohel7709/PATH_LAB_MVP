@@ -23,7 +23,6 @@ export default function EditPatient() {
 
   useEffect(() => {
     if (id) {
-      console.log('Patient ID from URL:', id);
       fetchPatient();
     } else {
       setError('Patient ID is missing');
@@ -34,15 +33,8 @@ export default function EditPatient() {
   const fetchPatient = async () => {
     try {
       setIsLoading(true);
-      // Import the API utility
       const { default: api } = await import('../../utils/api');
-      
-      // Fetch patient details
-      console.log('Fetching patient with ID:', id);
       const data = await api.patients.getById(id);
-      console.log('Fetched patient data:', data);
-      
-      // Set form data
       setFormData({
         fullName: data.fullName || '',
         age: data.age || '',
@@ -52,7 +44,6 @@ export default function EditPatient() {
         address: data.address || '',
         labId: data.labId || user?.lab || '',
       });
-      
       setError('');
     } catch (err) {
       setError(err.message || 'Failed to fetch patient details');
@@ -75,16 +66,8 @@ export default function EditPatient() {
     setError('');
 
     try {
-      // Import the API utility
       const { default: api } = await import('../../utils/api');
-      
-      // Update patient
-      console.log('Updating patient with ID:', id);
-      console.log('Update data:', formData);
       await api.patients.update(id, formData);
-      console.log('Patient updated successfully');
-      
-      // Redirect to patients list
       navigate('/patients');
     } catch (err) {
       setError(err.message || 'Failed to update patient');
@@ -265,7 +248,7 @@ export default function EditPatient() {
             <button
               type="submit"
               disabled={isSaving}
-              className={`btn-primary ${isSaving ? 'opacity-75 cursor-not-allowed' : ''}`}
+              className="btn-primary"
             >
               {isSaving ? 'Saving...' : 'Save Changes'}
             </button>

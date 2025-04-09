@@ -53,12 +53,17 @@ const CreateUser = () => {
     setSuccess('');
 
     try {
-      // If role is super-admin, remove lab
-      const userData = { ...formData };
-      if (userData.role === 'super-admin') {
-        userData.lab = undefined;
-      }
+      // Prepare the user data with the correct field name for lab ID
+      const userData = { 
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        role: formData.role,
+        // Use labId instead of lab for the API
+        labId: formData.role !== 'super-admin' ? formData.lab : undefined
+      };
       
+      console.log('Creating user with data:', userData);
       await superAdmin.createUser(userData);
       
       setSuccess('User created successfully!');

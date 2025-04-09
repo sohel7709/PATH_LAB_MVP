@@ -165,10 +165,26 @@ exports.getMe = async (req, res, next) => {
 // @access  Private
 exports.updateDetails = async (req, res, next) => {
   try {
+    // Get the current user
+    const currentUser = await User.findById(req.user.id);
+    
+    if (!currentUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    // Prepare fields to update
     const fieldsToUpdate = {
       name: req.body.name,
-      email: req.body.email
+      phone: req.body.phone
     };
+    
+    // Only super-admin can update email
+    if (currentUser.role === 'super-admin') {
+      fieldsToUpdate.email = req.body.email;
+    }
 
     const user = await User.findByIdAndUpdate(req.user.id, fieldsToUpdate, {
       new: true,

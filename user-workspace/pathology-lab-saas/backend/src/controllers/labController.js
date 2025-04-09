@@ -149,8 +149,8 @@ exports.deleteLab = async (req, res, next) => {
     // Delete all associated reports
     await Report.deleteMany({ lab: lab._id });
 
-    // Delete the lab
-    await lab.remove();
+    // Delete the lab using findByIdAndDelete instead of deprecated remove()
+    await Lab.findByIdAndDelete(lab._id);
 
     res.status(200).json({
       success: true,
@@ -183,7 +183,26 @@ exports.getLabStats = async (req, res, next) => {
       });
     }
 
-    // Get reports statistics
+    // Get total users count
+    const totalUsers = await User.countDocuments({ lab: lab._id });
+    
+    // Get total patients count
+    const Patient = require('../models/Patient');
+    console.log('Counting patients for lab ID:', lab._id);
+    
+    // Debug: Check if there are any patients in the system
+    const allPatients = await Patient.find({});
+    console.log('Total patients in system:', allPatients.length);
+    console.log('Sample patient data:', allPatients.length > 0 ? allPatients[0] : 'No patients');
+    
+    // Count patients for this lab
+    const totalPatients = await Patient.countDocuments({ labId: lab._id });
+    console.log('Patients found for this lab:', totalPatients);
+    
+    // Get total reports count
+    const totalReports = await Report.countDocuments({ lab: lab._id });
+
+    // Get reports statistics by status
     const reportsStats = await Report.aggregate([
       { $match: { lab: lab._id } },
       {
@@ -194,7 +213,7 @@ exports.getLabStats = async (req, res, next) => {
       }
     ]);
 
-    // Get users statistics
+    // Get users statistics by role
     const usersStats = await User.aggregate([
       { $match: { lab: lab._id } },
       {
@@ -221,9 +240,13 @@ exports.getLabStats = async (req, res, next) => {
       { $limit: 12 }
     ]);
 
+    // Format the response with summary counts at the top level
     res.status(200).json({
       success: true,
       data: {
+        totalUsers,
+        totalPatients,
+        totalReports,
         reportsStats,
         usersStats,
         monthlyReports

@@ -1,5 +1,5 @@
 import { Fragment, useState } from 'react';
-import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, Link, useLocation } from 'react-router-dom';
 import { Dialog, Menu, Transition } from '@headlessui/react';
 import {
   Bars3Icon,
@@ -10,6 +10,7 @@ import {
   XMarkIcon,
   BeakerIcon,
   ClipboardDocumentCheckIcon,
+  DocumentDuplicateIcon,
 } from '@heroicons/react/24/outline';
 import { ChevronDownIcon } from '@heroicons/react/20/solid';
 import { useAuth } from '../../context/AuthContext';
@@ -24,7 +25,9 @@ const getNavigationItems = (role) => {
   const superAdminItems = [
     ...commonItems,
     { name: 'Labs', href: '/labs', icon: BeakerIcon },
-    { name: 'User Management', href: '/settings/users', icon: UserGroupIcon },
+    { name: 'User Management', href: '/users', icon: UserGroupIcon },
+    { name: 'Test Templates', href: '/templates', icon: DocumentDuplicateIcon },
+    { name: 'Report Settings', href: '/settings/reports', icon: DocumentTextIcon },
     { name: 'Subscription Plans', href: '/settings/subscription', icon: CogIcon },
     { name: 'Audit Logs', href: '/audit-logs', icon: DocumentTextIcon },
   ];
@@ -33,7 +36,9 @@ const getNavigationItems = (role) => {
     ...commonItems,
     { name: 'Technicians', href: '/settings/users', icon: UserGroupIcon },
     { name: 'Patients', href: '/patients', icon: UserGroupIcon },
+    { name: 'Test Templates', href: '/templates', icon: DocumentDuplicateIcon },
     { name: 'Lab Settings', href: '/settings/lab', icon: BeakerIcon },
+    { name: 'Report Settings', href: '/settings/reports', icon: DocumentTextIcon },
     { name: 'Inventory', href: '/inventory', icon: BeakerIcon },
     { name: 'Financial Reports', href: '/finance/reports', icon: DocumentTextIcon },
   ];
@@ -41,6 +46,7 @@ const getNavigationItems = (role) => {
   const technicianItems = [
     ...commonItems,
     { name: 'Patients', href: '/patients', icon: UserGroupIcon },
+    { name: 'Test Templates', href: '/templates', icon: DocumentDuplicateIcon },
     { name: 'Test Samples', href: '/samples', icon: BeakerIcon },
     { name: 'Tasks', href: '/tasks', icon: ClipboardDocumentCheckIcon },
   ];
@@ -64,15 +70,14 @@ function classNames(...classes) {
 export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
-  const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   
   // Default to admin navigation if user role is not available
   const navigation = getNavigationItems(user?.role || 'admin');
 
   const handleLogout = () => {
-    // TODO: Implement logout logic
-    navigate('/login');
+    // Use the logout function from AuthContext
+    logout();
   };
 
   return (
@@ -234,6 +239,19 @@ export default function DashboardLayout() {
                   leaveTo="transform opacity-0 scale-95"
                 >
                   <Menu.Items className="absolute right-0 z-10 mt-2.5 w-32 origin-top-right rounded-md bg-white py-2 shadow-lg ring-1 ring-gray-900/5 focus:outline-none">
+                    <Menu.Item>
+                      {({ active }) => (
+                        <Link
+                          to="/profile"
+                          className={classNames(
+                            active ? 'bg-gray-50' : '',
+                            'block w-full px-3 py-1 text-sm leading-6 text-gray-900 text-left'
+                          )}
+                        >
+                          Profile
+                        </Link>
+                      )}
+                    </Menu.Item>
                     <Menu.Item>
                       {({ active }) => (
                         <button

@@ -103,20 +103,46 @@ exports.checkLabAccess = async (req, res, next) => {
   try {
     // Super admin can access all labs
     if (req.user.role === 'super-admin') {
+      // If a specific lab ID is provided in the request, use it
+      const labId = req.params.labId || req.body.labId || req.query.labId || req.params.lab || req.body.lab || req.query.lab || req.params.id;
+      if (labId) {
+        req.labId = labId;
+      }
       return next();
     }
 
-    // Get lab ID from request params or body
-    const labId = req.params.labId || req.body.labId || req.query.labId;
+    // For non-super-admin users, get lab ID from request params or body
+    const labId = req.params.labId || req.body.labId || req.query.labId || req.params.lab || req.body.lab || req.query.lab || req.params.id;
+
+    // If no lab ID is specified in the request, use the user's lab ID
+    if (!labId) {
+      // Add the user's lab ID to the request for controllers to use
+      req.labId = req.user.lab;
+      return next();
+    }
 
     // Check if user's lab matches the requested lab
-    if (!labId || req.user.lab.toString() !== labId) {
+    // Convert both to strings for comparison to avoid ObjectId vs String issues
+    const userLabId = req.user.lab ? req.user.lab.toString() : '';
+    const requestedLabId = labId.toString();
+
+    // For patient and report operations, we need to check if the patient/report belongs to the user's lab
+    // This will be handled in the respective controllers
+    if ((req.originalUrl.includes('/patients/') || req.originalUrl.includes('/reports/')) && 
+        (req.method === 'DELETE' || req.method === 'GET' || req.method === 'PUT')) {
+      req.labId = req.user.lab;
+      return next();
+    }
+
+    if (!userLabId || userLabId !== requestedLabId) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to access this lab\'s data'
       });
     }
 
+    // Add the lab ID to the request for controllers to use
+    req.labId = req.user.lab;
     next();
   } catch (error) {
     next(error);

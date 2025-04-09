@@ -1,4 +1,5 @@
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'http://localhost:5001/api';
+
 
 // Helper function to handle API responses
 const handleResponse = async (response) => {
@@ -66,12 +67,47 @@ export const auth = {
     });
     return handleResponse(response);
   },
+  
+  getProfile: async () => {
+    const response = await fetch(`${API_BASE_URL}/auth/me`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  },
+  
+  updateProfile: async (userData) => {
+    const response = await fetch(`${API_BASE_URL}/auth/updatedetails`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(userData),
+    });
+    return handleResponse(response);
+  },
+  
+  changePassword: async (passwordData) => {
+    const response = await fetch(`${API_BASE_URL}/auth/updatepassword`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(passwordData),
+    });
+    return handleResponse(response);
+  },
 };
 
 // Reports API calls
 export const reports = {
-  getAll: async () => {
-    const response = await fetch(`${API_BASE_URL}/reports`, {
+  getAll: async (filters = {}) => {
+    // Build query string from filters
+    const queryParams = new URLSearchParams();
+    if (filters?.lab) queryParams.append('lab', filters.lab);
+    if (filters?.status) queryParams.append('status', filters.status);
+    
+    const queryString = queryParams.toString();
+    const url = queryString 
+      ? `${API_BASE_URL}/reports?${queryString}` 
+      : `${API_BASE_URL}/reports`;
+    
+    const response = await fetch(url, {
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
@@ -168,8 +204,12 @@ export const users = {
 
 // Dashboard API calls
 export const dashboard = {
-  getStats: async () => {
-    const response = await fetch(`${API_BASE_URL}/dashboard/stats`, {
+  getStats: async (labId) => {
+    const url = labId 
+      ? `${API_BASE_URL}/dashboard/stats?lab=${labId}` 
+      : `${API_BASE_URL}/dashboard/stats`;
+    
+    const response = await fetch(url, {
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
@@ -283,8 +323,17 @@ export const superAdmin = {
   },
 
   // User Management
-  getUsers: async () => {
-    const response = await fetch(`${API_BASE_URL}/user-management`, {
+  getUsers: async (filters = {}) => {
+    // Build query string from filters
+    const queryParams = new URLSearchParams();
+    if (filters.lab) queryParams.append('lab', filters.lab);
+    
+    const queryString = queryParams.toString();
+    const url = queryString 
+      ? `${API_BASE_URL}/user-management?${queryString}` 
+      : `${API_BASE_URL}/user-management`;
+    
+    const response = await fetch(url, {
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
@@ -346,6 +395,173 @@ export const superAdmin = {
   }
 };
 
+// Test Templates API calls
+export const testTemplates = {
+  getAll: async (filters = {}) => {
+    // Get user role from localStorage
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const role = user.role || '';
+    
+    // Build query string from filters
+    const queryParams = new URLSearchParams();
+    if (filters?.category) queryParams.append('category', filters.category);
+    if (filters?.name) queryParams.append('name', filters.name);
+    
+    const queryString = queryParams.toString();
+    
+    // Use different endpoints based on user role
+    let baseEndpoint = '/admin/test-templates';
+    if (role === 'super-admin') {
+      baseEndpoint = '/super-admin/test-templates';
+    } else if (role === 'technician') {
+      baseEndpoint = '/technician/test-templates';
+    }
+    
+    const url = queryString 
+      ? `${API_BASE_URL}${baseEndpoint}?${queryString}` 
+      : `${API_BASE_URL}${baseEndpoint}`;
+    
+    const response = await fetch(url, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  },
+
+  getById: async (id) => {
+    // Get user role from localStorage
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const role = user.role || '';
+    
+    // Use different endpoints based on user role
+    let baseEndpoint = '/admin/test-templates';
+    if (role === 'super-admin') {
+      baseEndpoint = '/super-admin/test-templates';
+    } else if (role === 'technician') {
+      baseEndpoint = '/technician/test-templates';
+    }
+    
+    const response = await fetch(`${API_BASE_URL}${baseEndpoint}/${id}`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  },
+
+  create: async (templateData) => {
+    // Get user role from localStorage
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const role = user.role || '';
+    
+    // Only super-admin can create templates
+    const baseEndpoint = role === 'super-admin' 
+      ? '/super-admin/test-templates' 
+      : '/admin/test-templates';
+    
+    const response = await fetch(`${API_BASE_URL}${baseEndpoint}`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(templateData),
+    });
+    return handleResponse(response);
+  },
+
+  update: async (id, templateData) => {
+    // Get user role from localStorage
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const role = user.role || '';
+    
+    // Only super-admin can update templates
+    const baseEndpoint = role === 'super-admin' 
+      ? '/super-admin/test-templates' 
+      : '/admin/test-templates';
+    
+    const response = await fetch(`${API_BASE_URL}${baseEndpoint}/${id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(templateData),
+    });
+    return handleResponse(response);
+  },
+
+  delete: async (id) => {
+    // Get user role from localStorage
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const role = user.role || '';
+    
+    // Only super-admin can delete templates
+    const baseEndpoint = role === 'super-admin' 
+      ? '/super-admin/test-templates' 
+      : '/admin/test-templates';
+    
+    const response = await fetch(`${API_BASE_URL}${baseEndpoint}/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  },
+
+  // For technicians (read-only)
+  getAllForTechnician: async (filters = {}) => {
+    // Build query string from filters
+    const queryParams = new URLSearchParams();
+    if (filters?.category) queryParams.append('category', filters.category);
+    if (filters?.name) queryParams.append('name', filters.name);
+    
+    const queryString = queryParams.toString();
+    const url = queryString 
+      ? `${API_BASE_URL}/technician/test-templates/all?${queryString}` 
+      : `${API_BASE_URL}/technician/test-templates/all`;
+    
+    const response = await fetch(url, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  },
+
+  getByIdForTechnician: async (id) => {
+    const response = await fetch(`${API_BASE_URL}/technician/test-templates/${id}`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  }
+};
+
+// Lab Report Settings API calls
+export const labReportSettings = {
+  getSettings: async (labId) => {
+    const response = await fetch(`${API_BASE_URL}/labs/${labId}/report-settings`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  },
+
+  updateSettings: async (labId, settings) => {
+    const response = await fetch(`${API_BASE_URL}/labs/${labId}/report-settings`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(settings),
+    });
+    return handleResponse(response);
+  },
+
+  uploadImage: async (labId, file, type) => {
+    // In a real implementation, this would use FormData to upload the file
+    // For now, we'll just simulate the upload
+    const response = await fetch(`${API_BASE_URL}/labs/${labId}/report-settings/upload?type=${type}`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  },
+
+  generatePdf: async (reportId) => {
+    const response = await fetch(`${API_BASE_URL}/reports/${reportId}/generate-pdf`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  }
+};
+
 export default {
   auth,
   reports,
@@ -353,5 +569,7 @@ export default {
   users,
   dashboard,
   patients,
-  superAdmin
+  superAdmin,
+  testTemplates,
+  labReportSettings
 };

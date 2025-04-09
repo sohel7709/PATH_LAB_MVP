@@ -10,19 +10,60 @@ const Lab = require('../models/Lab');
 // @access  Private
 router.get('/stats', protect, async (req, res) => {
   try {
-    const totalReports = await Report.countDocuments();
-    const activeUsers = await User.countDocuments({ isActive: true });
-    const reportsToday = await Report.countDocuments({
+    // For super-admin, show all stats unless a lab is specified
+    // For admin and technician, only show stats for their lab
+    const labFilter = req.user.role === 'super-admin' 
+      ? (req.query.lab ? { lab: req.query.lab } : {})
+      : { lab: req.user.lab };
+    
+    // Get reports for the lab
+    const totalReports = await Report.countDocuments(labFilter);
+    
+    // Get active users for the lab
+    const userFilter = req.user.role === 'super-admin'
+      ? (req.query.lab ? { lab: req.query.lab, isActive: true } : { isActive: true })
+      : { lab: req.user.lab, isActive: true };
+    const activeUsers = await User.countDocuments(userFilter);
+    
+    // Get reports created today for the lab
+    const todayFilter = {
+      ...labFilter,
       createdAt: { $gte: new Date(new Date().setHours(0, 0, 0, 0)) }
+    };
+    const reportsToday = await Report.countDocuments(todayFilter);
+    
+    // Calculate completion rate for the lab
+    const completedFilter = {
+      ...labFilter,
+      status: 'completed'
+    };
+    const completedReports = await Report.countDocuments(completedFilter);
+    const completionRate = (totalReports > 0) ? (completedReports / totalReports) * 100 : 0;
+
+    // Get pending reports for the lab
+    const pendingReports = await Report.countDocuments({
+      ...labFilter,
+      status: 'pending'
     });
-    const completionRate = (totalReports > 0) ? (await Report.countDocuments({ status: 'completed' }) / totalReports) * 100 : 0;
+
+    // Get samples collected for the lab
+    const samplesCollected = await Report.countDocuments(labFilter);
+
+    // Get assigned tasks for the technician
+    const assignedTasks = req.user.role === 'technician'
+      ? await Report.countDocuments({ technician: req.user.id, status: { $in: ['pending', 'in-progress'] } })
+      : 0;
 
     res.status(200).json({
       success: true,
       totalReports,
       activeUsers,
       reportsToday,
-      completionRate: completionRate.toFixed(2) // Return as percentage
+      completionRate: completionRate.toFixed(2), // Return as percentage
+      pendingReports,
+      completedReports,
+      samplesCollected,
+      assignedTasks
     });
   } catch (error) {
     res.status(500).json({

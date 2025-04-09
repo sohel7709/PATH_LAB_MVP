@@ -31,21 +31,48 @@ export default function EditReport() {
   const fetchReport = async () => {
     try {
       setIsLoading(true);
-      const data = await reports.getById(id);
+      const response = await reports.getById(id);
+      
+      // Check if the response has a data property (API might return {success: true, data: {...}})
+      const data = response.data || response;
+      
+      console.log('Fetched report data for editing:', data);
+      
+      // Map the data from the API response to the form fields
       setFormData({
-        patientName: data.patientName || '',
-        patientAge: data.patientAge || '',
-        patientGender: data.patientGender || '',
-        patientPhone: data.patientPhone || '',
-        testName: data.testName || '',
-        category: data.category || Object.keys(TEST_CATEGORIES)[0],
-        collectionDate: data.collectionDate || new Date().toISOString().split('T')[0],
+        // Patient Information - handle both flat and nested structures
+        patientName: data.patientName || (data.patientInfo ? data.patientInfo.name : ''),
+        patientAge: data.patientAge || (data.patientInfo ? data.patientInfo.age : ''),
+        patientGender: data.patientGender || (data.patientInfo ? data.patientInfo.gender : ''),
+        patientPhone: data.patientPhone || (data.patientInfo && data.patientInfo.contact ? data.patientInfo.contact.phone : ''),
+        
+        // Test Information - handle both flat and nested structures
+        testName: data.testName || (data.testInfo ? data.testInfo.name : ''),
+        category: data.category || (data.testInfo ? data.testInfo.category : Object.keys(TEST_CATEGORIES)[0]),
+        collectionDate: data.collectionDate || 
+                       (data.testInfo && data.testInfo.sampleCollectionDate ? 
+                        new Date(data.testInfo.sampleCollectionDate).toISOString().split('T')[0] : 
+                        new Date().toISOString().split('T')[0]),
+        
+        // Other fields
         status: data.status || REPORT_STATUS.PENDING,
         notes: data.notes || '',
-        testParameters: data.testParameters || [{ name: '', value: '', unit: '', referenceRange: '' }]
+        
+        // Test Parameters - map from results array if available
+        testParameters: data.testParameters || 
+                       (data.results && data.results.length > 0 ? 
+                        data.results.map(result => ({
+                          name: result.parameter || '',
+                          value: result.value || '',
+                          unit: result.unit || '',
+                          referenceRange: result.referenceRange || ''
+                        })) : 
+                        [{ name: '', value: '', unit: '', referenceRange: '' }])
       });
+      
       setError('');
     } catch (err) {
+      console.error('Error fetching report for editing:', err);
       setError(err.message);
     } finally {
       setIsLoading(false);
@@ -95,10 +122,54 @@ export default function EditReport() {
     setError('');
 
     try {
-      await reports.update(id, formData);
+      // Convert the flat form data structure to the nested structure expected by the API
+      const reportData = {
+        // Patient Information
+        patientInfo: {
+          name: formData.patientName,
+          age: parseInt(formData.patientAge, 10), // Convert to number
+          gender: formData.patientGender,
+          contact: {
+            phone: formData.patientPhone
+          },
+          // Preserve patientId if it exists in the original data
+          patientId: formData.patientId || `PAT-${Date.now().toString().slice(-6)}`
+        },
+        
+        // Test Information
+        testInfo: {
+          name: formData.testName,
+          category: formData.category,
+          sampleCollectionDate: formData.collectionDate,
+          // Preserve other test info fields if they exist
+          sampleType: formData.sampleType || 'blood',
+          sampleId: formData.sampleId || `SMP-${Date.now().toString().slice(-6)}`
+        },
+        
+        // Status and Notes
+        status: formData.status,
+        notes: formData.notes,
+        
+        // Test Parameters/Results
+        results: formData.testParameters.map(param => ({
+          parameter: param.name,
+          value: param.value,
+          unit: param.unit,
+          referenceRange: param.referenceRange,
+          // Add flag based on value comparison with reference range if possible
+          flag: 'normal' // Default to normal, could be enhanced with actual comparison logic
+        }))
+      };
+      
+      console.log('Submitting report data:', JSON.stringify(reportData, null, 2));
+      
+      // Use the API utility to update the report
+      await reports.update(id, reportData);
+      
       navigate(`/reports/${id}`);
     } catch (err) {
-      setError(err.message);
+      console.error('Error updating report:', err);
+      setError(err.message || 'An error occurred while updating the report');
     } finally {
       setIsSaving(false);
     }
@@ -176,6 +247,18 @@ export default function EditReport() {
           <div className="px-4 py-5 sm:p-6">
             <h3 className="text-lg font-medium leading-6 text-gray-900">Patient Information</h3>
             <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+              <div className="sm:col-span-6">
+                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+                  <div className="flex">
+                    <div className="ml-3">
+                      <p className="text-sm text-yellow-700">
+                        Patient information cannot be changed after report creation. To update patient details, please create a new report.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
               <div className="sm:col-span-3">
                 <label htmlFor="patientName" className="block text-sm font-medium text-gray-700">
                   Full name
@@ -185,10 +268,9 @@ export default function EditReport() {
                     type="text"
                     name="patientName"
                     id="patientName"
-                    required
                     value={formData.patientName}
-                    onChange={handleChange}
-                    className="input-field"
+                    className="input-field bg-gray-100"
+                    disabled
                   />
                 </div>
               </div>
@@ -202,12 +284,9 @@ export default function EditReport() {
                     type="number"
                     name="patientAge"
                     id="patientAge"
-                    required
-                    min="0"
-                    max="150"
                     value={formData.patientAge}
-                    onChange={handleChange}
-                    className="input-field"
+                    className="input-field bg-gray-100"
+                    disabled
                   />
                 </div>
               </div>
@@ -217,19 +296,13 @@ export default function EditReport() {
                   Gender
                 </label>
                 <div className="mt-1">
-                  <select
+                  <input
+                    type="text"
                     id="patientGender"
-                    name="patientGender"
-                    required
                     value={formData.patientGender}
-                    onChange={handleChange}
-                    className="input-field"
-                  >
-                    <option value="">Select gender</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
-                  </select>
+                    className="input-field bg-gray-100"
+                    disabled
+                  />
                 </div>
               </div>
 
@@ -242,10 +315,9 @@ export default function EditReport() {
                     type="tel"
                     name="patientPhone"
                     id="patientPhone"
-                    required
                     value={formData.patientPhone}
-                    onChange={handleChange}
-                    className="input-field"
+                    className="input-field bg-gray-100"
+                    disabled
                   />
                 </div>
               </div>
@@ -258,6 +330,18 @@ export default function EditReport() {
           <div className="px-4 py-5 sm:p-6">
             <h3 className="text-lg font-medium leading-6 text-gray-900">Test Information</h3>
             <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+              <div className="sm:col-span-6">
+                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+                  <div className="flex">
+                    <div className="ml-3">
+                      <p className="text-sm text-yellow-700">
+                        Test information cannot be changed after report creation. To update test details, please create a new report.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
               <div className="sm:col-span-3">
                 <label htmlFor="testName" className="block text-sm font-medium text-gray-700">
                   Test name
@@ -267,10 +351,9 @@ export default function EditReport() {
                     type="text"
                     name="testName"
                     id="testName"
-                    required
                     value={formData.testName}
-                    onChange={handleChange}
-                    className="input-field"
+                    className="input-field bg-gray-100"
+                    disabled
                   />
                 </div>
               </div>
@@ -280,20 +363,13 @@ export default function EditReport() {
                   Category
                 </label>
                 <div className="mt-1">
-                  <select
+                  <input
+                    type="text"
                     id="category"
-                    name="category"
-                    required
-                    value={formData.category}
-                    onChange={handleChange}
-                    className="input-field"
-                  >
-                    {Object.entries(TEST_CATEGORIES).map(([key, value]) => (
-                      <option key={key} value={key}>
-                        {value}
-                      </option>
-                    ))}
-                  </select>
+                    value={Object.entries(TEST_CATEGORIES).find(([key]) => key === formData.category)?.[1] || formData.category}
+                    className="input-field bg-gray-100"
+                    disabled
+                  />
                 </div>
               </div>
 
@@ -306,10 +382,25 @@ export default function EditReport() {
                     type="date"
                     name="collectionDate"
                     id="collectionDate"
-                    required
                     value={formData.collectionDate}
-                    onChange={handleChange}
-                    className="input-field"
+                    className="input-field bg-gray-100"
+                    disabled
+                  />
+                </div>
+              </div>
+              
+              <div className="sm:col-span-3">
+                <label htmlFor="referenceDoctor" className="block text-sm font-medium text-gray-700">
+                  Reference Doctor
+                </label>
+                <div className="mt-1">
+                  <input
+                    type="text"
+                    name="referenceDoctor"
+                    id="referenceDoctor"
+                    value={formData.referenceDoctor || 'Not specified'}
+                    className="input-field bg-gray-100"
+                    disabled
                   />
                 </div>
               </div>

@@ -48,6 +48,10 @@ const reportSchema = new mongoose.Schema({
     sampleId: {
       type: String,
       required: [true, 'Please provide sample ID']
+    },
+    referenceDoctor: {
+      type: String,
+      default: ''
     }
   },
   results: [{

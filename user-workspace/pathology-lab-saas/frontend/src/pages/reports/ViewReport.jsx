@@ -20,11 +20,17 @@ export default function ViewReport() {
   const fetchReport = async () => {
     try {
       setIsLoading(true);
-      const data = await reports.getById(id);
+      const response = await reports.getById(id);
+      
+      // Check if the response has a data property (API might return {success: true, data: {...}})
+      const data = response.data || response;
+      
+      console.log('Fetched report data:', data);
       setReport(data);
       setEditedStatus(data.status);
       setError('');
     } catch (err) {
+      console.error('Error fetching report:', err);
       setError(err.message);
     } finally {
       setIsLoading(false);
@@ -163,22 +169,22 @@ export default function ViewReport() {
             <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
               <div className="sm:col-span-3">
                 <dt className="text-sm font-medium text-gray-500">Full name</dt>
-                <dd className="mt-1 text-sm text-gray-900">{report.patientName}</dd>
+                <dd className="mt-1 text-sm text-gray-900">{report.patientInfo?.name}</dd>
               </div>
 
               <div className="sm:col-span-1">
                 <dt className="text-sm font-medium text-gray-500">Age</dt>
-                <dd className="mt-1 text-sm text-gray-900">{report.patientAge}</dd>
+                <dd className="mt-1 text-sm text-gray-900">{report.patientInfo?.age}</dd>
               </div>
 
               <div className="sm:col-span-1">
                 <dt className="text-sm font-medium text-gray-500">Gender</dt>
-                <dd className="mt-1 text-sm text-gray-900">{report.patientGender}</dd>
+                <dd className="mt-1 text-sm text-gray-900">{report.patientInfo?.gender}</dd>
               </div>
 
               <div className="sm:col-span-1">
                 <dt className="text-sm font-medium text-gray-500">Phone</dt>
-                <dd className="mt-1 text-sm text-gray-900">{report.patientPhone}</dd>
+                <dd className="mt-1 text-sm text-gray-900">{report.patientInfo?.contact?.phone}</dd>
               </div>
             </div>
           </div>
@@ -191,17 +197,22 @@ export default function ViewReport() {
             <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
               <div className="sm:col-span-2">
                 <dt className="text-sm font-medium text-gray-500">Test name</dt>
-                <dd className="mt-1 text-sm text-gray-900">{report.testName}</dd>
+                <dd className="mt-1 text-sm text-gray-900">{report.testInfo?.name}</dd>
               </div>
 
               <div className="sm:col-span-2">
                 <dt className="text-sm font-medium text-gray-500">Category</dt>
-                <dd className="mt-1 text-sm text-gray-900">{report.category}</dd>
+                <dd className="mt-1 text-sm text-gray-900">{report.testInfo?.category}</dd>
               </div>
 
               <div className="sm:col-span-2">
                 <dt className="text-sm font-medium text-gray-500">Collection date</dt>
-                <dd className="mt-1 text-sm text-gray-900">{formatDate(report.collectionDate)}</dd>
+                <dd className="mt-1 text-sm text-gray-900">{formatDate(report.testInfo?.sampleCollectionDate)}</dd>
+              </div>
+              
+              <div className="sm:col-span-2">
+                <dt className="text-sm font-medium text-gray-500">Reference Doctor</dt>
+                <dd className="mt-1 text-sm text-gray-900">{report.testInfo?.referenceDoctor || 'Not specified'}</dd>
               </div>
             </div>
           </div>
@@ -222,14 +233,20 @@ export default function ViewReport() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {report.testParameters.map((param, index) => (
-                    <tr key={index}>
-                      <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900">{param.name}</td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{param.value}</td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{param.unit}</td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{param.referenceRange}</td>
+                  {report.results && report.results.length > 0 ? (
+                    report.results.map((param, index) => (
+                      <tr key={index}>
+                        <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900">{param.parameter}</td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{param.value}</td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{param.unit}</td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{param.referenceRange}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="4" className="py-4 text-center text-sm text-gray-500">No test parameters available</td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>

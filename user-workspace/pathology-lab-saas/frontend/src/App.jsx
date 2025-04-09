@@ -3,6 +3,11 @@ import UserList from './pages/users/UserList';
 import CreateUser from './pages/users/CreateUser';
 import EditUser from './pages/users/EditUser';
 import CreateLab from './pages/labs/CreateLab';
+import LabList from './pages/labs/LabList';
+import LabListDebug from './pages/labs/LabListDebug';
+import LabDetail from './pages/labs/LabDetail';
+import EditLab from './pages/labs/EditLab';
+import Profile from './pages/profile/Profile';
 
 import { Suspense, lazy } from 'react';
 import { AuthProvider } from './context/AuthContext';
@@ -30,6 +35,12 @@ const ViewReport = lazy(() => import('./pages/reports/ViewReport'));
 const EditReport = lazy(() => import('./pages/reports/EditReport'));
 const PrintReport = lazy(() => import('./pages/reports/PrintReport'));
 
+// Test Template Pages
+const TestTemplateList = lazy(() => import('./pages/templates/TestTemplateList'));
+const CreateTestTemplate = lazy(() => import('./pages/templates/CreateTestTemplate'));
+const ViewTestTemplate = lazy(() => import('./pages/templates/ViewTestTemplate'));
+const EditTestTemplate = lazy(() => import('./pages/templates/EditTestTemplate'));
+
 // Patient Pages
 const PatientList = lazy(() => import('./pages/patients/PatientList'));
 const AddPatient = lazy(() => import('./pages/patients/AddPatient'));
@@ -38,6 +49,7 @@ const EditPatient = lazy(() => import('./pages/patients/EditPatient'));
 // Settings Pages
 const LabSettings = lazy(() => import('./pages/settings/LabSettings'));
 const UserManagement = lazy(() => import('./pages/settings/UserManagement'));
+const ReportSettings = lazy(() => import('./pages/settings/ReportSettings'));
 
 // Loading Component
 const LoadingSpinner = () => (
@@ -89,7 +101,11 @@ function App() {
                 <DashboardLayout />
               </ProtectedRoute>
             }>
+              <Route path="/labs" element={<LabList />} />
               <Route path="/labs/create" element={<CreateLab />} />
+              <Route path="/labs/:id" element={<LabDetail />} />
+              <Route path="/labs/:id/edit" element={<EditLab />} />
+              <Route path="/lab-management" element={<Navigate to="/labs" replace />} />
             </Route>
 
             {/* User Management Routes */}
@@ -123,6 +139,20 @@ function App() {
               <Route path="/reports/:id/edit" element={<EditReport />} />
               <Route path="/reports/:id/print" element={<PrintReport />} />
               
+              {/* Test Template Routes */}
+              <Route path="/templates" element={<TestTemplateList />} />
+              <Route path="/templates/:id" element={<ViewTestTemplate />} />
+              <Route path="/templates/create" element={
+                <ProtectedRoute allowedRoles={['super-admin']}>
+                  <CreateTestTemplate />
+                </ProtectedRoute>
+              } />
+              <Route path="/templates/:id/edit" element={
+                <ProtectedRoute allowedRoles={['super-admin']}>
+                  <EditTestTemplate />
+                </ProtectedRoute>
+              } />
+              
               {/* Patient Routes */}
               <Route path="/patients" element={<PatientList />} />
               <Route path="/patients/add" element={<AddPatient />} />
@@ -132,6 +162,8 @@ function App() {
               {/* Settings Routes */}
               <Route path="/settings/lab" element={<LabSettings />} />
               <Route path="/settings/users" element={<UserManagement />} />
+              <Route path="/settings/reports" element={<ReportSettings />} />
+              <Route path="/profile" element={<Profile />} />
             </Route>
 
             {/* Catch all route */}

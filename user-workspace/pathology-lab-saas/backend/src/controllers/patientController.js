@@ -33,35 +33,54 @@ exports.createPatient = asyncHandler(async (req, res) => {
 exports.getPatients = asyncHandler(async (req, res) => {
   let query = {};
 
-  // If not super-admin, filter by lab
+  // For non-super-admins (admin/technician), filter by their associated lab
   if (req.user.role !== 'super-admin') {
     query.labId = req.user.lab;
   } 
-  // If super-admin and lab query param is provided, filter by lab
+  // For super-admins, check if lab query param is provided
   else if (req.query.lab) {
     query.labId = req.query.lab;
   }
 
-  const patients = await Patient.find(query);
-  res.json(patients);
+  try {
+    const patients = await Patient.find(query);
+    res.json(patients);
+  } catch (err) {
+    console.error('Error fetching patients:', err);
+    res.status(500).json({ message: 'Error fetching patients' });
+  }
 });
 
 // @desc    Get a single patient
 // @route   GET /api/patients/:id
 // @access  Private (super-admin, admin, technician)
 exports.getPatient = asyncHandler(async (req, res) => {
-  const patient = await Patient.findById(req.params.id);
+  console.log('Fetching patient with ID:', req.params.id);
+  console.log('User details:', req.user);
 
-  if (!patient) {
-    return res.status(404).json({ message: 'Patient not found' });
+  try {
+    const patient = await Patient.findById(req.params.id);
+    console.log('Patient found:', patient);
+    console.log('Patient labId:', patient.labId.toString());
+    console.log('User lab:', req.user.lab.toString());
+    console.log('User role:', req.user.role);
+
+    if (!patient) {
+      console.log('Patient not found');
+      return res.status(404).json({ message: 'Patient not found' });
+    }
+
+    // Check if user has access to this patient's lab
+    if (req.user.role !== 'super-admin' && patient.labId.toString() !== req.user.lab.toString()) {
+      console.log('User not authorized to access patient\'s lab. Expected:', req.user.lab.toString(), 'Got:', patient.labId.toString());
+      return res.status(403).json({ message: 'Not authorized to access this patient' });
+    }
+
+    res.json(patient);
+  } catch (error) {
+    console.error('Error fetching patient:', error);
+    res.status(500).json({ message: 'Error fetching patient details' });
   }
-
-  // Check if user has access to this patient's lab
-  if (req.user.role !== 'super-admin' && patient.labId.toString() !== req.user.lab.toString()) {
-    return res.status(403).json({ message: 'Not authorized to access this patient' });
-  }
-
-  res.json(patient);
 });
 
 // @desc    Update a patient
@@ -96,17 +115,36 @@ exports.updatePatient = asyncHandler(async (req, res) => {
 // @route   DELETE /api/patients/:id
 // @access  Private (super-admin, admin)
 exports.deletePatient = asyncHandler(async (req, res) => {
-  const patient = await Patient.findById(req.params.id);
+  try {
+    console.log('Delete patient request received for ID:', req.params.id);
+    console.log('User details:', req.user);
+    
+    const patient = await Patient.findById(req.params.id);
 
-  if (!patient) {
-    return res.status(404).json({ message: 'Patient not found' });
+    if (!patient) {
+      console.log('Patient not found');
+      return res.status(404).json({ message: 'Patient not found' });
+    }
+
+    console.log('Patient found:', patient);
+    console.log('Patient labId:', patient.labId?.toString());
+    console.log('User lab:', req.user.lab?.toString());
+    console.log('User role:', req.user.role);
+
+    // Check if user has access to this patient's lab
+    // Allow super-admin or admin of the same lab to delete
+    if (req.user.role === 'super-admin' || 
+        (req.user.role === 'admin' && patient.labId?.toString() === req.user.lab?.toString())) {
+      console.log('User authorized to delete patient');
+      await Patient.deleteOne({ _id: req.params.id });
+      console.log('Patient deleted successfully');
+      return res.json({ message: 'Patient removed' });
+    } else {
+      console.log('User not authorized to delete patient');
+      return res.status(403).json({ message: 'Not authorized to delete this patient' });
+    }
+  } catch (error) {
+    console.error('Error in deletePatient:', error);
+    return res.status(500).json({ message: 'Server error while deleting patient' });
   }
-
-  // Check if user has access to this patient's lab
-  if (req.user.role !== 'super-admin' && patient.labId.toString() !== req.user.lab.toString()) {
-    return res.status(403).json({ message: 'Not authorized to delete this patient' });
-  }
-
-  await Patient.deleteOne({ _id: req.params.id });
-  res.json({ message: 'Patient removed' });
 });

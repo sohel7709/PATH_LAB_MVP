@@ -4,8 +4,12 @@ import {
   PlusIcon, 
   MagnifyingGlassIcon,
   PencilIcon,
-  DocumentTextIcon
+  DocumentTextIcon,
+  TrashIcon,
+  ExclamationTriangleIcon,
+  CheckCircleIcon
 } from '@heroicons/react/24/outline';
+import { XMarkIcon } from '@heroicons/react/20/solid';
 import { useAuth } from '../../context/AuthContext';
 import { formatPhoneNumber } from '../../utils/helpers';
 
@@ -15,10 +19,24 @@ export default function PatientList() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [patientToDelete, setPatientToDelete] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     fetchPatients();
   }, []);
+
+  // Clear success message after 3 seconds
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage('');
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
 
   const fetchPatients = async () => {
     try {
@@ -35,6 +53,49 @@ export default function PatientList() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleDeleteClick = (patient) => {
+    setPatientToDelete(patient);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!patientToDelete) return;
+    
+    try {
+      setDeleteLoading(true);
+      // Import the API utility
+      const { default: api } = await import('../../utils/api');
+      
+      console.log('Deleting patient with ID:', patientToDelete._id);
+      console.log('Current user:', user);
+      
+      // Delete the patient
+      const response = await api.patients.delete(patientToDelete._id);
+      console.log('Delete response:', response);
+      
+      // Update the patients list
+      setPatients(patients.filter(p => p._id !== patientToDelete._id));
+      setSuccessMessage(`Patient ${patientToDelete.fullName} has been deleted successfully.`);
+      
+      // Close the modal
+      setShowDeleteModal(false);
+      setPatientToDelete(null);
+      
+      // Refresh the patient list
+      fetchPatients();
+    } catch (err) {
+      console.error('Error deleting patient:', err);
+      setError(err.message || 'Failed to delete patient');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setPatientToDelete(null);
   };
 
   const filteredPatients = patients.filter((patient) => {
@@ -60,6 +121,32 @@ export default function PatientList() {
 
   return (
     <div>
+      {/* Success message */}
+      {successMessage && (
+        <div className="mb-4 bg-green-50 p-4 rounded-md">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <CheckCircleIcon className="h-5 w-5 text-green-400" aria-hidden="true" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium text-green-800">{successMessage}</p>
+            </div>
+            <div className="ml-auto pl-3">
+              <div className="-mx-1.5 -my-1.5">
+                <button
+                  type="button"
+                  className="inline-flex rounded-md bg-green-50 p-1.5 text-green-500 hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2 focus:ring-offset-green-50"
+                  onClick={() => setSuccessMessage('')}
+                >
+                  <span className="sr-only">Dismiss</span>
+                  <XMarkIcon className="h-5 w-5" aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="sm:flex sm:items-center">
         <div className="sm:flex-auto">
           <h1 className="text-2xl font-semibold text-gray-900">Patients</h1>
@@ -161,11 +248,21 @@ export default function PatientList() {
                           </Link>
                           <Link
                             to={`/patients/${patient._id}/edit`}
-                            className="text-primary-600 hover:text-primary-900"
+                            className="text-primary-600 hover:text-primary-900 mr-4"
                           >
                             <PencilIcon className="inline-block h-4 w-4 mr-1" />
                             Edit
                           </Link>
+                          {/* Only show delete button for admin and super-admin roles */}
+                          {user && (user.role === 'admin' || user.role === 'super-admin') && (
+                            <button
+                              onClick={() => handleDeleteClick(patient)}
+                              className="text-red-600 hover:text-red-900"
+                            >
+                              <TrashIcon className="inline-block h-4 w-4 mr-1" />
+                              Delete
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))
@@ -176,6 +273,53 @@ export default function PatientList() {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed z-10 inset-0 overflow-y-auto">
+          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+              <div className="sm:flex sm:items-start">
+                <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                  <ExclamationTriangleIcon className="h-6 w-6 text-red-600" aria-hidden="true" />
+                </div>
+                <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                  <h3 className="text-lg leading-6 font-medium text-gray-900">Delete Patient</h3>
+                  <div className="mt-2">
+                    <p className="text-sm text-gray-500">
+                      Are you sure you want to delete {patientToDelete?.fullName}? This action cannot be undone.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                <button
+                  type="button"
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
+                  onClick={confirmDelete}
+                  disabled={deleteLoading}
+                >
+                  {deleteLoading ? 'Deleting...' : 'Delete'}
+                </button>
+                <button
+                  type="button"
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:w-auto sm:text-sm"
+                  onClick={cancelDelete}
+                  disabled={deleteLoading}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

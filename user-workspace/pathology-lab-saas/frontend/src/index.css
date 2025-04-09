@@ -5,7 +5,34 @@
 @layer components {
   .input-field {
     @apply block w-full rounded-md border border-blue-400 shadow-lg focus:border-primary-500 focus:ring-primary-500 sm:text-sm bg-white px-4 py-3 text-gray-900;
-    border-width: 3px;
+    border-width: 2px;
+    /* Enhanced visibility styles */
+    background-color: #ffffff;
+    border-color: #4a90e2;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease-in-out;
+  }
+  
+  .input-field:focus {
+    @apply outline-none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3);
+    transform: translateY(-1px);
+  }
+  
+  .input-field:hover:not(:focus) {
+    border-color: #3b82f6;
+    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+  }
+  
+  .input-field::placeholder {
+    color: #9ca3af;
+  }
+  
+  .input-field-required::after {
+    content: "*";
+    color: #ef4444;
+    margin-left: 4px;
   }
 
   .btn-primary {

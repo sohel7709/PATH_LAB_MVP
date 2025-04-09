@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import {
   UserGroupIcon,
   DocumentTextIcon,
@@ -23,32 +24,106 @@ const AdminDashboard = () => {
   const [recentReports, setRecentReports] = useState([]);
   const [recentTechnicians, setRecentTechnicians] = useState([]);
   const [selectedView, setSelectedView] = useState('admin');
+  const [labDetails, setLabDetails] = useState(null);
+  
+  const { user } = useAuth();
 
-  // Simulated data - would be replaced with actual API calls
+  // Fetch data from API
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setStats({
-        totalTechnicians: 12,
-        totalReports: 245,
-        totalPatients: 178,
-        revenueThisMonth: 8500,
-        inventoryItems: 56,
-      });
+    const fetchDashboardData = async () => {
+      try {
+        // Import API utilities
+        const { dashboard, superAdmin, reports } = await import('../../utils/api');
+        
+        try {
+          // Fetch lab details if user has a lab ID
+          if (user?.lab) {
+            try {
+              const labResponse = await superAdmin.getLab(user.lab);
+              if (labResponse.success) {
+                setLabDetails(labResponse.data);
+                
+                // Fetch lab statistics
+                try {
+                  const statsData = await dashboard.getStats(user.lab);
+                  setStats({
+                    totalTechnicians: statsData.totalTechnicians || 0,
+                    totalReports: statsData.totalReports || 0,
+                    totalPatients: statsData.totalPatients || 0,
+                    revenueThisMonth: statsData.revenueThisMonth || 0,
+                    inventoryItems: statsData.inventoryItems || 0,
+                  });
+                } catch (statsErr) {
+                  console.error('Error fetching lab statistics:', statsErr);
+                }
+                
+                // Fetch lab users
+                try {
+                  const usersResponse = await superAdmin.getUsers({ lab: user.lab });
+                  if (usersResponse.success) {
+                    setRecentTechnicians(usersResponse.data.slice(0, 3).map(user => ({
+                      id: user._id || user.id,
+                      name: user.name,
+                      email: user.email,
+                      status: user.status || 'active',
+                      assignedTests: user.assignedTests || 0,
+                    })));
+                  }
+                } catch (usersErr) {
+                  console.error('Error fetching lab users:', usersErr);
+                }
+                
+                // Fetch lab reports
+                try {
+                  const reportsResponse = await reports.getAll({ lab: user.lab });
+                  setRecentReports(reportsResponse.slice(0, 3).map(report => ({
+                    id: report._id || report.id,
+                    patientName: report.patientName,
+                    testName: report.testName,
+                    status: report.status,
+                    date: report.createdAt || new Date().toISOString(),
+                  })));
+                } catch (reportsErr) {
+                  console.error('Error fetching lab reports:', reportsErr);
+                }
+              } else {
+                console.error('Failed to fetch lab details:', labResponse.message);
+              }
+            } catch (labErr) {
+              console.error('Error fetching lab details:', labErr);
+            }
+          }
+        } catch (error) {
+          console.error('Error in lab details section:', error);
+        }
+        
+        // Simulate API call for other data (to be replaced with actual API calls)
+        setStats({
+          totalTechnicians: 12,
+          totalReports: 245,
+          totalPatients: 178,
+          revenueThisMonth: 8500,
+          inventoryItems: 56,
+        });
 
-      setRecentReports([
-        { id: 1, patientName: 'John Smith', testName: 'Blood Test', status: 'completed', date: '2023-03-29' },
-        { id: 2, patientName: 'Mary Johnson', testName: 'Urine Analysis', status: 'pending', date: '2023-03-30' },
-        { id: 3, patientName: 'Robert Brown', testName: 'Lipid Profile', status: 'in-progress', date: '2023-03-28' },
-      ]);
+        setRecentReports([
+          { id: 1, patientName: 'John Smith', testName: 'Blood Test', status: 'completed', date: '2023-03-29' },
+          { id: 2, patientName: 'Mary Johnson', testName: 'Urine Analysis', status: 'pending', date: '2023-03-30' },
+          { id: 3, patientName: 'Robert Brown', testName: 'Lipid Profile', status: 'in-progress', date: '2023-03-28' },
+        ]);
 
-      setRecentTechnicians([
-        { id: 1, name: 'Sarah Wilson', email: 'sarah@example.com', status: 'active', assignedTests: 8 },
-        { id: 2, name: 'Michael Davis', email: 'michael@example.com', status: 'active', assignedTests: 5 },
-        { id: 3, name: 'Emily Taylor', email: 'emily@example.com', status: 'inactive', assignedTests: 0 },
-      ]);
-    }, 1000);
-  }, []);
+        setRecentTechnicians([
+          { id: 1, name: 'Sarah Wilson', email: 'sarah@example.com', status: 'active', assignedTests: 8 },
+          { id: 2, name: 'Michael Davis', email: 'michael@example.com', status: 'active', assignedTests: 5 },
+          { id: 3, name: 'Emily Taylor', email: 'emily@example.com', status: 'inactive', assignedTests: 0 },
+        ]);
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      }
+    };
+    
+    fetchDashboardData();
+  }, [user]);
 
   // Function to handle view switching
   const handleViewChange = (view) => {
@@ -76,6 +151,22 @@ const AdminDashboard = () => {
             <option value="admin">Admin View</option>
             <option value="technician">Technician View</option>
           </select>
+        </div>
+      </div>
+      
+      {/* User and Lab Information */}
+      <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-lg shadow-lg p-6 text-white">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <h3 className="text-lg font-semibold">Your Profile</h3>
+            <p className="text-sm opacity-90">ID: {user?.id || 'N/A'}</p>
+            <p className="text-sm opacity-90">Role: {user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'N/A'}</p>
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold">Lab Information</h3>
+            <p className="text-sm opacity-90">Lab ID: {user?.lab || 'N/A'}</p>
+            <p className="text-sm opacity-90">Lab Name: {labDetails?.name || 'Loading...'}</p>
+          </div>
         </div>
       </div>
 

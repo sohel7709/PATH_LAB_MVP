@@ -171,7 +171,7 @@ const SuperAdminDashboard = () => {
           </div>
           <div className="bg-gray-50 px-5 py-3">
             <div className="text-sm">
-              <Link to="/labs" className="font-medium text-blue-700 hover:text-blue-900">
+                <Link to="/labs" className="font-medium text-blue-700 hover:text-blue-900">
                 View all
               </Link>
             </div>
@@ -305,6 +305,27 @@ const SuperAdminDashboard = () => {
               </div>
             </div>
             
+            {/* Test Templates */}
+            <div className="bg-indigo-50 rounded-lg p-4 shadow-sm">
+              <h4 className="text-indigo-800 font-medium mb-3">Test Templates</h4>
+              <div className="space-y-2">
+                <Link
+                  to="/templates/create"
+                  className="inline-flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                >
+                  <PlusCircleIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+                  Create Template
+                </Link>
+                <Link
+                  to="/templates"
+                  className="inline-flex w-full items-center justify-center rounded-md border border-indigo-300 bg-white px-4 py-2 text-sm font-medium text-indigo-700 shadow-sm hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                >
+                  <EyeIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+                  View Templates
+                </Link>
+              </div>
+            </div>
+
             {/* Analytics & Reports */}
             <div className="bg-green-50 rounded-lg p-4 shadow-sm">
               <h4 className="text-green-800 font-medium mb-3">Analytics & Reports</h4>

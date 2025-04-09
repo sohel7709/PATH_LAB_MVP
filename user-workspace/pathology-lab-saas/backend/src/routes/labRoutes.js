@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { protect, authorize } = require('../middleware/auth');
+const { protect, authorize, checkLabAccess } = require('../middleware/auth');
 const {
   createLab,
   getLabs,
@@ -14,18 +14,19 @@ const {
 // All routes require authentication
 router.use(protect);
 
-// Allow all roles to create a lab
+// Lab creation and listing routes
 router.route('/')
-  .post(createLab) // Removed authorization check for lab creation
+  .post(authorize('super-admin'), createLab) // Only super-admin can create labs
   .get(authorize('super-admin'), getLabs);
 
+// Lab-specific routes
 router.route('/:id')
-  .get(authorize('super-admin', 'admin'), getLab)
-  .put(authorize('super-admin', 'admin'), updateLab)
+  .get(authorize('super-admin', 'admin'), checkLabAccess, getLab)
+  .put(authorize('super-admin', 'admin'), checkLabAccess, updateLab)
   .delete(authorize('super-admin'), deleteLab);
 
 // Lab statistics route
-router.get('/:id/stats', authorize('super-admin', 'admin'), getLabStats);
+router.get('/:id/stats', authorize('super-admin', 'admin'), checkLabAccess, getLabStats);
 
 // Subscription management route (Super Admin only)
 router.put('/:id/subscription', authorize('super-admin'), updateLabSubscription);
