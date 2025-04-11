@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { testTemplates } from '../../utils/api';
+import { TEST_CATEGORIES } from '../../utils/constants';
 import { PlusIcon, XMarkIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 
 const EditTestTemplate = () => {
@@ -18,13 +19,13 @@ const EditTestTemplate = () => {
     fields: []
   });
 
+  // Generate categories from TEST_CATEGORIES constant
   const categories = [
     { value: '', label: 'Select Category' },
-    { value: 'hematology', label: 'Hematology' },
-    { value: 'biochemistry', label: 'Biochemistry' },
-    { value: 'microbiology', label: 'Microbiology' },
-    { value: 'immunology', label: 'Immunology' },
-    { value: 'pathology', label: 'Pathology' }
+    ...Object.entries(TEST_CATEGORIES).map(([key, value]) => ({
+      value: value,
+      label: key.charAt(0) + key.slice(1).toLowerCase().replace('_', ' ')
+    }))
   ];
 
   const sampleTypes = [

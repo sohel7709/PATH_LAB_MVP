@@ -29,6 +29,11 @@ const TestTemplateList = () => {
     { value: 'microbiology', label: 'Microbiology' },
     { value: 'immunology', label: 'Immunology' },
     { value: 'pathology', label: 'Pathology' },
+    { value: 'endocrinology', label: 'Endocrinology' },
+    { value: 'serology', label: 'Serology' },
+    { value: 'urinalysis', label: 'Urinalysis' },
+    { value: 'cardiology', label: 'Cardiology' },
+    { value: 'gastroenterology', label: 'Gastroenterology' },
   ];
 
   const fetchTemplates = async () => {

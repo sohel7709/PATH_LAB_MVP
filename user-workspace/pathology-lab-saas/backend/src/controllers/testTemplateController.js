@@ -212,29 +212,29 @@ exports.createDefaultTemplates = async (req, res, next) => {
   try {
     // Check if default templates already exist
     const existingDefaults = await TestTemplate.find({ isDefault: true });
-    
+
     if (existingDefaults.length > 0) {
       return res.status(400).json({
         success: false,
-        message: 'Default templates already exist'
+        message: 'Default templates already exist',
       });
     }
 
-    // Create default templates
-    const defaultTemplates = req.body.templates;
-    
+    // Read default templates from JSON file
+    const defaultTemplates = require('../utils/defaultTestTemplates.json');
+
     if (!defaultTemplates || !Array.isArray(defaultTemplates) || defaultTemplates.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'No templates provided'
+        message: 'No templates found in defaultTestTemplates.json',
       });
     }
 
-    // Mark all templates as default
-    const templatesWithDefaults = defaultTemplates.map(template => ({
+    // Mark all templates as default and add createdBy
+    const templatesWithDefaults = defaultTemplates.map((template) => ({
       ...template,
       isDefault: true,
-      createdBy: req.user.id
+      createdBy: req.user.id,
     }));
 
     const createdTemplates = await TestTemplate.create(templatesWithDefaults);
@@ -242,7 +242,7 @@ exports.createDefaultTemplates = async (req, res, next) => {
     res.status(201).json({
       success: true,
       count: createdTemplates.length,
-      data: createdTemplates
+      data: createdTemplates,
     });
   } catch (error) {
     next(error);

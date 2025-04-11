@@ -11,6 +11,7 @@ import {
   ArrowPathIcon,
   ChartBarIcon,
   PlusIcon,
+  TrashIcon,
 } from '@heroicons/react/24/outline';
 
 const AdminDashboard = () => {
@@ -22,9 +23,12 @@ const AdminDashboard = () => {
     inventoryItems: 0,
   });
   const [recentReports, setRecentReports] = useState([]);
-  const [recentTechnicians, setRecentTechnicians] = useState([]);
+  const [recentPatients, setRecentPatients] = useState([]);
   const [selectedView, setSelectedView] = useState('admin');
   const [labDetails, setLabDetails] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [reportToDelete, setReportToDelete] = useState(null);
+  const [apiUtils, setApiUtils] = useState(null);
   
   const { user } = useAuth();
 
@@ -33,7 +37,11 @@ const AdminDashboard = () => {
     const fetchDashboardData = async () => {
       try {
         // Import API utilities
-        const { dashboard, superAdmin, reports } = await import('../../utils/api');
+        const apiModules = await import('../../utils/api');
+        const { dashboard, superAdmin, reports, patients } = apiModules;
+        
+        // Store API utilities for use outside this effect
+        setApiUtils(apiModules);
         
         try {
           // Fetch lab details if user has a lab ID
@@ -46,10 +54,15 @@ const AdminDashboard = () => {
                 // Fetch lab statistics
                 try {
                   const statsData = await dashboard.getStats(user.lab);
+                  console.log('Stats data:', statsData);
+                  // Make sure we're getting the actual patient count
+                  const patientCount = statsData.totalPatients !== undefined ? statsData.totalPatients : 0;
+                  console.log('Patient count:', patientCount);
+                  
                   setStats({
                     totalTechnicians: statsData.totalTechnicians || 0,
                     totalReports: statsData.totalReports || 0,
-                    totalPatients: statsData.totalPatients || 0,
+                    totalPatients: patientCount,
                     revenueThisMonth: statsData.revenueThisMonth || 0,
                     inventoryItems: statsData.inventoryItems || 0,
                   });
@@ -57,34 +70,61 @@ const AdminDashboard = () => {
                   console.error('Error fetching lab statistics:', statsErr);
                 }
                 
-                // Fetch lab users
+                // Fetch patients for this lab
                 try {
-                  const usersResponse = await superAdmin.getUsers({ lab: user.lab });
-                  if (usersResponse.success) {
-                    setRecentTechnicians(usersResponse.data.slice(0, 3).map(user => ({
-                      id: user._id || user.id,
-                      name: user.name,
-                      email: user.email,
-                      status: user.status || 'active',
-                      assignedTests: user.assignedTests || 0,
+                  const patientsData = await patients.getAll(user.lab);
+                  console.log('Patients data:', patientsData);
+                  
+                  // Set recent patients data
+                  if (patientsData && Array.isArray(patientsData)) {
+                    setRecentPatients(patientsData.slice(0, 5).map(patient => ({
+                      id: patient._id || patient.id,
+                      name: patient.fullName,
+                      age: patient.age,
+                      gender: patient.gender,
+                      contact: patient.phone,
                     })));
                   }
-                } catch (usersErr) {
-                  console.error('Error fetching lab users:', usersErr);
+                } catch (patientsErr) {
+                  console.error('Error fetching patients data:', patientsErr);
                 }
                 
                 // Fetch lab reports
                 try {
                   const reportsResponse = await reports.getAll({ lab: user.lab });
-                  setRecentReports(reportsResponse.slice(0, 3).map(report => ({
+                  console.log('Reports response:', reportsResponse);
+                  
+                  // Handle different response formats
+                  let reportsArray = [];
+                  
+                  if (reportsResponse && reportsResponse.data && Array.isArray(reportsResponse.data)) {
+                    // New API format with { success, data, pagination }
+                    reportsArray = reportsResponse.data;
+                  } else if (Array.isArray(reportsResponse)) {
+                    // Old API format with direct array
+                    reportsArray = reportsResponse;
+                  } else if (reportsResponse && reportsResponse.success && Array.isArray(reportsResponse.data)) {
+                    // Another possible format
+                    reportsArray = reportsResponse.data;
+                  }
+                  
+                  setRecentReports(reportsArray.slice(0, 3).map(report => ({
                     id: report._id || report.id,
-                    patientName: report.patientName,
-                    testName: report.testName,
-                    status: report.status,
-                    date: report.createdAt || new Date().toISOString(),
+                    patientName: report.patientName || (report.patientInfo ? report.patientInfo.name : 'Unknown'),
+                    testName: report.testName || (report.testInfo ? report.testInfo.name : 'Unknown'),
+                    status: report.status || 'pending',
+                    date: report.createdAt || report.reportMeta?.generatedAt || new Date().toISOString(),
                   })));
                 } catch (reportsErr) {
                   console.error('Error fetching lab reports:', reportsErr);
+                }
+                
+                // Fetch patients for this lab
+                try {
+                  const patientsData = await patients.getAll(user.lab);
+                  console.log('Patients data:', patientsData);
+                } catch (patientsErr) {
+                  console.error('Error fetching patients data:', patientsErr);
                 }
               } else {
                 console.error('Failed to fetch lab details:', labResponse.message);
@@ -97,26 +137,6 @@ const AdminDashboard = () => {
           console.error('Error in lab details section:', error);
         }
         
-        // Simulate API call for other data (to be replaced with actual API calls)
-        setStats({
-          totalTechnicians: 12,
-          totalReports: 245,
-          totalPatients: 178,
-          revenueThisMonth: 8500,
-          inventoryItems: 56,
-        });
-
-        setRecentReports([
-          { id: 1, patientName: 'John Smith', testName: 'Blood Test', status: 'completed', date: '2023-03-29' },
-          { id: 2, patientName: 'Mary Johnson', testName: 'Urine Analysis', status: 'pending', date: '2023-03-30' },
-          { id: 3, patientName: 'Robert Brown', testName: 'Lipid Profile', status: 'in-progress', date: '2023-03-28' },
-        ]);
-
-        setRecentTechnicians([
-          { id: 1, name: 'Sarah Wilson', email: 'sarah@example.com', status: 'active', assignedTests: 8 },
-          { id: 2, name: 'Michael Davis', email: 'michael@example.com', status: 'active', assignedTests: 5 },
-          { id: 3, name: 'Emily Taylor', email: 'emily@example.com', status: 'inactive', assignedTests: 0 },
-        ]);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       }
@@ -128,6 +148,36 @@ const AdminDashboard = () => {
   // Function to handle view switching
   const handleViewChange = (view) => {
     setSelectedView(view);
+  };
+  
+  // Function to handle report deletion
+  const handleDeleteClick = (report) => {
+    setReportToDelete(report);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!reportToDelete || !apiUtils) return;
+    
+    try {
+      const reportId = reportToDelete.id;
+      await apiUtils.reports.delete(reportId);
+      
+      // Remove the deleted report from the state
+      setRecentReports(prevReports => 
+        prevReports.filter(report => report.id !== reportId)
+      );
+      
+      setShowDeleteConfirm(false);
+      setReportToDelete(null);
+    } catch (err) {
+      console.error('Error deleting report:', err);
+    }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteConfirm(false);
+    setReportToDelete(null);
   };
 
   return (
@@ -170,33 +220,8 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
-        <div className="overflow-hidden rounded-lg bg-white shadow">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <UserGroupIcon className="h-6 w-6 text-gray-400" aria-hidden="true" />
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="truncate text-sm font-medium text-gray-500">Technicians</dt>
-                  <dd>
-                    <div className="text-lg font-medium text-gray-900">{stats.totalTechnicians}</div>
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-          <div className="bg-gray-50 px-5 py-3">
-            <div className="text-sm">
-              <Link to="/settings/users" className="font-medium text-primary-700 hover:text-primary-900">
-                Manage
-              </Link>
-            </div>
-          </div>
-        </div>
-
+      {/* Stats Grid - Removed technician card as requested */}
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <div className="overflow-hidden rounded-lg bg-white shadow">
           <div className="p-5">
             <div className="flex items-center">
@@ -215,7 +240,7 @@ const AdminDashboard = () => {
           </div>
           <div className="bg-gray-50 px-5 py-3">
             <div className="text-sm">
-              <Link to="/reports" className="font-medium text-primary-700 hover:text-primary-900">
+              <Link to="/reports" className="font-medium text-blue-700 hover:text-blue-900">
                 View all
               </Link>
             </div>
@@ -240,58 +265,8 @@ const AdminDashboard = () => {
           </div>
           <div className="bg-gray-50 px-5 py-3">
             <div className="text-sm">
-              <Link to="/patients" className="font-medium text-primary-700 hover:text-primary-900">
+              <Link to="/patients" className="font-medium text-blue-700 hover:text-blue-900">
                 View all
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        <div className="overflow-hidden rounded-lg bg-white shadow">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <CurrencyDollarIcon className="h-6 w-6 text-gray-400" aria-hidden="true" />
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="truncate text-sm font-medium text-gray-500">Revenue (Month)</dt>
-                  <dd>
-                    <div className="text-lg font-medium text-gray-900">${stats.revenueThisMonth}</div>
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-          <div className="bg-gray-50 px-5 py-3">
-            <div className="text-sm">
-              <Link to="/finance" className="font-medium text-primary-700 hover:text-primary-900">
-                View details
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        <div className="overflow-hidden rounded-lg bg-white shadow">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <BeakerIcon className="h-6 w-6 text-gray-400" aria-hidden="true" />
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="truncate text-sm font-medium text-gray-500">Inventory Items</dt>
-                  <dd>
-                    <div className="text-lg font-medium text-gray-900">{stats.inventoryItems}</div>
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-          <div className="bg-gray-50 px-5 py-3">
-            <div className="text-sm">
-              <Link to="/inventory" className="font-medium text-primary-700 hover:text-primary-900">
-                Manage
               </Link>
             </div>
           </div>
@@ -299,51 +274,30 @@ const AdminDashboard = () => {
       </div>
 
       {/* Quick Actions */}
-      <div className="overflow-hidden rounded-lg bg-white shadow">
+      <div className="overflow-hidden rounded-lg bg-gray-100 shadow-lg mb-6 border border-gray-300">
         <div className="p-6">
-          <h3 className="text-base font-medium text-gray-900">Quick Actions</h3>
-          <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <h3 className="text-lg font-medium text-gray-900">Quick Actions</h3>
+          <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-3">
             <Link
-              to="/settings/users/create"
-              className="inline-flex items-center justify-center rounded-md border border-transparent bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-            >
-              <UserGroupIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-              Add Technician
-            </Link>
-            <Link
-              to="/reports/create"
-              className="inline-flex items-center justify-center rounded-md border border-transparent bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-            >
-              <DocumentTextIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-              Create Report
-            </Link>
-            <Link
-              to="/patients/create"
-              className="inline-flex items-center justify-center rounded-md border border-transparent bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+              to="/patients/add"
+              className="btn-primary flex items-center justify-center"
             >
               <UserIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
               Add Patient
             </Link>
             <Link
+              to="/reports/create"
+              className="btn-primary flex items-center justify-center"
+            >
+              <DocumentTextIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+              Create Report
+            </Link>
+            <Link
               to="/finance/reports"
-              className="inline-flex items-center justify-center rounded-md border border-transparent bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+              className="btn-primary flex items-center justify-center"
             >
               <ChartBarIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-              Financial Reports
-            </Link>
-            <Link
-              to="/inventory/manage"
-              className="inline-flex items-center justify-center rounded-md border border-transparent bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-            >
-              <BeakerIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-              Manage Inventory
-            </Link>
-            <Link
-              to="/technician-mode"
-              className="inline-flex items-center justify-center rounded-md border border-transparent bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-            >
-              <ArrowPathIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-              Switch to Technician Mode
+              Financial Report
             </Link>
           </div>
         </div>
@@ -410,7 +364,12 @@ const AdminDashboard = () => {
                           <Link to={`/reports/${report.id}/edit`} className="text-primary-600 hover:text-primary-900 mr-4">
                             Edit
                           </Link>
-                          <button className="text-red-600 hover:text-red-900">Delete</button>
+                          <button 
+                            onClick={() => handleDeleteClick(report)}
+                            className="text-red-600 hover:text-red-900"
+                          >
+                            Delete
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -430,14 +389,14 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Lab Technicians */}
+      {/* Recent Patients */}
       <div className="overflow-hidden rounded-lg bg-white shadow">
         <div className="p-6">
           <div className="flex items-center justify-between">
-            <h3 className="text-base font-medium text-gray-900">Lab Technicians</h3>
-            <Link to="/settings/users/create" className="text-sm font-medium text-primary-600 hover:text-primary-900">
+            <h3 className="text-base font-medium text-gray-900">Recent Patients</h3>
+            <Link to="/patients/add" className="text-sm font-medium text-primary-600 hover:text-primary-900">
               <PlusIcon className="inline-block h-5 w-5 mr-1" />
-              Add Technician
+              Add Patient
             </Link>
           </div>
           <div className="mt-6 flow-root">
@@ -450,13 +409,10 @@ const AdminDashboard = () => {
                         Name
                       </th>
                       <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                        Email
+                        Age/Gender
                       </th>
                       <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                        Status
-                      </th>
-                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                        Assigned Tests
+                        Contact
                       </th>
                       <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-0">
                         <span className="sr-only">Actions</span>
@@ -464,33 +420,33 @@ const AdminDashboard = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {recentTechnicians.map((tech) => (
-                      <tr key={tech.id}>
-                        <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-0">
-                          {tech.name}
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{tech.email}</td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm">
-                          <span
-                            className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${
-                              tech.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                            }`}
-                          >
-                            {tech.status}
-                          </span>
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{tech.assignedTests}</td>
-                        <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
-                          <Link to={`/settings/users/${tech.id}`} className="text-primary-600 hover:text-primary-900 mr-4">
-                            Edit
-                          </Link>
-                          <Link to={`/settings/users/${tech.id}/tasks`} className="text-primary-600 hover:text-primary-900 mr-4">
-                            Assign Tasks
-                          </Link>
-                          <button className="text-red-600 hover:text-red-900">Delete</button>
+                    {recentPatients.length > 0 ? (
+                      recentPatients.map((patient) => (
+                        <tr key={patient.id}>
+                          <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-0">
+                            {patient.name}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                            {patient.age} / {patient.gender?.charAt(0).toUpperCase() + patient.gender?.slice(1)}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{patient.contact}</td>
+                          <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
+                            <Link to={`/patients/${patient.id}/edit`} className="text-primary-600 hover:text-primary-900 mr-4">
+                              Edit
+                            </Link>
+                            <Link to={`/reports/create?patientId=${patient.id}`} className="text-primary-600 hover:text-primary-900">
+                              Create Report
+                            </Link>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="4" className="py-4 text-center text-sm text-gray-500">
+                          No patients found
                         </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -498,78 +454,53 @@ const AdminDashboard = () => {
           </div>
           <div className="mt-6">
             <Link
-              to="/settings/users"
+              to="/patients"
               className="flex w-full items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
             >
-              Manage all technicians
+              View all patients
             </Link>
           </div>
         </div>
       </div>
 
-      {/* Financial Overview */}
-      <div className="overflow-hidden rounded-lg bg-white shadow">
-        <div className="p-6">
-          <h3 className="text-base font-medium text-gray-900">Financial Overview</h3>
-          <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6 border border-gray-200">
-              <dt className="truncate text-sm font-medium text-gray-500">Revenue (This Month)</dt>
-              <dd className="mt-1 text-3xl font-semibold tracking-tight text-gray-900">${stats.revenueThisMonth}</dd>
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full">
+            <div className="sm:flex sm:items-start">
+              <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                <TrashIcon className="h-6 w-6 text-red-600" aria-hidden="true" />
+              </div>
+              <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                <h3 className="text-lg leading-6 font-medium text-gray-900">Delete Report</h3>
+                <div className="mt-2">
+                  <p className="text-sm text-gray-500">
+                    Are you sure you want to delete this report? This action cannot be undone.
+                  </p>
+                </div>
+              </div>
             </div>
-            <div className="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6 border border-gray-200">
-              <dt className="truncate text-sm font-medium text-gray-500">Pending Payments</dt>
-              <dd className="mt-1 text-3xl font-semibold tracking-tight text-gray-900">$1,250</dd>
+            <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+              <button
+                type="button"
+                className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
+                onClick={confirmDelete}
+              >
+                Delete
+              </button>
+              <button
+                type="button"
+                className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:w-auto sm:text-sm"
+                onClick={cancelDelete}
+              >
+                Cancel
+              </button>
             </div>
-            <div className="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6 border border-gray-200">
-              <dt className="truncate text-sm font-medium text-gray-500">Expenses (This Month)</dt>
-              <dd className="mt-1 text-3xl font-semibold tracking-tight text-gray-900">$3,200</dd>
-            </div>
-          </div>
-          <div className="mt-6">
-            <Link
-              to="/finance/reports"
-              className="inline-flex items-center rounded-md border border-transparent bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-            >
-              <ChartBarIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-              Generate Financial Reports
-            </Link>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Inventory Status */}
-      <div className="overflow-hidden rounded-lg bg-white shadow">
-        <div className="p-6">
-          <h3 className="text-base font-medium text-gray-900">Inventory Status</h3>
-          <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6 border border-gray-200">
-              <dt className="truncate text-sm font-medium text-gray-500">Total Items</dt>
-              <dd className="mt-1 text-3xl font-semibold tracking-tight text-gray-900">{stats.inventoryItems}</dd>
-            </div>
-            <div className="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6 border border-gray-200">
-              <dt className="truncate text-sm font-medium text-gray-500">Low Stock Items</dt>
-              <dd className="mt-1 text-3xl font-semibold tracking-tight text-gray-900">8</dd>
-            </div>
-            <div className="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6 border border-gray-200">
-              <dt className="truncate text-sm font-medium text-gray-500">Out of Stock</dt>
-              <dd className="mt-1 text-3xl font-semibold tracking-tight text-gray-900">3</dd>
-            </div>
-            <div className="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6 border border-gray-200">
-              <dt className="truncate text-sm font-medium text-gray-500">Value</dt>
-              <dd className="mt-1 text-3xl font-semibold tracking-tight text-gray-900">$12,500</dd>
-            </div>
-          </div>
-          <div className="mt-6">
-            <Link
-              to="/inventory/manage"
-              className="inline-flex items-center rounded-md border border-transparent bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-            >
-              <BeakerIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-              Manage Inventory
-            </Link>
-          </div>
-        </div>
-      </div>
+      {/* No Financial Overview or Inventory Status sections as requested */}
     </div>
   );
 };

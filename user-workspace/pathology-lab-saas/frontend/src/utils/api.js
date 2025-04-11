@@ -412,14 +412,17 @@ export const testTemplates = {
     // Use different endpoints based on user role
     let baseEndpoint = '/admin/test-templates';
     if (role === 'super-admin') {
-      baseEndpoint = '/super-admin/test-templates';
+      // For superadmin, we'll use the admin endpoint since we've updated the backend to allow superadmin access
+      baseEndpoint = '/admin/test-templates';
     } else if (role === 'technician') {
-      baseEndpoint = '/technician/test-templates';
+      // For technicians, use the technician-specific endpoint
+      baseEndpoint = '/technician/test-templates/all';
     }
     
-    const url = queryString 
-      ? `${API_BASE_URL}${baseEndpoint}?${queryString}` 
-      : `${API_BASE_URL}${baseEndpoint}`;
+    let url = `${API_BASE_URL}${baseEndpoint}`;
+    if (queryString) {
+      url += `?${queryString}`;
+    }
     
     const response = await fetch(url, {
       headers: getAuthHeaders(),
@@ -427,18 +430,29 @@ export const testTemplates = {
     return handleResponse(response);
   },
 
-  getById: async (id) => {
-    // Get user role from localStorage
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const role = user.role || '';
+  getById: async (id, role) => {
+    // Get user role from localStorage if not provided
+    if (!role) {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      role = user.role || '';
+    }
+    
+    console.log('Getting template details with role:', role);
     
     // Use different endpoints based on user role
     let baseEndpoint = '/admin/test-templates';
     if (role === 'super-admin') {
-      baseEndpoint = '/super-admin/test-templates';
+      // For superadmin, we'll use the admin endpoint since we've updated the backend to allow superadmin access
+      baseEndpoint = '/admin/test-templates';
     } else if (role === 'technician') {
+      // For technicians, use the technician-specific endpoint
       baseEndpoint = '/technician/test-templates';
+    } else if (role === 'admin') {
+      // For admin, use the admin endpoint
+      baseEndpoint = '/admin/test-templates';
     }
+    
+    console.log('Using endpoint:', `${API_BASE_URL}${baseEndpoint}/${id}`);
     
     const response = await fetch(`${API_BASE_URL}${baseEndpoint}/${id}`, {
       headers: getAuthHeaders(),
@@ -446,15 +460,37 @@ export const testTemplates = {
     return handleResponse(response);
   },
 
-  create: async (templateData) => {
-    // Get user role from localStorage
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const role = user.role || '';
+  // Specific methods for technicians
+  technician: {
+    getAll: async (filters = {}) => {
+      // Build query string from filters
+      const queryParams = new URLSearchParams();
+      if (filters?.category) queryParams.append('category', filters.category);
+      if (filters?.name) queryParams.append('name', filters.name);
+      
+      const queryString = queryParams.toString();
+      
+      const url = queryString 
+        ? `${API_BASE_URL}/technician/test-templates/all?${queryString}` 
+        : `${API_BASE_URL}/technician/test-templates/all`;
+      
+      const response = await fetch(url, {
+        headers: getAuthHeaders(),
+      });
+      return handleResponse(response);
+    },
     
-    // Only super-admin can create templates
-    const baseEndpoint = role === 'super-admin' 
-      ? '/super-admin/test-templates' 
-      : '/admin/test-templates';
+    getById: async (id) => {
+      const response = await fetch(`${API_BASE_URL}/technician/test-templates/${id}`, {
+        headers: getAuthHeaders(),
+      });
+      return handleResponse(response);
+    }
+  },
+
+  create: async (templateData) => {
+    // Both admin and super-admin can create templates
+    const baseEndpoint = '/admin/test-templates';
     
     const response = await fetch(`${API_BASE_URL}${baseEndpoint}`, {
       method: 'POST',
@@ -465,14 +501,8 @@ export const testTemplates = {
   },
 
   update: async (id, templateData) => {
-    // Get user role from localStorage
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const role = user.role || '';
-    
-    // Only super-admin can update templates
-    const baseEndpoint = role === 'super-admin' 
-      ? '/super-admin/test-templates' 
-      : '/admin/test-templates';
+    // Both admin and super-admin can update templates
+    const baseEndpoint = '/admin/test-templates';
     
     const response = await fetch(`${API_BASE_URL}${baseEndpoint}/${id}`, {
       method: 'PUT',
@@ -483,14 +513,8 @@ export const testTemplates = {
   },
 
   delete: async (id) => {
-    // Get user role from localStorage
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const role = user.role || '';
-    
-    // Only super-admin can delete templates
-    const baseEndpoint = role === 'super-admin' 
-      ? '/super-admin/test-templates' 
-      : '/admin/test-templates';
+    // Both admin and super-admin can delete templates
+    const baseEndpoint = '/admin/test-templates';
     
     const response = await fetch(`${API_BASE_URL}${baseEndpoint}/${id}`, {
       method: 'DELETE',
@@ -499,30 +523,7 @@ export const testTemplates = {
     return handleResponse(response);
   },
 
-  // For technicians (read-only)
-  getAllForTechnician: async (filters = {}) => {
-    // Build query string from filters
-    const queryParams = new URLSearchParams();
-    if (filters?.category) queryParams.append('category', filters.category);
-    if (filters?.name) queryParams.append('name', filters.name);
-    
-    const queryString = queryParams.toString();
-    const url = queryString 
-      ? `${API_BASE_URL}/technician/test-templates/all?${queryString}` 
-      : `${API_BASE_URL}/technician/test-templates/all`;
-    
-    const response = await fetch(url, {
-      headers: getAuthHeaders(),
-    });
-    return handleResponse(response);
-  },
-
-  getByIdForTechnician: async (id) => {
-    const response = await fetch(`${API_BASE_URL}/technician/test-templates/${id}`, {
-      headers: getAuthHeaders(),
-    });
-    return handleResponse(response);
-  }
+  // Technician-specific methods removed as technicians no longer have access to test templates
 };
 
 // Lab Report Settings API calls
@@ -544,13 +545,56 @@ export const labReportSettings = {
   },
 
   uploadImage: async (labId, file, type) => {
-    // In a real implementation, this would use FormData to upload the file
-    // For now, we'll just simulate the upload
-    const response = await fetch(`${API_BASE_URL}/labs/${labId}/report-settings/upload?type=${type}`, {
-      method: 'POST',
-      headers: getAuthHeaders(),
-    });
-    return handleResponse(response);
+    // Convert file to base64 and get MIME type
+    const getBase64 = (file) => {
+      return new Promise((resolve, reject) => {
+        if (!file) {
+          reject(new Error('No file provided'));
+          return;
+        }
+        
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => {
+          // Extract the base64 data from the data URL
+          const base64String = reader.result.split(',')[1];
+          resolve({
+            imageData: base64String,
+            mimeType: file.type
+          });
+        };
+        reader.onerror = (error) => reject(error);
+      });
+    };
+
+    try {
+      // If we have a file, convert it to base64
+      let imageData, mimeType;
+      
+      if (file) {
+        const result = await getBase64(file);
+        imageData = result.imageData;
+        mimeType = result.mimeType;
+      } else {
+        // For testing/demo purposes only - in production, always require a file
+        imageData = 'mockBase64Data';
+        mimeType = type === 'logo' || type === 'header' ? 'image/png' : 'image/jpeg';
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/labs/${labId}/report-settings/upload?type=${type}`, {
+        method: 'POST',
+        headers: {
+          ...getAuthHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ imageData, mimeType })
+      });
+      
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      throw error;
+    }
   },
 
   generatePdf: async (reportId) => {

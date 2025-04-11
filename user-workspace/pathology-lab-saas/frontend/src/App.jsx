@@ -8,6 +8,8 @@ import LabListDebug from './pages/labs/LabListDebug';
 import LabDetail from './pages/labs/LabDetail';
 import EditLab from './pages/labs/EditLab';
 import Profile from './pages/profile/Profile';
+import Inventory from './pages/inventory';
+import FinancialReports from './pages/finance/reports';
 
 import { Suspense, lazy } from 'react';
 import { AuthProvider } from './context/AuthContext';
@@ -164,6 +166,10 @@ function App() {
               <Route path="/settings/users" element={<UserManagement />} />
               <Route path="/settings/reports" element={<ReportSettings />} />
               <Route path="/profile" element={<Profile />} />
+              
+              {/* Coming Soon Feature Pages */}
+              <Route path="/inventory" element={<Inventory />} />
+              <Route path="/finance/reports" element={<FinancialReports />} />
             </Route>
 
             {/* Catch all route */}

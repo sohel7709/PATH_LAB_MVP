@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lab Report</title>
+  <style>
+    /* Reset and base styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: {{styling.fontFamily}};
+      font-size: {{styling.fontSize}}pt;
+      line-height: 1.5;
+      color: #333;
+      background-color: white;
+      margin: 0;
+      padding: 0;
+    }
+    
+    /* Page layout for A4 */
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      position: relative;
+      background-color: white;
+      padding: 0;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    
+    /* Header section */
+    .header {
+      width: 100%;
+      text-align: center;
+      position: relative;
+    }
+    
+    .header img {
+      width: 100%;
+      max-height: 150px;
+      object-fit: contain;
+    }
+    
+    /* Lab info section - for when no header image is available */
+    .lab-info {
+      display: flex;
+      padding: 15px;
+      border-bottom: 2px solid {{styling.primaryColor}};
+      background: linear-gradient(to right, {{styling.primaryColor}}, {{styling.secondaryColor}});
+      color: white;
+    }
+    
+    .lab-logo {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background-color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 20px;
+    }
+    
+    .lab-details {
+      flex: 1;
+    }
+    
+    .lab-name {
+      font-size: 24pt;
+      font-weight: bold;
+      color: white;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    
+    .doctors-info {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+    }
+    
+    .doctor-card {
+      text-align: center;
+      padding: 0 10px;
+      border-right: 1px solid rgba(255,255,255,0.3);
+    }
+    
+    .doctor-card:last-child {
+      border-right: none;
+    }
+    
+    .doctor-name {
+      font-weight: bold;
+      color: #ff6b6b;
+    }
+    
+    .lab-address {
+      text-align: center;
+      margin-top: 10px;
+      font-size: 10pt;
+    }
+    
+    /* Patient info section */
+    .patient-info {
+      margin-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 20px;
+      border-bottom: 2px solid {{styling.primaryColor}};
+    }
+    
+    .patient-info-left, .patient-info-right {
+      width: 48%;
+    }
+    
+    .info-row {
+      margin-bottom: 5px;
+    }
+    
+    .info-label {
+      font-weight: bold;
+      display: inline-block;
+      margin-right: 5px;
+    }
+    
+    /* Test title */
+    .test-title {
+      text-align: center;
+      font-size: 16pt;
+      font-weight: bold;
+      margin: 20px 0;
+      color: {{styling.primaryColor}};
+    }
+    
+    /* Test data table */
+    .test-data {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px;
+      max-width: calc(100% - 40px);
+    }
+    
+    .test-data th {
+      background-color: #f5f5f5;
+      font-weight: bold;
+      text-align: left;
+      padding: 8px;
+      border: 1px solid #ddd;
+      color: {{styling.primaryColor}};
+    }
+    
+    .test-data td {
+      padding: 8px;
+      border: 1px solid #ddd;
+    }
+    
+    .abnormal {
+      color: red;
+      font-weight: bold;
+    }
+    
+    /* Signature section */
+    .signature-section {
+      display: flex;
+      justify-content: flex-end;
+      margin: 40px 20px 20px 0;
+    }
+    
+    .signature-container {
+      text-align: center;
+      width: 200px;
+    }
+    
+    .signature-image {
+      height: 60px;
+      object-fit: contain;
+    }
+    
+    .signature-name {
+      font-weight: bold;
+      margin-top: 5px;
+    }
+    
+    .signature-designation {
+      font-size: 10pt;
+      color: #666;
+    }
+    
+    /* Footer section */
+    .footer {
+      width: 100%;
+      margin-top: auto;
+      border-top: 2px solid {{styling.primaryColor}};
+      padding-top: 10px;
+      background-color: #f9f9f9;
+    }
+    
+    .footer img {
+      width: 100%;
+      max-height: 100px;
+      object-fit: contain;
+    }
+    
+    .footer-text {
+      text-align: center;
+      font-size: 10pt;
+      color: #666;
+      padding: 10px;
+      background-color: {{styling.primaryColor}};
+      color: white;
+    }
+    
+    @media print {
+      body {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        margin: 0;
+        padding: 0;
+      }
+      
+      .page {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        box-shadow: none;
+      }
+      
+      /* Ensure header and footer are visible when printing */
+      .header, .footer, .signature-section {
+        display: block !important;
+        visibility: visible !important;
+      }
+      
+      /* Ensure images are visible */
+      .header img, .footer img, .signature-image {
+        display: block !important;
+        visibility: visible !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <!-- Header with lab logo/image -->
+    <div class="header">
+      {{#if headerImage}}
+        <img src="{{headerImage}}" alt="Lab Header">
+      {{else}}
+        <div class="lab-info">
+          <div class="lab-logo">
+            <span>LOGO</span>
+          </div>
+          <div class="lab-details">
+            <h1 class="lab-name">{{labName}}</h1>
+            <div class="doctors-info">
+              <div class="doctor-card">
+                <p class="doctor-name">{{doctorName}}</p>
+                <p>MBBS, DPB (Pathology)</p>
+                <p>Reg. No.12345</p>
+              </div>
+              <div class="doctor-card">
+                <p class="doctor-name">Lab Technician</p>
+                <p>Bsc DMLT</p>
+              </div>
+              <div class="doctor-card">
+                <p class="doctor-name">Lab Technician</p>
+                <p>BSc DMLT</p>
+                <p>Reg No 12345</p>
+              </div>
+              <div class="doctor-card">
+                <p class="doctor-name">Lab Technician</p>
+                <p>Lab Technician</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="lab-address">
+          {{address}}. Phone: {{phone}}
+        </div>
+      {{/if}}
+    </div>
+    
+    {{debug this}}
+    
+    <!-- Patient Information -->
+    <div class="patient-info">
+      <div class="patient-info-left">
+        <div class="info-row">
+          <span class="info-label">Patient Name:</span>
+          <span>{{patientName}}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Age/Gender:</span>
+          <span>{{patientAge}} Years / {{patientGender}}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Patient ID:</span>
+          <span>{{patientId}}</span>
+        </div>
+      </div>
+      <div class="patient-info-right">
+        <div class="info-row">
+          <span class="info-label">Sample Collection:</span>
+          <span>{{sampleCollectionDate}}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Sample Type:</span>
+          <span>{{sampleType}}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Referring Doctor:</span>
+          <span>{{referringDoctor}}</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Test Title -->
+    <div class="test-title">
+      {{testName}}
+    </div>
+    
+    <!-- Test Results Table -->
+    <table class="test-data">
+      <thead>
+        <tr>
+          <th>Test</th>
+          <th>Result</th>
+          <th>Unit</th>
+          <th>Reference Range</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each testResults}}
+        <tr>
+          <td>{{this.name}}</td>
+          <td {{#if this.isAbnormal}}class="abnormal"{{/if}}>{{this.result}}</td>
+          <td>{{this.unit}}</td>
+          <td>{{this.referenceRange}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+    
+    <!-- Signature Section -->
+    <div class="signature-section">
+      <div class="signature-container">
+        {{#if signatureImage}}
+          <img src="{{signatureImage}}" alt="Signature" class="signature-image">
+        {{else}}
+          <div style="height: 60px; border-bottom: 1px solid #000;"></div>
+        {{/if}}
+        <div class="signature-name">Dr. {{verifiedBy}}</div>
+        <div class="signature-designation">{{designation}}</div>
+      </div>
+    </div>
+    
+    <!-- Footer -->
+    <div class="footer">
+      {{#if footerImage}}
+        <img src="{{footerImage}}" alt="Footer">
+      {{else}}
+        <div class="footer-text">
+          This is a computer-generated report and does not require a physical signature. The results relate only to the samples tested.
+          For any queries, please contact the laboratory at the address/phone number mentioned above.
+        </div>
+      {{/if}}
+    </div>
+  </div>
+</body>
+</html>

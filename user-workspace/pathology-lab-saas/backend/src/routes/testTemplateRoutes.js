@@ -28,7 +28,7 @@ router.route('/super-admin/test-templates/:id')
   .delete(deleteTestTemplate);
 
 // Routes for admin
-router.use('/admin/test-templates', protect, authorize('admin'));
+router.use('/admin/test-templates', protect, authorize('admin', 'super-admin', 'technician'));
 router.route('/admin/test-templates')
   .post(createTestTemplate)
   .get(getTestTemplates);
@@ -39,7 +39,7 @@ router.route('/admin/test-templates/:id')
   .delete(deleteTestTemplate);
 
 // Routes for technician (read-only)
-router.use('/technician/test-templates', protect, authorize('technician'));
+router.use('/technician/test-templates', protect);
 
 // Add a route for technicians to access all templates (including default ones)
 // This specific route must come before the :id route

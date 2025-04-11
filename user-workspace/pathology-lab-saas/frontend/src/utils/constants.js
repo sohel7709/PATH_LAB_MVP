@@ -28,6 +28,11 @@ export const TEST_CATEGORIES = {
   MICROBIOLOGY: 'microbiology',
   IMMUNOLOGY: 'immunology',
   PATHOLOGY: 'pathology',
+  ENDOCRINOLOGY: 'endocrinology',
+  SEROLOGY: 'serology',
+  URINALYSIS: 'urinalysis',
+  CARDIOLOGY: 'cardiology',
+  GASTROENTEROLOGY: 'gastroenterology',
 };
 
 // Form Validation Rules

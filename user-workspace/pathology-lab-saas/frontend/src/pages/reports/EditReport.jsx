@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ExclamationCircleIcon } from '@heroicons/react/20/solid';
 import { reports } from '../../utils/api';
 import { REPORT_STATUS, TEST_CATEGORIES } from '../../utils/constants';
+import { useAuth } from '../../context/AuthContext';
 
 export default function EditReport() {
   const { id } = useParams();
@@ -23,6 +24,10 @@ export default function EditReport() {
     notes: '',
     testParameters: []
   });
+
+  // Check if user is a technician
+  const { user } = useAuth();
+  const isTechnician = user?.role === 'technician';
 
   useEffect(() => {
     fetchReport();
@@ -99,6 +104,45 @@ export default function EditReport() {
     }));
   };
 
+  // Function to check if a value is outside the reference range
+  const isOutsideRange = (value, referenceRange) => {
+    if (!value || !referenceRange) return false;
+    
+    // Try to parse the value as a number
+    const numValue = parseFloat(value);
+    if (isNaN(numValue)) return false;
+    
+    // Parse reference range - handle different formats
+    // Examples: "10-20", "<10", ">20", "≤30", "≥5"
+    try {
+      if (referenceRange.includes('-')) {
+        // Range format: "10-20"
+        const [min, max] = referenceRange.split('-').map(v => parseFloat(v.trim()));
+        return numValue < min || numValue > max;
+      } else if (referenceRange.startsWith('<')) {
+        // Less than format: "<10"
+        const max = parseFloat(referenceRange.substring(1).trim());
+        return numValue >= max;
+      } else if (referenceRange.startsWith('≤')) {
+        // Less than or equal format: "≤10"
+        const max = parseFloat(referenceRange.substring(1).trim());
+        return numValue > max;
+      } else if (referenceRange.startsWith('>')) {
+        // Greater than format: ">20"
+        const min = parseFloat(referenceRange.substring(1).trim());
+        return numValue <= min;
+      } else if (referenceRange.startsWith('≥')) {
+        // Greater than or equal format: "≥5"
+        const min = parseFloat(referenceRange.substring(1).trim());
+        return numValue < min;
+      }
+    } catch (e) {
+      console.error('Error parsing reference range:', e);
+    }
+    
+    return false;
+  };
+
   const addParameter = () => {
     setFormData(prev => ({
       ...prev,
@@ -156,8 +200,8 @@ export default function EditReport() {
           value: param.value,
           unit: param.unit,
           referenceRange: param.referenceRange,
-          // Add flag based on value comparison with reference range if possible
-          flag: 'normal' // Default to normal, could be enhanced with actual comparison logic
+          // Add flag based on value comparison with reference range
+          flag: isOutsideRange(param.value, param.referenceRange) ? 'abnormal' : 'normal'
         }))
       };
       
@@ -187,6 +231,85 @@ export default function EditReport() {
       </div>
     );
   }
+
+  // Render test parameter row
+  const renderParameterRow = (param, index) => {
+    const isAbnormal = isOutsideRange(param.value, param.referenceRange);
+    
+    return (
+      <div 
+        key={index} 
+        className={`grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-12 items-end ${isAbnormal ? 'bg-red-50 border-l-4 border-red-500 pl-2' : ''}`}
+      >
+        <div className="sm:col-span-3">
+          <label className="block text-sm font-medium text-gray-700">
+            Parameter name
+          </label>
+          <input
+            type="text"
+            required
+            value={param.name}
+            onChange={(e) => handleParameterChange(index, 'name', e.target.value)}
+            className={`input-field mt-1 ${isTechnician ? 'bg-gray-100' : ''}`}
+            disabled={isTechnician}
+          />
+        </div>
+        
+        <div className="sm:col-span-3">
+          <label className="block text-sm font-medium text-gray-700">
+            Value
+          </label>
+          <input
+            type="text"
+            required
+            value={param.value}
+            onChange={(e) => handleParameterChange(index, 'value', e.target.value)}
+            className="input-field mt-1"
+          />
+        </div>
+        
+        <div className="sm:col-span-2">
+          <label className="block text-sm font-medium text-gray-700">
+            Unit
+          </label>
+          <input
+            type="text"
+            required
+            value={param.unit}
+            onChange={(e) => handleParameterChange(index, 'unit', e.target.value)}
+            className={`input-field mt-1 ${isTechnician ? 'bg-gray-100' : ''}`}
+            disabled={isTechnician}
+          />
+        </div>
+        
+        <div className="sm:col-span-3">
+          <label className="block text-sm font-medium text-gray-700">
+            Reference range
+          </label>
+          <input
+            type="text"
+            required
+            value={param.referenceRange}
+            onChange={(e) => handleParameterChange(index, 'referenceRange', e.target.value)}
+            className={`input-field mt-1 ${isTechnician ? 'bg-gray-100' : ''}`}
+            disabled={isTechnician}
+          />
+        </div>
+        
+        <div className="sm:col-span-1">
+          {index > 0 && !isTechnician && (
+            <button
+              type="button"
+              onClick={() => removeParameter(index)}
+              className="text-red-600 hover:text-red-900"
+            >
+              Remove
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div>
@@ -413,83 +536,19 @@ export default function EditReport() {
           <div className="px-4 py-5 sm:p-6">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-medium leading-6 text-gray-900">Test Parameters</h3>
-              <button
-                type="button"
-                onClick={addParameter}
-                className="btn-secondary"
-              >
-                Add Parameter
-              </button>
+              {!isTechnician && (
+                <button
+                  type="button"
+                  onClick={addParameter}
+                  className="btn-secondary"
+                >
+                  Add Parameter
+                </button>
+              )}
             </div>
             
             <div className="mt-6 space-y-4">
-              {formData.testParameters.map((param, index) => (
-                <div key={index} className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-12 items-end">
-                  <div className="sm:col-span-3">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Parameter name
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={param.name}
-                      onChange={(e) => handleParameterChange(index, 'name', e.target.value)}
-                      className="input-field mt-1"
-                    />
-                  </div>
-                  
-                  <div className="sm:col-span-3">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Value
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={param.value}
-                      onChange={(e) => handleParameterChange(index, 'value', e.target.value)}
-                      className="input-field mt-1"
-                    />
-                  </div>
-                  
-                  <div className="sm:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Unit
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={param.unit}
-                      onChange={(e) => handleParameterChange(index, 'unit', e.target.value)}
-                      className="input-field mt-1"
-                    />
-                  </div>
-                  
-                  <div className="sm:col-span-3">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Reference range
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={param.referenceRange}
-                      onChange={(e) => handleParameterChange(index, 'referenceRange', e.target.value)}
-                      className="input-field mt-1"
-                    />
-                  </div>
-                  
-                  <div className="sm:col-span-1">
-                    {index > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => removeParameter(index)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
+              {formData.testParameters.map((param, index) => renderParameterRow(param, index))}
             </div>
           </div>
         </div>

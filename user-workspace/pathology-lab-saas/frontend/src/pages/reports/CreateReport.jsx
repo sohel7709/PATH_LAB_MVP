@@ -61,23 +61,25 @@ export default function CreateReport() {
   const fetchTemplates = async () => {
     try {
       setIsLoading(true);
-      // Use the special endpoint for technicians to get all templates
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/technician/test-templates/all`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      // Get user role from localStorage for debugging
+      const userFromStorage = JSON.parse(localStorage.getItem('user') || '{}');
+      const userRole = userFromStorage.role || '';
+      console.log('Current user role:', userRole);
       
-      const data = await response.json();
-      console.log('Templates response:', data);
+      // Use the appropriate API method based on user role
+      let response;
       
-      if (data && data.success && data.data) {
-        setAvailableTemplates(data.data);
+      // Use the appropriate API method based on user role
+      console.log('Using standard API method for role:', userRole);
+      response = await testTemplates.getAll();
+      console.log('Standard API response:', response);
+      
+      if (response && response.data) {
+        setAvailableTemplates(response.data);
         
         // If templates are available, select the first one by default
-        if (data.data.length > 0) {
-          const firstTemplate = data.data[0];
+        if (response.data.length > 0) {
+          const firstTemplate = response.data[0];
           setSelectedTemplate(firstTemplate._id);
           await fetchTemplateDetails(firstTemplate._id);
         } else {
@@ -94,13 +96,13 @@ export default function CreateReport() {
           setHasSections(false);
         }
       } else {
-        console.error('Invalid response format:', data);
+        console.error('Invalid response format:', response);
         setError('Failed to load test templates. Invalid response format.');
         setSelectedTemplate('custom');
       }
     } catch (err) {
       console.error('Error fetching test templates:', err);
-      setError('Failed to load test templates. Please try again.');
+      setError(`Failed to load test templates: ${err.message || 'Unknown error'}`);
       
       // Set up for custom test in case of error
       setSelectedTemplate('custom');
@@ -124,19 +126,31 @@ export default function CreateReport() {
     
     try {
       setIsLoading(true);
-      const response = await testTemplates.getByIdForTechnician(templateId);
       
+      // Get user role from localStorage for debugging
+      const userFromStorage = JSON.parse(localStorage.getItem('user') || '{}');
+      const userRole = userFromStorage.role || '';
+      console.log('Fetching template details for role:', userRole);
+      
+      // Use the appropriate API method based on user role
+      let response;
+      
+      // Fetch template details for all user roles
+      console.log('Using standard API method for template details');
+      response = await testTemplates.getById(templateId, userRole);
+      console.log('Standard API template details response:', response);
+  
       if (response && response.data) {
         const template = response.data;
         setTemplateDetails(template);
-        
+  
         // Check if template has sections
         const hasTemplateSections = template.sections && Object.keys(template.sections).length > 0;
         setHasSections(hasTemplateSections);
-        
+  
         // Update form data with template details
         let parameters = [];
-        
+  
         if (hasTemplateSections) {
           // Flatten sections into parameters for the form
           Object.entries(template.sections).forEach(([sectionName, sectionParams]) => {
@@ -159,7 +173,7 @@ export default function CreateReport() {
             referenceRange: field.reference_range || ''
           }));
         }
-        
+  
         setFormData(prev => ({
           ...prev,
           testName: template.name,
@@ -170,7 +184,7 @@ export default function CreateReport() {
       }
     } catch (err) {
       console.error('Error fetching template details:', err);
-      setError('Failed to load template details. Please try again.');
+      setError(`Failed to load template details: ${err.message || 'Unknown error'}`);
     } finally {
       setIsLoading(false);
     }
@@ -342,19 +356,89 @@ export default function CreateReport() {
   const isValueNormal = (value, referenceRange) => {
     if (!value || !referenceRange) return true;
     
-    // Handle numeric ranges like "10-20"
-    const numericMatch = referenceRange.match(/(\d+\.?\d*)\s*-\s*(\d+\.?\d*)/);
+    // Convert value to number
+    const numValue = parseFloat(value);
+    if (isNaN(numValue)) return true; // If value is not a number, consider it normal
+    
+    // Get patient gender
+    const patientGender = formData.patientGender.toLowerCase();
+    
+    // Handle gender-specific ranges like "M: 13.5–18.0; F: 11.5–16.4"
+    const genderMatch = referenceRange.match(/M:\s*(\d+\.?\d*)[–-](\d+\.?\d*);\s*F:\s*(\d+\.?\d*)[–-](\d+\.?\d*)/);
+    if (genderMatch) {
+      const maleMin = parseFloat(genderMatch[1]);
+      const maleMax = parseFloat(genderMatch[2]);
+      const femaleMin = parseFloat(genderMatch[3]);
+      const femaleMax = parseFloat(genderMatch[4]);
+      
+      // Use the appropriate range based on patient gender
+      if (patientGender === 'male' && !isNaN(maleMin) && !isNaN(maleMax)) {
+        return numValue >= maleMin && numValue <= maleMax;
+      } else if (patientGender === 'female' && !isNaN(femaleMin) && !isNaN(femaleMax)) {
+        return numValue >= femaleMin && numValue <= femaleMax;
+      } else {
+        // If gender is not specified or is 'other', use the wider range
+        const minValue = Math.min(maleMin, femaleMin);
+        const maxValue = Math.max(maleMax, femaleMax);
+        
+        if (!isNaN(minValue) && !isNaN(maxValue)) {
+          return numValue >= minValue && numValue <= maxValue;
+        }
+      }
+    }
+    
+    // Handle numeric ranges like "10-20" or "10–20" (with en dash)
+    const numericMatch = referenceRange.match(/(\d+\.?\d*)\s*[–-]\s*(\d+\.?\d*)/);
     if (numericMatch) {
       const min = parseFloat(numericMatch[1]);
       const max = parseFloat(numericMatch[2]);
-      const numValue = parseFloat(value);
       
-      if (!isNaN(numValue) && !isNaN(min) && !isNaN(max)) {
+      if (!isNaN(min) && !isNaN(max)) {
         return numValue >= min && numValue <= max;
       }
     }
     
+    // Handle "Up to X" format
+    const upToMatch = referenceRange.match(/Up\s+to\s+(\d+\.?\d*)/i);
+    if (upToMatch) {
+      const max = parseFloat(upToMatch[1]);
+      
+      if (!isNaN(max)) {
+        return numValue <= max;
+      }
+    }
+    
+    // Handle ranges with < or > symbols like "<5" or ">10"
+    const lessThanMatch = referenceRange.match(/\s*<\s*(\d+\.?\d*)/);
+    if (lessThanMatch) {
+      const max = parseFloat(lessThanMatch[1]);
+      
+      if (!isNaN(max)) {
+        return numValue < max;
+      }
+    }
+    
+    const greaterThanMatch = referenceRange.match(/\s*>\s*(\d+\.?\d*)/);
+    if (greaterThanMatch) {
+      const min = parseFloat(greaterThanMatch[1]);
+      
+      if (!isNaN(min)) {
+        return numValue > min;
+      }
+    }
+    
+    // Debug log for unmatched reference ranges
+    console.log('Unmatched reference range format:', referenceRange);
     return true;
+  };
+  
+  // Get row background color based on value
+  const getRowBackgroundColor = (value, referenceRange) => {
+    if (!value || !referenceRange) return '';
+    
+    return isValueNormal(value, referenceRange) 
+      ? '' 
+      : 'bg-red-200 text-red-800 font-medium';
   };
 
   // Submit form
@@ -507,7 +591,7 @@ export default function CreateReport() {
               <h3 className="text-lg font-medium leading-6 text-gray-900">Patient Information</h3>
               {formData.patientId && (
                 <p className="text-sm text-gray-500 italic">
-                  You can modify patient information if needed
+                  Patient information is locked for data integrity. Only Reference Doctor can be modified.
                 </p>
               )}
             </div>
@@ -551,7 +635,7 @@ export default function CreateReport() {
                     value={formData.patientName}
                     onChange={handleChange}
                     className="block w-full rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
-                    readOnly={false}
+                    readOnly={!!formData.patientId}
                   />
                 </div>
               </div>
@@ -571,7 +655,7 @@ export default function CreateReport() {
                     value={formData.patientAge}
                     onChange={handleChange}
                     className="block w-full rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
-                    readOnly={false}
+                    readOnly={!!formData.patientId}
                   />
                 </div>
               </div>
@@ -588,7 +672,7 @@ export default function CreateReport() {
                     value={formData.patientGender}
                     onChange={handleChange}
                     className="block w-full rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
-                    disabled={false}
+                    disabled={!!formData.patientId}
                   >
                     <option value="">Select gender</option>
                     <option value="male">Male</option>
@@ -611,7 +695,7 @@ export default function CreateReport() {
       value={formData.patientPhone}
       onChange={handleChange}
       className="block w-full rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
-      readOnly={false}
+      readOnly={!!formData.patientId}
     />
   </div>
 </div>
@@ -842,7 +926,10 @@ export default function CreateReport() {
                               p.name === param.name && p.section === param.section
                             );
                             return (
-                              <tr key={paramIndex}>
+                              <tr 
+                                key={paramIndex} 
+                                className={getRowBackgroundColor(param.value, param.referenceRange)}
+                              >
                                 <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
                                   {param.name}
                                 </td>
@@ -896,7 +983,10 @@ export default function CreateReport() {
                     </thead>
                     <tbody className="divide-y divide-gray-200">
                       {formData.testParameters.map((param, index) => (
-                        <tr key={index}>
+                        <tr 
+                          key={index}
+                          className={getRowBackgroundColor(param.value, param.referenceRange)}
+                        >
                           <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
                             {selectedTemplate === 'custom' ? (
                               <input

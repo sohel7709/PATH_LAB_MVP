@@ -1,9 +1,30 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ExclamationCircleIcon, PrinterIcon, PencilIcon } from '@heroicons/react/24/outline';
+import { ExclamationCircleIcon, PrinterIcon, PencilIcon, DocumentTextIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import { reports } from '../../utils/api';
 import { formatDate, getStatusColor } from '../../utils/helpers';
 import { REPORT_STATUS } from '../../utils/constants';
+
+// Function to check if a value is outside the reference range
+const isOutsideRange = (value, referenceRange) => {
+  if (!value || !referenceRange) return false;
+  const numValue = parseFloat(value);
+  if (isNaN(numValue)) return false;
+
+  try {
+    if (referenceRange.includes('-')) {
+      const [min, max] = referenceRange.split('-').map(Number);
+      return numValue < min || numValue > max;
+    } else if (referenceRange.startsWith('<')) {
+      return numValue >= parseFloat(referenceRange.substring(1));
+    } else if (referenceRange.startsWith('>')) {
+      return numValue <= parseFloat(referenceRange.substring(1));
+    }
+  } catch (error) {
+    console.warn('Invalid reference range:', referenceRange, error);
+  }
+  return false;
+};
 
 export default function ViewReport() {
   const { id } = useParams();
@@ -48,7 +69,8 @@ export default function ViewReport() {
   };
 
   const handlePrint = () => {
-    window.print();
+    // Navigate to the print report page instead of using browser print
+    window.open(`/reports/${id}/print`, '_blank');
   };
 
   if (isLoading) {
@@ -106,8 +128,26 @@ export default function ViewReport() {
             className="btn-secondary"
           >
             <PrinterIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-            Print
+            Print Report
           </button>
+          <Link
+            to={`/reports/${id}/print`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-secondary"
+          >
+            <DocumentTextIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+            View Formatted Report
+          </Link>
+          <a
+            href={`/api/reports/${id}/pdf`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-secondary"
+          >
+            <ArrowDownTrayIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+            Download PDF
+          </a>
         </div>
       </div>
 
@@ -234,14 +274,19 @@ export default function ViewReport() {
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {report.results && report.results.length > 0 ? (
-                    report.results.map((param, index) => (
-                      <tr key={index}>
-                        <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900">{param.parameter}</td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{param.value}</td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{param.unit}</td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{param.referenceRange}</td>
-                      </tr>
-                    ))
+                    report.results.map((param, index) => {
+                      const isAbnormal = isOutsideRange(param.value, param.referenceRange);
+                      return (
+                        <tr key={index} className={isAbnormal ? 'bg-red-50' : ''}>
+                          <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900">{param.parameter || param.name}</td>
+                          <td className={`whitespace-nowrap px-3 py-4 text-sm ${isAbnormal ? 'font-bold text-red-600' : 'text-gray-500'}`}>
+                            {param.value}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{param.unit}</td>
+                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{param.referenceRange}</td>
+                        </tr>
+                      );
+                    })
                   ) : (
                     <tr>
                       <td colSpan="4" className="py-4 text-center text-sm text-gray-500">No test parameters available</td>

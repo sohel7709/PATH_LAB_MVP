@@ -6,7 +6,8 @@ import {
   FunnelIcon,
   ArrowUpIcon,
   ArrowDownIcon,
-  ArrowPathIcon
+  ArrowPathIcon,
+  TrashIcon
 } from '@heroicons/react/24/outline';
 import { reports } from '../../utils/api';
 import { formatDate, getStatusColor } from '../../utils/helpers';
@@ -19,6 +20,8 @@ export default function Reports() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'desc' });
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [reportToDelete, setReportToDelete] = useState(null);
 
   useEffect(() => {
     fetchReports();
@@ -58,6 +61,42 @@ export default function Reports() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleDeleteClick = (report) => {
+    setReportToDelete(report);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!reportToDelete) return;
+    
+    try {
+      setIsLoading(true);
+      const reportId = reportToDelete._id || reportToDelete.id;
+      await reports.delete(reportId);
+      
+      // Remove the deleted report from the state
+      setReportsData(prevReports => 
+        prevReports.filter(report => {
+          const id = report._id || report.id;
+          return id !== reportId;
+        })
+      );
+      
+      setShowDeleteConfirm(false);
+      setReportToDelete(null);
+    } catch (err) {
+      console.error('Error deleting report:', err);
+      setError(`Failed to delete report: ${err.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteConfirm(false);
+    setReportToDelete(null);
   };
 
   const handleSort = (key) => {
@@ -282,6 +321,13 @@ export default function Reports() {
                             >
                               Print
                             </Link>
+                            <button
+                              onClick={() => handleDeleteClick(report)}
+                              className="text-red-600 hover:text-red-900"
+                              title="Delete Report"
+                            >
+                              Delete
+                            </button>
                           </div>
                           </td>
                         </tr>
@@ -294,6 +340,43 @@ export default function Reports() {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full">
+            <div className="sm:flex sm:items-start">
+              <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                <TrashIcon className="h-6 w-6 text-red-600" aria-hidden="true" />
+              </div>
+              <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                <h3 className="text-lg leading-6 font-medium text-gray-900">Delete Report</h3>
+                <div className="mt-2">
+                  <p className="text-sm text-gray-500">
+                    Are you sure you want to delete this report? This action cannot be undone.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+              <button
+                type="button"
+                className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
+                onClick={confirmDelete}
+              >
+                Delete
+              </button>
+              <button
+                type="button"
+                className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:w-auto sm:text-sm"
+                onClick={cancelDelete}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

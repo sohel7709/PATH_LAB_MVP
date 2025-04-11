@@ -15,7 +15,7 @@ const testTemplateSchema = new mongoose.Schema({
   category: {
     type: String,
     required: [true, 'Please provide test category'],
-    enum: ['hematology', 'biochemistry', 'microbiology', 'immunology', 'pathology']
+    enum: ['hematology', 'biochemistry', 'microbiology', 'immunology', 'pathology', 'endocrinology', 'serology', 'urinalysis', 'cardiology', 'gastroenterology']
   },
   description: {
     type: String,

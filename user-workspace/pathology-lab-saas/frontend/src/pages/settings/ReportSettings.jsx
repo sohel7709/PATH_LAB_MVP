@@ -7,6 +7,7 @@ import {
   CheckCircleIcon, 
   ExclamationCircleIcon 
 } from '@heroicons/react/24/outline';
+import ReportPreview from '../../components/reports/ReportPreview';
 
 const ReportSettings = () => {
   const { user } = useAuth();
@@ -24,12 +25,17 @@ const ReportSettings = () => {
       address: '',
       phone: '',
       email: '',
-      logo: ''
+      logo: '',
+      headerImage: '',
+      headerImageType: ''
     },
     footer: {
       verifiedBy: '',
       designation: 'Consultant Pathologist',
-      signature: ''
+      signature: '',
+      signatureType: '',
+      footerImage: '',
+      footerImageType: ''
     },
     styling: {
       primaryColor: '#3b82f6',
@@ -38,6 +44,11 @@ const ReportSettings = () => {
       fontSize: 12
     }
   });
+  
+  // File input references
+  const headerInputRef = React.useRef(null);
+  const footerInputRef = React.useRef(null);
+  const signatureInputRef = React.useRef(null);
 
   // Fetch lab report settings
   useEffect(() => {
@@ -92,31 +103,51 @@ const ReportSettings = () => {
     }));
   };
 
-  // Handle file upload (logo or signature)
-  const handleFileUpload = async (type) => {
+  // Handle file upload (logo, header, footer, or signature)
+  const handleFileUpload = async (type, file) => {
     try {
+      if (!file) {
+        return;
+      }
+      
+      // Validate file type
+      const validTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+      if (!validTypes.includes(file.type)) {
+        setError(`Invalid file type. Please upload a PNG or JPG image.`);
+        return;
+      }
+      
       setError('');
       setSaving(true);
       
-      // In a real implementation, this would upload the file
-      // For now, we'll just simulate the upload
-      const response = await labReportSettings.uploadImage(user.lab, null, type);
+      const response = await labReportSettings.uploadImage(user.lab, file, type);
       
       if (response.success) {
-        if (type === 'logo') {
+        if (type === 'header') {
           setSettings(prev => ({
             ...prev,
             header: {
               ...prev.header,
-              logo: response.data.url
+              headerImage: response.data.url,
+              headerImageType: response.data.mimeType
             }
           }));
-        } else {
+        } else if (type === 'footer') {
           setSettings(prev => ({
             ...prev,
             footer: {
               ...prev.footer,
-              signature: response.data.url
+              footerImage: response.data.url,
+              footerImageType: response.data.mimeType
+            }
+          }));
+        } else if (type === 'signature') {
+          setSettings(prev => ({
+            ...prev,
+            footer: {
+              ...prev.footer,
+              signature: response.data.url,
+              signatureType: response.data.mimeType
             }
           }));
         }
@@ -143,7 +174,29 @@ const ReportSettings = () => {
       setSuccess('');
       setSaving(true);
       
-      const response = await labReportSettings.updateSettings(user.lab, settings);
+      // Create a simplified version of the settings object to avoid potential issues
+      const settingsToSave = {
+        header: {
+          headerImage: settings.header.headerImage,
+          headerImageType: settings.header.headerImageType
+        },
+        footer: {
+          verifiedBy: settings.footer.verifiedBy,
+          designation: settings.footer.designation,
+          signature: settings.footer.signature,
+          signatureType: settings.footer.signatureType,
+          footerImage: settings.footer.footerImage,
+          footerImageType: settings.footer.footerImageType
+        },
+        styling: {
+          primaryColor: settings.styling.primaryColor,
+          secondaryColor: settings.styling.secondaryColor,
+          fontFamily: settings.styling.fontFamily,
+          fontSize: settings.styling.fontSize
+        }
+      };
+      
+      const response = await labReportSettings.updateSettings(user.lab, settingsToSave);
       
       if (response.success) {
         setSuccess('Report settings saved successfully');
@@ -222,154 +275,7 @@ const ReportSettings = () => {
       )}
 
       {previewMode ? (
-        <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-          <div className="px-4 py-5 sm:p-6">
-            <h3 className="text-lg leading-6 font-medium text-gray-900">Report Preview</h3>
-            <div className="mt-5 border-2 border-gray-300 p-4">
-              {/* Report Header */}
-              <div className="border-b-2 pb-4 mb-4" style={{ borderColor: settings.styling.primaryColor }}>
-                <div className="flex justify-between items-center">
-                  <div>
-                    {settings.header.logo ? (
-                      <img 
-                        src={settings.header.logo} 
-                        alt="Lab Logo" 
-                        className="h-16 w-auto object-contain mb-2" 
-                      />
-                    ) : (
-                      <div className="h-16 w-32 bg-gray-200 flex items-center justify-center text-gray-500 text-sm">
-                        Logo Placeholder
-                      </div>
-                    )}
-                    <h2 className="text-xl font-bold" style={{ color: settings.styling.primaryColor }}>
-                      {settings.header.labName || 'Lab Name'}
-                    </h2>
-                    <p className="text-sm text-gray-600">
-                      {settings.header.doctorName || 'Doctor Name'}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {settings.header.address || 'Lab Address'}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {settings.header.phone && `Phone: ${settings.header.phone}`}
-                      {settings.header.email && settings.header.phone && ' | '}
-                      {settings.header.email && `Email: ${settings.header.email}`}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <h3 className="text-lg font-semibold" style={{ color: settings.styling.secondaryColor }}>
-                      PATHOLOGY REPORT
-                    </h3>
-                    <p className="text-sm text-gray-600">Report ID: SAMPLE-12345</p>
-                    <p className="text-xs text-gray-500">Date: {new Date().toLocaleDateString()}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Patient Info */}
-              <div className="mb-6 grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p><span className="font-semibold">Patient Name:</span> John Doe</p>
-                  <p><span className="font-semibold">Age/Gender:</span> 45 Years / Male</p>
-                  <p><span className="font-semibold">Patient ID:</span> P-98765</p>
-                </div>
-                <div>
-                  <p><span className="font-semibold">Sample Collection:</span> {new Date().toLocaleDateString()}</p>
-                  <p><span className="font-semibold">Sample Type:</span> Blood</p>
-                  <p><span className="font-semibold">Referring Doctor:</span> Dr. Smith</p>
-                </div>
-              </div>
-
-              {/* Test Results */}
-              <div className="mb-6">
-                <h4 className="text-md font-semibold mb-2 pb-1 border-b" style={{ color: settings.styling.secondaryColor }}>
-                  HEMATOLOGY
-                </h4>
-                <table className="min-w-full divide-y divide-gray-300">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      <th scope="col" className="py-2 pl-4 pr-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Test
-                      </th>
-                      <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Result
-                      </th>
-                      <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Unit
-                      </th>
-                      <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Reference Range
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    <tr>
-                      <td className="py-2 pl-4 pr-3 text-sm font-medium text-gray-900">
-                        Hemoglobin
-                      </td>
-                      <td className="px-3 py-2 text-sm text-gray-500">
-                        14.5
-                      </td>
-                      <td className="px-3 py-2 text-sm text-gray-500">
-                        g/dL
-                      </td>
-                      <td className="px-3 py-2 text-sm text-gray-500">
-                        13.0 - 17.0
-                      </td>
-                    </tr>
-                    <tr>
-                      <td className="py-2 pl-4 pr-3 text-sm font-medium text-gray-900">
-                        WBC Count
-                      </td>
-                      <td className="px-3 py-2 text-sm text-gray-500">
-                        7.5
-                      </td>
-                      <td className="px-3 py-2 text-sm text-gray-500">
-                        x10³/μL
-                      </td>
-                      <td className="px-3 py-2 text-sm text-gray-500">
-                        4.5 - 11.0
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Footer */}
-              <div className="mt-8 pt-4 border-t-2" style={{ borderColor: settings.styling.primaryColor }}>
-                <div className="flex justify-between items-end">
-                  <div>
-                    <p className="text-xs text-gray-500">
-                      This report is electronically verified. No signature is required.
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      Report generated on {new Date().toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    {settings.footer.signature ? (
-                      <img 
-                        src={settings.footer.signature} 
-                        alt="Signature" 
-                        className="h-12 w-auto object-contain mb-1 ml-auto" 
-                      />
-                    ) : (
-                      <div className="h-12 w-32 bg-gray-200 flex items-center justify-center text-gray-500 text-sm ml-auto mb-1">
-                        Signature
-                      </div>
-                    )}
-                    <p className="font-semibold text-sm">
-                      {settings.footer.verifiedBy || 'Verified By'}
-                    </p>
-                    <p className="text-xs text-gray-600">
-                      {settings.footer.designation}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ReportPreview settings={settings} />
       ) : (
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Header Settings */}
@@ -377,101 +283,24 @@ const ReportSettings = () => {
             <div className="px-4 py-5 sm:p-6">
               <h3 className="text-lg leading-6 font-medium text-gray-900">Header Settings</h3>
               <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-                <div className="sm:col-span-3">
-                  <label htmlFor="labName" className="block text-sm font-medium text-gray-700">
-                    Lab Name
-                  </label>
-                  <div className="mt-1">
-                    <input
-                      type="text"
-                      name="labName"
-                      id="labName"
-                      value={settings.header.labName}
-                      onChange={(e) => handleChange('header', 'labName', e.target.value)}
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                    />
-                  </div>
-                </div>
-
-                <div className="sm:col-span-3">
-                  <label htmlFor="doctorName" className="block text-sm font-medium text-gray-700">
-                    Doctor Name
-                  </label>
-                  <div className="mt-1">
-                    <input
-                      type="text"
-                      name="doctorName"
-                      id="doctorName"
-                      value={settings.header.doctorName}
-                      onChange={(e) => handleChange('header', 'doctorName', e.target.value)}
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                    />
-                  </div>
-                </div>
-
-                <div className="sm:col-span-6">
-                  <label htmlFor="address" className="block text-sm font-medium text-gray-700">
-                    Address
-                  </label>
-                  <div className="mt-1">
-                    <input
-                      type="text"
-                      name="address"
-                      id="address"
-                      value={settings.header.address}
-                      onChange={(e) => handleChange('header', 'address', e.target.value)}
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                    />
-                  </div>
-                </div>
-
-                <div className="sm:col-span-3">
-                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                    Phone
-                  </label>
-                  <div className="mt-1">
-                    <input
-                      type="text"
-                      name="phone"
-                      id="phone"
-                      value={settings.header.phone}
-                      onChange={(e) => handleChange('header', 'phone', e.target.value)}
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                    />
-                  </div>
-                </div>
-
-                <div className="sm:col-span-3">
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                    Email
-                  </label>
-                  <div className="mt-1">
-                    <input
-                      type="email"
-                      name="email"
-                      id="email"
-                      value={settings.header.email}
-                      onChange={(e) => handleChange('header', 'email', e.target.value)}
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                    />
-                  </div>
-                </div>
-
                 <div className="sm:col-span-6">
                   <label className="block text-sm font-medium text-gray-700">
-                    Logo
+                    Header Image
                   </label>
                   <div className="mt-1 flex items-center">
-                    {settings.header.logo ? (
+                    {settings.header.headerImage ? (
                       <div className="relative">
                         <img 
-                          src={settings.header.logo} 
-                          alt="Lab Logo" 
+                          src={settings.header.headerImage} 
+                          alt="Header Image" 
                           className="h-16 w-auto object-contain" 
                         />
                         <button
                           type="button"
-                          onClick={() => handleChange('header', 'logo', '')}
+                          onClick={() => {
+                            handleChange('header', 'headerImage', '');
+                            handleChange('header', 'headerImageType', '');
+                          }}
                           className="absolute -top-2 -right-2 bg-red-100 rounded-full p-1 text-red-600 hover:bg-red-200"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -481,20 +310,27 @@ const ReportSettings = () => {
                       </div>
                     ) : (
                       <div className="h-16 w-32 bg-gray-200 flex items-center justify-center text-gray-500 text-sm">
-                        No Logo
+                        No Header Image
                       </div>
                     )}
+                    <input
+                      type="file"
+                      ref={headerInputRef}
+                      className="hidden"
+                      accept="image/png,image/jpeg,image/jpg"
+                      onChange={(e) => handleFileUpload('header', e.target.files[0])}
+                    />
                     <button
                       type="button"
-                      onClick={() => handleFileUpload('logo')}
+                      onClick={() => headerInputRef.current.click()}
                       className="ml-5 rounded-md border border-gray-300 bg-white py-2 px-3 text-sm font-medium leading-4 text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                     >
                       <ArrowUpTrayIcon className="h-4 w-4 inline mr-1" />
-                      Upload Logo
+                      Upload Header
                     </button>
                   </div>
                   <p className="mt-2 text-sm text-gray-500">
-                    Recommended size: 200x100 pixels, PNG or JPEG format
+                    Recommended size: 800x150 pixels, PNG or JPEG format. This image will be displayed at the top of the report.
                   </p>
                 </div>
               </div>
@@ -565,9 +401,16 @@ const ReportSettings = () => {
                         No Signature
                       </div>
                     )}
+                    <input
+                      type="file"
+                      ref={signatureInputRef}
+                      className="hidden"
+                      accept="image/png,image/jpeg,image/jpg"
+                      onChange={(e) => handleFileUpload('signature', e.target.files[0])}
+                    />
                     <button
                       type="button"
-                      onClick={() => handleFileUpload('signature')}
+                      onClick={() => signatureInputRef.current.click()}
                       className="ml-5 rounded-md border border-gray-300 bg-white py-2 px-3 text-sm font-medium leading-4 text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                     >
                       <ArrowUpTrayIcon className="h-4 w-4 inline mr-1" />
@@ -575,7 +418,58 @@ const ReportSettings = () => {
                     </button>
                   </div>
                   <p className="mt-2 text-sm text-gray-500">
-                    Recommended size: 200x100 pixels, PNG or JPEG format with transparent background
+                    Recommended size: 200x100 pixels, PNG or JPEG format with transparent background.
+                  </p>
+                </div>
+
+                <div className="sm:col-span-6">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Footer Image
+                  </label>
+                  <div className="mt-1 flex items-center">
+                    {settings.footer.footerImage ? (
+                      <div className="relative">
+                        <img 
+                          src={settings.footer.footerImage} 
+                          alt="Footer Image" 
+                          className="h-16 w-auto object-contain" 
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleChange('footer', 'footerImage', '');
+                            handleChange('footer', 'footerImageType', '');
+                          }}
+                          className="absolute -top-2 -right-2 bg-red-100 rounded-full p-1 text-red-600 hover:bg-red-200"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="h-16 w-32 bg-gray-200 flex items-center justify-center text-gray-500 text-sm">
+                        No Footer Image
+                      </div>
+                    )}
+                    <input
+                      type="file"
+                      ref={footerInputRef}
+                      className="hidden"
+                      accept="image/png,image/jpeg,image/jpg"
+                      onChange={(e) => handleFileUpload('footer', e.target.files[0])}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => footerInputRef.current.click()}
+                      className="ml-5 rounded-md border border-gray-300 bg-white py-2 px-3 text-sm font-medium leading-4 text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    >
+                      <ArrowUpTrayIcon className="h-4 w-4 inline mr-1" />
+                      Upload Footer
+                    </button>
+                  </div>
+                  <p className="mt-2 text-sm text-gray-500">
+                    Recommended size: 800x100 pixels, PNG or JPEG format.
                   </p>
                 </div>
               </div>
@@ -600,12 +494,7 @@ const ReportSettings = () => {
                       onChange={(e) => handleColorChange('primaryColor', e.target.value)}
                       className="h-8 w-8 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                     />
-                    <input
-                      type="text"
-                      value={settings.styling.primaryColor}
-                      onChange={(e) => handleColorChange('primaryColor', e.target.value)}
-                      className="ml-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                    />
+                    <span className="ml-2 text-sm text-gray-500">{settings.styling.primaryColor}</span>
                   </div>
                 </div>
 
@@ -622,63 +511,18 @@ const ReportSettings = () => {
                       onChange={(e) => handleColorChange('secondaryColor', e.target.value)}
                       className="h-8 w-8 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                     />
-                    <input
-                      type="text"
-                      value={settings.styling.secondaryColor}
-                      onChange={(e) => handleColorChange('secondaryColor', e.target.value)}
-                      className="ml-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                    />
-                  </div>
-                </div>
-
-                <div className="sm:col-span-3">
-                  <label htmlFor="fontFamily" className="block text-sm font-medium text-gray-700">
-                    Font Family
-                  </label>
-                  <div className="mt-1">
-                    <select
-                      id="fontFamily"
-                      name="fontFamily"
-                      value={settings.styling.fontFamily}
-                      onChange={(e) => handleColorChange('fontFamily', e.target.value)}
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                    >
-                      <option value="Arial, sans-serif">Arial</option>
-                      <option value="'Times New Roman', serif">Times New Roman</option>
-                      <option value="'Courier New', monospace">Courier New</option>
-                      <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
-                      <option value="'Verdana', sans-serif">Verdana</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="sm:col-span-3">
-                  <label htmlFor="fontSize" className="block text-sm font-medium text-gray-700">
-                    Base Font Size (px)
-                  </label>
-                  <div className="mt-1">
-                    <input
-                      type="number"
-                      name="fontSize"
-                      id="fontSize"
-                      min="8"
-                      max="16"
-                      value={settings.styling.fontSize}
-                      onChange={(e) => handleColorChange('fontSize', parseInt(e.target.value))}
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                    />
+                    <span className="ml-2 text-sm text-gray-500">{settings.styling.secondaryColor}</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Submit Button */}
           <div className="flex justify-end">
             <button
               type="submit"
               disabled={saving}
-              className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               {saving ? 'Saving...' : 'Save Settings'}
             </button>

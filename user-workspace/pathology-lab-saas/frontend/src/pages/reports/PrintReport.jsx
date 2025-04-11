@@ -1,53 +1,52 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ExclamationCircleIcon, PrinterIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
-import { reports } from '../../utils/api';
-import { formatDate } from '../../utils/helpers';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import { reports, labReportSettings } from '../../utils/api';
+import ReportTemplate from '../../components/reports/ReportTemplate';
 
 export default function PrintReport() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [report, setReport] = useState(null);
+  const [labSettings, setLabSettings] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  const [isPrinting, setIsPrinting] = useState(false);
+  const [isPrinting] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const reportRef = useRef(null);
 
   useEffect(() => {
-    fetchReport();
+    fetchReportData();
   }, [id]);
 
-  const fetchReport = async () => {
+  const fetchReportData = async () => {
     try {
       setIsLoading(true);
-      const response = await reports.getById(id);
       
-      // Check if the response has a data property (API might return {success: true, data: {...}})
-      const data = response.data || response;
+      // Fetch the report data
+      const reportResponse = await reports.getById(id);
+      const reportData = reportResponse.data || reportResponse;
       
-      console.log('Fetched report data:', data);
-      setReport(data);
+      // Fetch the lab settings
+      const labId = reportData.lab;
+      const settingsResponse = await labReportSettings.getSettings(labId);
+      const settingsData = settingsResponse.data || settingsResponse;
+      
+      setReport(reportData);
+      setLabSettings(settingsData);
       setError('');
     } catch (err) {
-      console.error('Error fetching report:', err);
-      setError(err.message);
+      console.error('Error fetching report data:', err);
+      setError(err.message || 'Failed to load report');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handlePrint = () => {
-    setIsPrinting(true);
-    setTimeout(() => {
-      window.print();
-      setIsPrinting(false);
-      
-      // Update report status to indicate it was printed
-      updateReportStatus('printed');
-    }, 500);
+    window.print();
   };
 
   const handleDownload = async () => {
@@ -55,28 +54,57 @@ export default function PrintReport() {
     
     setIsDownloading(true);
     try {
+      // Use html2canvas to capture the report
       const canvas = await html2canvas(reportRef.current, {
         scale: 2,
         useCORS: true,
-        logging: false
+        logging: false,
+        windowWidth: 800,
+        windowHeight: 1200,
+        allowTaint: true,
+        backgroundColor: '#ffffff'
       });
       
       const imgData = canvas.toDataURL('image/jpeg', 1.0);
-      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+        compress: true
+      });
+      
+      // Set PDF properties
+      pdf.setProperties({
+        title: `Medical Report - ${report.patientInfo?.name || 'Patient'}`,
+        subject: `${report.testInfo?.name || 'Medical Test'} Report`,
+        creator: 'Pathology Lab System',
+        author: report.lab?.name || 'Medical Laboratory'
+      });
+      
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
       const imgWidth = canvas.width;
       const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-      const imgX = (pdfWidth - imgWidth * ratio) / 2;
+      
+      // Calculate the ratio to fit the image within the PDF page
+      // We're using a slightly smaller area to ensure margins are respected
+      const ratio = Math.min((pdfWidth) / imgWidth, (pdfHeight) / imgHeight);
+      
+      // Center the image horizontally
+      const imgX = 0;
       const imgY = 0;
       
+      // Add the image to the PDF
       pdf.addImage(imgData, 'JPEG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
-      pdf.save(`Report_${id}.pdf`);
       
-      // Update report status to indicate it was downloaded
-      updateReportStatus('downloaded');
+      // Use patient name for the filename if available
+      const patientName = report.patientInfo?.name || `Patient_${id}`;
+      const testName = report.testInfo?.name?.replace(/\s+/g, '_') || 'Medical_Test';
+      const date = new Date().toISOString().split('T')[0];
+      const safePatientName = patientName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      
+      pdf.save(`${safePatientName}_${testName}_${date}.pdf`);
     } catch (err) {
       console.error('Error generating PDF:', err);
       setError('Failed to generate PDF. Please try again.');
@@ -85,29 +113,55 @@ export default function PrintReport() {
     }
   };
 
-  const updateReportStatus = async (action) => {
-    try {
-      // Only update if we have a report
-      if (!report) return;
+  // Prepare the data for the ReportTemplate component
+  const prepareReportData = () => {
+    if (!report || !labSettings) return null;
+    
+    return {
+      // Header data
+      headerImage: labSettings.header?.headerImage || '',
+      labName: labSettings.header?.labName || 'Pathology Laboratory',
+      doctorName: labSettings.header?.doctorName || 'Dr. Consultant',
+      address: labSettings.header?.address || '',
+      phone: labSettings.header?.phone || '',
       
-      // Create a copy of the report with updated audit information
-      const updatedReport = {
-        ...report,
-        auditTrail: [
-          ...(report.auditTrail || []),
-          {
-            action: action,
-            timestamp: new Date().toISOString(),
-            user: 'current-user' // In a real app, this would be the current user's ID
-          }
-        ]
-      };
+      // Patient data
+      patientName: report.patientInfo?.name || 'N/A',
+      patientAge: report.patientInfo?.age || 'N/A',
+      patientGender: report.patientInfo?.gender || 'N/A',
+      patientId: report.patientInfo?.patientId || report._id?.substring(0, 8) || 'N/A',
       
-      // Update the report
-      await reports.update(id, updatedReport);
-    } catch (err) {
-      console.error(`Error updating report ${action} status:`, err);
-    }
+      // Sample data
+      sampleCollectionDate: new Date(report.testInfo?.sampleCollectionDate || report.createdAt).toLocaleDateString(),
+      sampleType: report.testInfo?.sampleType || 'Blood',
+      referringDoctor: report.testInfo?.referenceDoctor || 'N/A',
+      
+      // Test data
+      testName: report.testInfo?.name || 'COMPLETE BLOOD COUNT (CBC)',
+      testResults: report.results?.map(param => ({
+        name: param.parameter || param.name,
+        result: param.value,
+        unit: param.unit,
+        referenceRange: param.referenceRange,
+        isAbnormal: param.flag === 'high' || param.flag === 'low' || param.flag === 'critical'
+      })) || [],
+      
+      // Signature data
+      signatureImage: labSettings.footer?.signature || '',
+      verifiedBy: labSettings.footer?.verifiedBy || 'Consultant',
+      designation: labSettings.footer?.designation || 'Pathologist',
+      
+      // Footer data
+      footerImage: labSettings.footer?.footerImage || '',
+      
+      // Styling
+      styling: labSettings.styling || {
+        primaryColor: '#007bff',
+        secondaryColor: '#6c757d',
+        fontFamily: 'Arial, sans-serif',
+        fontSize: 12
+      }
+    };
   };
 
   if (isLoading) {
@@ -138,8 +192,10 @@ export default function PrintReport() {
     );
   }
 
-  if (!report) {
-    return <div>Report not found</div>;
+  const reportData = prepareReportData();
+  
+  if (!reportData) {
+    return <div>Failed to prepare report data</div>;
   }
 
   return (
@@ -183,156 +239,31 @@ export default function PrintReport() {
       {/* Printable Report */}
       <div 
         ref={reportRef}
-        className="mt-8 bg-white p-8 shadow-sm print:shadow-none print:p-0 print:mt-0"
+        className="mt-8 bg-white shadow-sm print:shadow-none print:mt-0 print-report-container"
+        style={{
+          maxWidth: '210mm', // A4 width
+          margin: '0 auto',
+          pageBreakInside: 'avoid'
+        }}
       >
-        {/* Report Header */}
-        <div className="border-b border-gray-200 pb-5">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">LABORATORY REPORT</h1>
-              <p className="text-sm text-gray-500">Report ID: {report.id}</p>
-            </div>
-            <div className="text-right">
-              <img 
-                src="/logo.svg" 
-                alt="Lab Logo" 
-                className="h-12 w-auto inline-block" 
-              />
-              <p className="text-sm font-semibold mt-2">Pathology Lab Services</p>
-              <p className="text-xs text-gray-500">123 Medical Center Drive</p>
-              <p className="text-xs text-gray-500">Phone: (555) 123-4567</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Patient Information */}
-        <div className="mt-6 border-b border-gray-200 pb-5">
-          <h2 className="text-lg font-medium text-gray-900">Patient Information</h2>
-          <div className="mt-4 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-            <div className="sm:col-span-3">
-              <p className="text-sm font-medium text-gray-500">Patient Name</p>
-              <p className="mt-1 text-sm text-gray-900">{report.patientName || report.patientInfo?.name || 'N/A'}</p>
-            </div>
-            <div className="sm:col-span-1">
-              <p className="text-sm font-medium text-gray-500">Age</p>
-              <p className="mt-1 text-sm text-gray-900">{report.patientAge || report.patientInfo?.age || 'N/A'}</p>
-            </div>
-            <div className="sm:col-span-1">
-              <p className="text-sm font-medium text-gray-500">Gender</p>
-              <p className="mt-1 text-sm text-gray-900">
-                {report.patientGender 
-                  ? report.patientGender.charAt(0).toUpperCase() + report.patientGender.slice(1) 
-                  : report.patientInfo?.gender 
-                    ? report.patientInfo.gender.charAt(0).toUpperCase() + report.patientInfo.gender.slice(1) 
-                    : 'N/A'}
-              </p>
-            </div>
-            <div className="sm:col-span-1">
-              <p className="text-sm font-medium text-gray-500">Phone</p>
-              <p className="mt-1 text-sm text-gray-900">{report.patientPhone || report.patientInfo?.contact?.phone || 'N/A'}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Test Information */}
-        <div className="mt-6 border-b border-gray-200 pb-5">
-          <h2 className="text-lg font-medium text-gray-900">Test Information</h2>
-          <div className="mt-4 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-            <div className="sm:col-span-2">
-              <p className="text-sm font-medium text-gray-500">Test Name</p>
-              <p className="mt-1 text-sm text-gray-900">{report.testName || report.testInfo?.name || 'N/A'}</p>
-            </div>
-            <div className="sm:col-span-2">
-              <p className="text-sm font-medium text-gray-500">Category</p>
-              <p className="mt-1 text-sm text-gray-900">{report.category || report.testInfo?.category || 'N/A'}</p>
-            </div>
-            <div className="sm:col-span-2">
-              <p className="text-sm font-medium text-gray-500">Collection Date</p>
-              <p className="mt-1 text-sm text-gray-900">
-                {report.collectionDate 
-                  ? formatDate(report.collectionDate)
-                  : report.testInfo?.sampleCollectionDate 
-                    ? formatDate(report.testInfo.sampleCollectionDate) 
-                    : 'N/A'}
-              </p>
-            </div>
-            <div className="sm:col-span-2">
-              <p className="text-sm font-medium text-gray-500">Reference Doctor</p>
-              <p className="mt-1 text-sm text-gray-900">
-                {report.referenceDoctor || report.testInfo?.referenceDoctor || 'Not specified'}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Test Results */}
-        <div className="mt-6 border-b border-gray-200 pb-5">
-          <h2 className="text-lg font-medium text-gray-900">Test Results</h2>
-          <div className="mt-4 overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-300">
-              <thead>
-                <tr className="bg-gray-50">
-                  <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900">Parameter</th>
-                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Value</th>
-                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Unit</th>
-                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Reference Range</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 bg-white">
-                {report.results && report.results.length > 0 ? (
-                  report.results.map((param, index) => (
-                    <tr key={index}>
-                      <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900">{param.parameter}</td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{param.value}</td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{param.unit}</td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{param.referenceRange}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="4" className="py-4 text-center text-sm text-gray-500">No test parameters available</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Notes */}
-        {((report.notes && report.notes.length > 0) || (report.comments && report.comments.length > 0)) && (
-          <div className="mt-6 border-b border-gray-200 pb-5">
-            <h2 className="text-lg font-medium text-gray-900">Notes</h2>
-            <div className="mt-4">
-              {report.notes && (
-                <div className="mb-4">
-                  <p className="text-sm text-gray-900 whitespace-pre-wrap">{report.notes}</p>
-                </div>
-              )}
+        <style>
+          {`
+            @media print {
+              .print-report-container {
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+              }
               
-              {report.comments && report.comments.length > 0 && report.comments.map((comment, index) => (
-                <div key={index} className="mb-2">
-                  <p className="text-sm text-gray-900 whitespace-pre-wrap">{comment.text}</p>
-                  <p className="text-xs text-gray-500">{formatDate(comment.timestamp)}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Footer */}
-        <div className="mt-8 pt-5">
-          <div className="flex justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Report Status: <span className="font-medium">{report.status}</span></p>
-              <p className="text-sm text-gray-500">Report Date: {formatDate(report.createdAt)}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-500">Authorized Signature</p>
-              <div className="mt-4 h-10 w-40 border-b border-gray-300"></div>
-              <p className="mt-1 text-sm text-gray-500">Lab Technician</p>
-            </div>
-          </div>
-        </div>
+              @page {
+                size: A4 portrait;
+                margin: 0;
+              }
+            }
+          `}
+        </style>
+        <ReportTemplate reportData={reportData} />
       </div>
     </div>
   );

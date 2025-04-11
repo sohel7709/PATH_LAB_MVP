@@ -29,6 +29,14 @@ const labReportSettingsSchema = new mongoose.Schema({
     logo: {
       type: String, // URL to the logo image
       default: ''
+    },
+    headerImage: {
+      type: String, // URL to the header image
+      default: ''
+    },
+    headerImageType: {
+      type: String, // MIME type of the header image (image/png, image/jpeg)
+      default: ''
     }
   },
   footer: {
@@ -42,6 +50,18 @@ const labReportSettingsSchema = new mongoose.Schema({
     },
     signature: {
       type: String, // URL to the signature image
+      default: ''
+    },
+    signatureType: {
+      type: String, // MIME type of the signature image (image/png, image/jpeg)
+      default: ''
+    },
+    footerImage: {
+      type: String, // URL to the footer image
+      default: ''
+    },
+    footerImageType: {
+      type: String, // MIME type of the footer image (image/png, image/jpeg)
       default: ''
     }
   },

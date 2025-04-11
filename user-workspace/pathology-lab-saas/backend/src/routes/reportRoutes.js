@@ -8,7 +8,10 @@ const {
   updateReport,
   deleteReport,
   verifyReport,
-  addComment
+  addComment,
+  generateHtmlReport,
+  generatePdfReport,
+  testTemplate
 } = require('../controllers/reportController');
 
 // All routes require authentication
@@ -30,10 +33,16 @@ router.put('/:id/verify', authorize('admin'), checkLabAccess, verifyReport);
 // Comment routes (both Admin and Technician)
 router.post('/:id/comments', authorize('admin', 'technician'), checkLabAccess, addComment);
 
+// Report generation routes (both Admin and Technician)
+router.get('/:id/html', authorize('admin', 'technician'), checkLabAccess, generateHtmlReport);
+router.get('/:id/pdf', authorize('admin', 'technician'), checkLabAccess, generatePdfReport);
+
+// Test route for debugging Handlebars templates
+router.get('/test-template', authorize('admin', 'technician'), testTemplate);
+
 // Additional routes can be added here for features like:
 // - Bulk report operations
 // - Report templates
-// - Report export/download
 // - Report sharing/delivery
 
 module.exports = router;

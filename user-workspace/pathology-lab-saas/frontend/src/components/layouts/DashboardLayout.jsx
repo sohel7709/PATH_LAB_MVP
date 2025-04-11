@@ -1,5 +1,5 @@
 import { Fragment, useState } from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Dialog, Menu, Transition } from '@headlessui/react';
 import {
   Bars3Icon,
@@ -11,6 +11,7 @@ import {
   BeakerIcon,
   ClipboardDocumentCheckIcon,
   DocumentDuplicateIcon,
+  ArrowLeftIcon,
 } from '@heroicons/react/24/outline';
 import { ChevronDownIcon } from '@heroicons/react/20/solid';
 import { useAuth } from '../../context/AuthContext';
@@ -22,8 +23,9 @@ const getNavigationItems = (role) => {
     { name: 'Reports', href: '/reports', icon: DocumentTextIcon },
   ];
 
+  // For superadmin, we don't include Reports section
   const superAdminItems = [
-    ...commonItems,
+    { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
     { name: 'Labs', href: '/labs', icon: BeakerIcon },
     { name: 'User Management', href: '/users', icon: UserGroupIcon },
     { name: 'Test Templates', href: '/templates', icon: DocumentDuplicateIcon },
@@ -34,10 +36,8 @@ const getNavigationItems = (role) => {
 
   const adminItems = [
     ...commonItems,
-    { name: 'Technicians', href: '/settings/users', icon: UserGroupIcon },
     { name: 'Patients', href: '/patients', icon: UserGroupIcon },
     { name: 'Test Templates', href: '/templates', icon: DocumentDuplicateIcon },
-    { name: 'Lab Settings', href: '/settings/lab', icon: BeakerIcon },
     { name: 'Report Settings', href: '/settings/reports', icon: DocumentTextIcon },
     { name: 'Inventory', href: '/inventory', icon: BeakerIcon },
     { name: 'Financial Reports', href: '/finance/reports', icon: DocumentTextIcon },
@@ -46,7 +46,6 @@ const getNavigationItems = (role) => {
   const technicianItems = [
     ...commonItems,
     { name: 'Patients', href: '/patients', icon: UserGroupIcon },
-    { name: 'Test Templates', href: '/templates', icon: DocumentDuplicateIcon },
     { name: 'Test Samples', href: '/samples', icon: BeakerIcon },
     { name: 'Tasks', href: '/tasks', icon: ClipboardDocumentCheckIcon },
   ];
@@ -70,6 +69,7 @@ function classNames(...classes) {
 export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
   
   // Default to admin navigation if user role is not available
@@ -198,6 +198,18 @@ export default function DashboardLayout() {
       {/* Main content */}
       <div className="lg:pl-72">
         <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-white px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
+          {/* Back button */}
+          <button
+            type="button"
+            className="-m-2.5 p-2.5 text-gray-700 hover:text-gray-900 flex items-center"
+            onClick={() => navigate(-1)}
+            aria-label="Go back"
+            title="Go back to previous page"
+          >
+            <ArrowLeftIcon className="h-5 w-5 mr-1" aria-hidden="true" />
+            <span className="text-sm font-medium">Back</span>
+          </button>
+
           <button
             type="button"
             className="-m-2.5 p-2.5 text-gray-700 lg:hidden"
@@ -208,7 +220,7 @@ export default function DashboardLayout() {
           </button>
 
           {/* Separator */}
-          <div className="h-6 w-px bg-gray-200 lg:hidden" aria-hidden="true" />
+          <div className="h-6 w-px bg-gray-200" aria-hidden="true" />
 
           <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
             <div className="flex flex-1" />
