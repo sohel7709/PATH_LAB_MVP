@@ -4,7 +4,8 @@ const cors = require('cors');
 const morgan = require('morgan');
 const path = require('path');
 require('dotenv').config();
-
+const mongoose = require('mongoose');
+const cors = require('cors');
 // Import routes
 const authRoutes = require('./routes/authRoutes');
 const labManagementRoutes = require('./routes/labManagementRoutes');
