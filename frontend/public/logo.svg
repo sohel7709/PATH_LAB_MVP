@@ -1,0 +1,10 @@
+<svg width="200" height="50" viewBox="0 0 200 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Lab Flask Icon -->
+  <path d="M30 10 L40 40 L20 40 L30 10" stroke="#0284c7" stroke-width="2" fill="white"/>
+  <path d="M25 25 L35 25" stroke="#0284c7" stroke-width="2"/>
+  <path d="M23 30 L37 30" stroke="#0284c7" stroke-width="2"/>
+  <path d="M22 35 L38 35" stroke="#0284c7" stroke-width="2"/>
+  
+  <!-- Text -->
+  <text x="50" y="32" font-family="Inter, sans-serif" font-size="24" font-weight="600" fill="#0284c7">PathLab</text>
+</svg>

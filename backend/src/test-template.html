@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Template</title>
+</head>
+<body>
+  <h1>Test Template</h1>
+  <p>This is a test template to verify that Handlebars is working correctly.</p>
+  
+  <h2>Basic Variable:</h2>
+  <p>Name: {{name}}</p>
+  
+  <h2>Object Property:</h2>
+  <p>User Name: {{user.name}}</p>
+  <p>User Age: {{user.age}}</p>
+  
+  <h2>Conditional:</h2>
+  {{#if showMessage}}
+    <p>This message is shown conditionally.</p>
+  {{else}}
+    <p>The condition was false.</p>
+  {{/if}}
+  
+  <h2>Loop:</h2>
+  <ul>
+    {{#each items}}
+      <li>{{this}}</li>
+    {{/each}}
+  </ul>
+</body>
+</html>
