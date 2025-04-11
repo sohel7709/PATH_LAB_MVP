@@ -44,8 +44,8 @@ function runCommand(command, description) {
 function checkMongoDB() {
   console.log(`\n${colors.bright}${colors.blue}=== Checking MongoDB Connection ===${colors.reset}\n`);
   try {
-    // Simple check to see if we can connect to MongoDB
-    require('mongoose').connect(process.env.MONGODB_URI, { 
+    const mongoose = require('mongoose');
+    mongoose.connect(process.env.MONGODB_URI, { 
       serverSelectionTimeoutMS: 5000 
     }).then(() => {
       console.log(`${colors.green}✓ MongoDB is running and accessible${colors.reset}\n`);
@@ -86,7 +86,6 @@ function checkEnvironmentVariables() {
     process.exit(1);
   }
   
-  // Check JWT_SECRET specifically to ensure it's not the default
   if (process.env.JWT_SECRET === 'your-super-secret-jwt-key-2024') {
     console.error(`${colors.red}✗ JWT_SECRET is set to the default value. This is insecure.${colors.reset}\n`);
     console.log(`${colors.yellow}Please update JWT_SECRET in your .env file with a strong random string.${colors.reset}\n`);
@@ -115,13 +114,9 @@ async function deploy() {
   if (!runCommand('node createsuperadmin.js', 'Creating superadmin user and sample lab')) {
     process.exit(1);
   }
-  
-  // Create default test templates
-  // if (!runCommand('node createDefaultTestTemplates.js', 'Creating default test templates')) {
 
-    process.exit(1);
-  }
-  
+  // Create default test templates
+
   console.log(`\n${colors.bright}${colors.green}========================================${colors.reset}`);
   console.log(`${colors.bright}${colors.green}  DEPLOYMENT COMPLETED SUCCESSFULLY!  ${colors.reset}`);
   console.log(`${colors.bright}${colors.green}========================================${colors.reset}\n`);
