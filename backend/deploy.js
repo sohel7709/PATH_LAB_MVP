@@ -116,10 +116,7 @@ async function deploy() {
   }
 
   // Create default test templates
-  if (!runCommand('node createDefaultTestTemplates.js', 'Creating default test templates')) {
-    process.exit(1);
-  }
-  
+
   console.log(`\n${colors.bright}${colors.green}========================================${colors.reset}`);
   console.log(`${colors.bright}${colors.green}  DEPLOYMENT COMPLETED SUCCESSFULLY!  ${colors.reset}`);
   console.log(`${colors.bright}${colors.green}========================================${colors.reset}\n`);
