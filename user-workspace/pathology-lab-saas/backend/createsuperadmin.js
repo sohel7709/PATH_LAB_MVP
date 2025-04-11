@@ -1,15 +1,16 @@
 const mongoose = require('mongoose');
 const User = require('./src/models/User');
 const Lab = require('./src/models/Lab');
+require('dotenv').config();
 
-const MONGODB_URI = 'mongodb://localhost:27017/pathology-lab-saas';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/pathology-lab-saas';
 
 mongoose.connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(async () => {
     const sampleUser = {
       name: 'Sample Super Admin',
       email: 'superadmin_new@example.com',
-      password: 'SamplePassword123',
+      password: 'SuperAdmin@2025!',
       role: 'super-admin',
       lab: null // No lab ID required for super-admin
     };
@@ -17,7 +18,7 @@ mongoose.connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true 
     const adminUser = {
       name: 'Sample Admin',
       email: 'admin_new@example.com',
-      password: 'Admin@123',
+      password: 'Admin@2025!',
       role: 'admin',
       lab: null // Assign a lab ID if needed
     };
@@ -25,7 +26,7 @@ mongoose.connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true 
     const technicianUser = {
       name: 'Sample Technician',
       email: 'technician_new@example.com',
-      password: 'Tech@123',
+      password: 'Technician@2025!',
       role: 'technician',
       lab: null // Assign a lab ID if needed
     };

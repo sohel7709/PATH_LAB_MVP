@@ -16,12 +16,29 @@ const exportRoutes = require('./routes/exportRoutes');
 const userManagementRoutes = require('./routes/userManagementRoutes');
 const testTemplateRoutes = require('./routes/testTemplateRoutes');
 const labReportSettingsRoutes = require('./routes/labReportSettingsRoutes');
+const doctorRoutes = require('./routes/doctorRoutes');
 
 const app = express();
 
 // Middleware
-app.use(cors());
-app.use(morgan('dev'));
+// Configure CORS for production
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://yourdomain.com', 'https://www.yourdomain.com'] // Update with your actual domain
+    : '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  maxAge: 86400 // 24 hours
+};
+app.use(cors(corsOptions));
+
+// Use morgan in development mode only
+if (process.env.NODE_ENV !== 'production') {
+  app.use(morgan('dev'));
+} else {
+  app.use(morgan('combined'));
+}
 app.use(express.json({ limit: '50mb' })); // Increased limit for base64 images
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
@@ -38,15 +55,45 @@ app.use(require('helmet')({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "blob:"] // Allow data URLs for images
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      connectSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "blob:"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      fontSrc: ["'self'", "data:"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"]
     }
-  }
+  },
+  xssFilter: true,
+  noSniff: true,
+  referrerPolicy: { policy: 'same-origin' }
 }));
+
+// Prevent XSS attacks
 app.use(require('xss-clean')());
+
+// Prevent parameter pollution
+app.use(require('hpp')());
+
+// Rate limiting
 app.use(require('express-rate-limit')({
   windowMs: 10 * 60 * 1000, // 10 minutes
-  max: 1000 // limit each IP to 1000 requests per windowMs
+  max: 500, // limit each IP to 500 requests per windowMs
+  message: {
+    success: false,
+    message: 'Too many requests from this IP, please try again after 10 minutes'
+  }
 }));
+
+// Add security headers
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  next();
+});
 
 // Mount routes
 app.use('/api/auth', authRoutes);
@@ -59,6 +106,7 @@ app.use('/api/patients', patientRoutes);
 app.use('/api/export', exportRoutes);
 app.use('/api', testTemplateRoutes);
 app.use('/api', labReportSettingsRoutes);
+app.use('/api/doctors', doctorRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
