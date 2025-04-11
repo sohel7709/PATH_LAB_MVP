@@ -11,6 +11,9 @@ Backend API for Pathology Lab SaaS Application.
    npm install
    ```
 
+## Deployment
+The backend is deployed at: [https://path-lab-mvp.onrender.com](https://path-lab-mvp.onrender.com)
+
 ## Usage
 - To start the application, run:
   ```bash
