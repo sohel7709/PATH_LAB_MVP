@@ -117,7 +117,8 @@ async function deploy() {
   }
   
   // Create default test templates
-  if (!runCommand('node createDefaultTestTemplates.js', 'Creating default test templates')) {
+  // if (!runCommand('node createDefaultTestTemplates.js', 'Creating default test templates')) {
+
     process.exit(1);
   }
   
