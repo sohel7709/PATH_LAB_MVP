@@ -60,7 +60,7 @@ const LabListDebug = () => {
       
       <div>
         <h2 className="text-lg font-medium mb-2">Network Request</h2>
-        <p>Endpoint: <code>http://localhost:5001/api/lab-management</code></p>
+        <p>Endpoint: <code>https://path-lab-mvp.onrender.com/api/lab-management</code></p>
 
         <p>Method: GET</p>
         <p>Headers: Authorization: Bearer [token]</p>

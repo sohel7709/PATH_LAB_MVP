@@ -56,7 +56,7 @@ const ResetPasswordPage = () => {
     setIsLoading(true);
     
     try {
-      const response = await fetch(`http://localhost:5001/api/auth/reset-password/${token}`, {
+      const response = await fetch(`https://path-lab-mvp.onrender.com/api/auth/reset-password/${token}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
