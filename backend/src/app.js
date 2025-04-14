@@ -22,9 +22,9 @@ const app = express();
 // Middleware
 // Configure CORS for production
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://yourdomain.com', 'https://www.yourdomain.com'] // Update with your actual domain
-    : '*',
+  origin: process.env.NODE_ENV === 'production'
+    ? ['https://path-lab-mvp-frontend.onrender.com']
+    : 'https://path-lab-mvp-frontend.onrender.com',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
