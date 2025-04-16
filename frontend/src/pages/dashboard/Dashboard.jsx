@@ -36,6 +36,12 @@ export default function Dashboard() {
     completionRate: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [animateElements, setAnimateElements] = useState(false);
+
+  useEffect(() => {
+    // Trigger animations after component mounts
+    setAnimateElements(true);
+  }, []);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -96,70 +102,89 @@ export default function Dashboard() {
   }
 
   return (
-    <div>
-      {/* Welcome Message */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-lg shadow-lg p-8 text-white mb-8">
-        <h1 className="text-3xl font-bold">Welcome, {user?.name || 'User'}!</h1>
-        <p className="mt-2 text-lg opacity-90">Role: {user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'User'}</p>
-      </div>
-      
-      {/* Lab Name */}
-      <div className="mt-6 mb-6 text-center">
-        <h2 className="text-2xl font-bold text-gray-800">{user?.lab?.name || 'yash'}</h2>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => (
-          <div
-            key={stat.name}
-            className="relative overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:px-6 sm:py-6"
-          >
-            <dt>
-              <div className="absolute rounded-md bg-primary-500 p-3">
-                <stat.icon className="h-6 w-6 text-white" aria-hidden="true" />
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-7xl mx-auto space-y-6">
+        {/* Welcome Message */}
+        <div className="bg-white rounded-2xl shadow-xl border border-blue-100 overflow-hidden transition-all duration-500 transform hover:shadow-2xl hover:-translate-y-1">
+          <div className="px-8 py-6 bg-gradient-to-r from-blue-700 to-blue-500">
+            <div className="flex justify-between items-center">
+              <div className={`transition-all duration-500 ${animateElements ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`}>
+                <h1 className="text-3xl font-extrabold text-white">Dashboard</h1>
+                <p className="text-base text-blue-100 mt-1">
+                  Welcome, {user?.name || 'User'}! | Role: {user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'User'}
+                </p>
               </div>
-              <p className="ml-16 truncate text-sm font-medium text-gray-500">
-                {stat.name}
-              </p>
-            </dt>
-            <dd className="ml-16 flex items-baseline">
-              <p className="text-2xl font-semibold text-gray-900">
-                {isLoading ? (
-                  <div className="h-8 w-16 bg-gray-200 animate-pulse rounded"></div>
-                ) : (
-                  getStatValue(stat.name)
-                )}
-              </p>
-            </dd>
+            </div>
           </div>
-        ))}
-      </div>
-
-      {/* Recent Reports */}
-      <div className="mt-8">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-medium text-gray-900">Recent Reports</h2>
-          <Link
-            to="/reports"
-            className="text-sm font-medium text-primary-600 hover:text-primary-500"
-          >
-            View all reports
-          </Link>
+          
+          {/* Lab Name */}
+          {user?.lab?.name && (
+            <div className="py-4 text-center bg-blue-50 border-b border-blue-100">
+              <h2 className="text-xl font-bold text-blue-800">{user?.lab?.name || 'PathLab'}</h2>
+            </div>
+          )}
         </div>
-        <div className="overflow-hidden bg-white shadow sm:rounded-md">
-          <ul role="list" className="divide-y divide-gray-200">
-            {recentReports.map((report) => (
-              <li key={report.id}>
-                <Link
-                  to={`/reports/${report.id}/print`}
-                  className="block hover:bg-gray-50"
-                >
-                  <div className="px-4 py-4 sm:px-6">
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {stats.map((stat, index) => (
+            <div
+              key={stat.name}
+              className={`overflow-hidden rounded-lg bg-white shadow-xl border border-blue-100 hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-1 ${animateElements ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+              style={{ transitionDelay: `${index * 150}ms` }}
+            >
+              <div className="p-5 border-b-4 border-blue-500">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0 bg-blue-100 p-3 rounded-full">
+                    <stat.icon className="h-6 w-6 text-blue-600" aria-hidden="true" />
+                  </div>
+                  <div className="ml-5 w-0 flex-1">
+                    <dl>
+                      <dt className="truncate text-sm font-medium text-gray-500">
+                        {stat.name}
+                      </dt>
+                      <dd>
+                        <div className="text-2xl font-bold text-gray-900">
+                          {isLoading ? (
+                            <div className="h-8 w-16 bg-gray-200 animate-pulse rounded"></div>
+                          ) : (
+                            getStatValue(stat.name)
+                          )}
+                        </div>
+                      </dd>
+                    </dl>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Recent Reports */}
+        <div className={`bg-white rounded-2xl shadow-xl border border-blue-100 overflow-hidden transition-all duration-500 transform hover:shadow-2xl delay-300 ${animateElements ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+          <div className="px-6 py-5 border-b border-blue-100 bg-blue-50">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-blue-800">Recent Reports</h3>
+              <Link
+                to="/reports"
+                className="text-sm font-medium text-blue-600 hover:text-blue-800 bg-white px-3 py-1 rounded-lg shadow-sm border border-blue-200 transition-colors"
+              >
+                View all
+              </Link>
+            </div>
+          </div>
+          <div className="px-6 py-5">
+            <ul className="divide-y divide-blue-100">
+              {recentReports.map((report) => (
+                <li key={report.id} className="py-4 hover:bg-blue-50 rounded-md transition-all duration-300 transform hover:scale-[1.01]">
+                  <Link
+                    to={`/reports/${report.id}/print`}
+                    className="block"
+                  >
                     <div className="flex items-center justify-between">
                       <div className="truncate">
                         <div className="flex text-sm">
-                          <p className="font-medium text-primary-600 truncate">
+                          <p className="font-medium text-blue-600 truncate">
                             {report.patientName}
                           </p>
                           <p className="ml-1 flex-shrink-0 font-normal text-gray-500">
@@ -169,7 +194,7 @@ export default function Dashboard() {
                       </div>
                       <div className="ml-2 flex flex-shrink-0">
                         <span
-                          className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${
+                          className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
                             report.status === "completed"
                               ? "bg-green-100 text-green-800"
                               : "bg-yellow-100 text-yellow-800"
@@ -190,11 +215,24 @@ export default function Dashboard() {
                         </p>
                       </div>
                     </div>
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
+                  </Link>
+                </li>
+              ))}
+              {recentReports.length === 0 && (
+                <li className="py-4 text-center text-gray-500">
+                  No recent reports found
+                </li>
+              )}
+            </ul>
+            <div className="mt-6">
+              <Link
+                to="/reports"
+                className="flex w-full items-center justify-center rounded-lg border border-blue-300 bg-white px-4 py-2 text-sm font-medium text-blue-700 shadow-sm hover:bg-blue-50 transition-all duration-300 transform hover:scale-[1.02]"
+              >
+                View all reports
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
     </div>

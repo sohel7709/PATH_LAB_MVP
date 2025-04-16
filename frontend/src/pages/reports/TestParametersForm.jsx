@@ -321,206 +321,208 @@ export default function TestParametersForm({
   return (
     <>
       {/* Test Template Selection */}
-      <div className="bg-white shadow sm:rounded-lg">
-        <div className="px-4 py-5 sm:p-6">
-          <h3 className="text-lg font-medium leading-6 text-gray-900">Test Template</h3>
-          <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-            <div className="sm:col-span-6">
-              <label htmlFor="templateSelect" className="form-label">
-                Select Test Template
-              </label>
-              <div className="mt-1">
-                <select
-                  id="templateSelect"
-                  name="templateSelect"
-                  className="block w-full rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
-                  onChange={handleTemplateSelect}
-                  value={selectedTemplate}
-                >
-                  <option value="">Select a template</option>
-                  <option value="custom">Custom Test</option>
-                  {availableTemplates.map(template => (
-                    <option key={template._id} value={template._id}>
-                      {template.name} - {template.category}
-                    </option>
-                  ))}
-                </select>
-              </div>
+      <section className="mb-8">
+        <h2 className="text-xl font-semibold text-blue-700 mb-4 border-b border-blue-100 pb-2">
+          Test Template
+        </h2>
+        <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+          <div className="sm:col-span-6">
+            <label htmlFor="templateSelect" className="block text-sm font-medium text-gray-700 mb-1">
+              Select Test Template
+            </label>
+            <div className="mt-1">
+              <select
+                id="templateSelect"
+                name="templateSelect"
+                className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+                onChange={handleTemplateSelect}
+                value={selectedTemplate}
+              >
+                <option value="">Select a template</option>
+                <option value="custom">Custom Test</option>
+                {availableTemplates.map(template => (
+                  <option key={template._id} value={template._id}>
+                    {template.name} - {template.category}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Test Information */}
-      <div className="bg-white shadow sm:rounded-lg">
-        <div className="px-4 py-5 sm:p-6">
-          <h3 className="text-lg font-medium leading-6 text-gray-900">Test Information</h3>
-          <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-            <div className="sm:col-span-3">
-              <label htmlFor="testName" className="form-label">
-                Test Name
-              </label>
-              <div className="mt-1">
-                <input
-                  type="text"
-                  name="testName"
-                  id="testName"
-                  required
-                  value={formData.testName}
-                  onChange={handleChange}
-                  className="block w-full rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
-                />
-              </div>
+      <section className="mb-8">
+        <h2 className="text-xl font-semibold text-blue-700 mb-4 border-b border-blue-100 pb-2">
+          Test Information
+        </h2>
+        <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+          <div className="sm:col-span-3">
+            <label htmlFor="testName" className="block text-sm font-medium text-gray-700 mb-1">
+              Test Name
+            </label>
+            <div className="mt-1">
+              <input
+                type="text"
+                name="testName"
+                id="testName"
+                required
+                value={formData.testName}
+                onChange={handleChange}
+                className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+              />
             </div>
+          </div>
 
-            <div className="sm:col-span-3">
-              <label htmlFor="category" className="form-label">
-                Category
-              </label>
-              <div className="mt-1">
-                <select
-                  id="category"
-                  name="category"
-                  required
-                  value={formData.category}
-                  onChange={handleChange}
-                  className="block w-full rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
-                >
-                  <option value="">Select category</option>
-                  {Object.entries(TEST_CATEGORIES).map(([key, value]) => (
-                    <option key={key} value={value}>
-                      {key.charAt(0) + key.slice(1).toLowerCase().replace('_', ' ')}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          <div className="sm:col-span-3">
+            <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
+              Category
+            </label>
+            <div className="mt-1">
+              <select
+                id="category"
+                name="category"
+                required
+                value={formData.category}
+                onChange={handleChange}
+                className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+              >
+                <option value="">Select category</option>
+                {Object.entries(TEST_CATEGORIES).map(([key, value]) => (
+                  <option key={key} value={value}>
+                    {key.charAt(0) + key.slice(1).toLowerCase().replace('_', ' ')}
+                  </option>
+                ))}
+              </select>
             </div>
+          </div>
 
-            <div className="sm:col-span-3">
-              <label htmlFor="sampleType" className="form-label">
-                Sample Type
-              </label>
-              <div className="mt-1">
-                <input
-                  type="text"
-                  name="sampleType"
-                  id="sampleType"
-                  required
-                  value={formData.sampleType}
-                  onChange={handleChange}
-                  className="block w-full rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
-                />
-              </div>
+          <div className="sm:col-span-3">
+            <label htmlFor="sampleType" className="block text-sm font-medium text-gray-700 mb-1">
+              Sample Type
+            </label>
+            <div className="mt-1">
+              <input
+                type="text"
+                name="sampleType"
+                id="sampleType"
+                required
+                value={formData.sampleType}
+                onChange={handleChange}
+                className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+              />
             </div>
+          </div>
 
-            <div className="sm:col-span-3">
-              <label htmlFor="collectionDate" className="form-label">
-                Collection Date
-              </label>
-              <div className="mt-1">
-                <input
-                  type="date"
-                  name="collectionDate"
-                  id="collectionDate"
-                  required
-                  value={formData.collectionDate}
-                  onChange={handleChange}
-                  className="block w-full rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
-                />
-              </div>
+          <div className="sm:col-span-3">
+            <label htmlFor="collectionDate" className="block text-sm font-medium text-gray-700 mb-1">
+              Collection Date
+            </label>
+            <div className="mt-1">
+              <input
+                type="date"
+                name="collectionDate"
+                id="collectionDate"
+                required
+                value={formData.collectionDate}
+                onChange={handleChange}
+                className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+              />
             </div>
+          </div>
 
-            <div className="sm:col-span-3">
-              <label htmlFor="reportDate" className="form-label">
-                Report Date
-              </label>
-              <div className="mt-1">
-                <input
-                  type="date"
-                  name="reportDate"
-                  id="reportDate"
-                  required
-                  value={formData.reportDate}
-                  onChange={handleChange}
-                  className="block w-full rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
-                />
-              </div>
+          <div className="sm:col-span-3">
+            <label htmlFor="reportDate" className="block text-sm font-medium text-gray-700 mb-1">
+              Report Date
+            </label>
+            <div className="mt-1">
+              <input
+                type="date"
+                name="reportDate"
+                id="reportDate"
+                required
+                value={formData.reportDate}
+                onChange={handleChange}
+                className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+              />
             </div>
+          </div>
 
-            <div className="sm:col-span-3">
-              <label htmlFor="status" className="form-label">
-                Status
-              </label>
-              <div className="mt-1">
-                <select
-                  id="status"
-                  name="status"
-                  required
-                  value={formData.status}
-                  onChange={handleChange}
-                  className="block w-full rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
-                >
-                  {Object.entries(REPORT_STATUS).map(([key, value]) => (
-                    <option key={key} value={value}>
-                      {value}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          <div className="sm:col-span-3">
+            <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
+              Status
+            </label>
+            <div className="mt-1">
+              <select
+                id="status"
+                name="status"
+                required
+                value={formData.status}
+                onChange={handleChange}
+                className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+              >
+                {Object.entries(REPORT_STATUS).map(([key, value]) => (
+                  <option key={key} value={value}>
+                    {value}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Test Parameters */}
-      <div className="bg-white shadow sm:rounded-lg">
-        <div className="px-4 py-5 sm:p-6">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-medium leading-6 text-gray-900">Test Parameters</h3>
-            {selectedTemplate === 'custom' && (
-              <button
-                type="button"
-                onClick={addParameter}
-                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                Add Parameter
-              </button>
-            )}
-          </div>
+      <section className="mb-8">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold text-blue-700 border-b border-blue-100 pb-2 flex-grow">
+            Test Parameters
+          </h2>
+          {selectedTemplate === 'custom' && (
+            <button
+              type="button"
+              onClick={addParameter}
+              className="ml-4 px-4 py-2 rounded-lg border border-transparent bg-gradient-to-r from-blue-600 to-blue-500 text-white font-medium shadow hover:from-blue-700 hover:to-blue-600 transition focus:outline-none focus:ring-2 focus:ring-blue-400"
+            >
+              Add Parameter
+            </button>
+          )}
+        </div>
           
-          {formData.testParameters.length === 0 ? (
-            <div className="mt-4 text-sm text-gray-500">
-              {selectedTemplate ? 'No parameters defined for this template.' : 'Please select a test template to see parameters.'}
-            </div>
-          ) : (
-            <div className="mt-6">
-              {hasSections ? (
-                // Group parameters by section
-                Object.entries(
-                  formData.testParameters.reduce((acc, param) => {
-                    const section = param.section || 'Default';
-                    if (!acc[section]) acc[section] = [];
-                    acc[section].push(param);
-                    return acc;
-                  }, {})
-                ).map(([section, parameters], sectionIndex) => (
-                  <div key={sectionIndex} className="mb-8">
-                    <h4 className="text-md font-medium text-gray-800 mb-4">{section}</h4>
-                    <table className="min-w-full divide-y divide-gray-300">
-                      <thead>
+        {formData.testParameters.length === 0 ? (
+          <div className="mt-4 text-sm text-gray-500 bg-blue-50 p-4 rounded-lg border border-blue-100">
+            {selectedTemplate ? 'No parameters defined for this template.' : 'Please select a test template to see parameters.'}
+          </div>
+        ) : (
+          <div className="mt-4 bg-white rounded-lg border border-blue-100 overflow-hidden shadow-sm">
+            {hasSections ? (
+              // Group parameters by section
+              Object.entries(
+                formData.testParameters.reduce((acc, param) => {
+                  const section = param.section || 'Default';
+                  if (!acc[section]) acc[section] = [];
+                  acc[section].push(param);
+                  return acc;
+                }, {})
+              ).map(([section, parameters], sectionIndex) => (
+                <div key={sectionIndex} className="mb-6">
+                  <h4 className="text-md font-medium text-blue-600 bg-blue-50 px-4 py-2 border-b border-blue-100">{section}</h4>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-blue-100">
+                      <thead className="bg-blue-50">
                         <tr>
-                          <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">Parameter</th>
-                          <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Value</th>
-                          <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Unit</th>
-                          <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Reference Range</th>
+                          <th scope="col" className="py-3 pl-4 pr-3 text-left text-sm font-semibold text-gray-700 sm:pl-6">Parameter</th>
+                          <th scope="col" className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Value</th>
+                          <th scope="col" className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Unit</th>
+                          <th scope="col" className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Reference Range</th>
                           {selectedTemplate === 'custom' && (
-                            <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                            <th scope="col" className="relative py-3 pl-3 pr-4 sm:pr-6">
                               <span className="sr-only">Actions</span>
                             </th>
                           )}
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-200">
+                      <tbody className="divide-y divide-blue-50">
                         {parameters.map((param, paramIndex) => {
                           const globalIndex = formData.testParameters.findIndex(p => 
                             p.name === param.name && p.section === param.section
@@ -530,25 +532,25 @@ export default function TestParametersForm({
                               key={paramIndex} 
                               className={getRowBackgroundColor(param.value, param.referenceRange)}
                             >
-                              <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
+                              <td className="py-3 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
                                 {param.name}
                               </td>
-                              <td className="whitespace-nowrap px-3 py-4 text-sm">
+                              <td className="px-3 py-3 text-sm">
                                 <input
                                   type="text"
                                   value={param.value}
                                   onChange={(e) => handleParameterChange(globalIndex, 'value', e.target.value)}
-                                  className="block w-full rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                                  className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
                                 />
                               </td>
-                              <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                              <td className="px-3 py-3 text-sm text-gray-500">
                                 {param.unit}
                               </td>
-                              <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                              <td className="px-3 py-3 text-sm text-gray-500">
                                 {param.referenceRange}
                               </td>
                               {selectedTemplate === 'custom' && (
-                                <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                                <td className="relative py-3 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
                                   <button
                                     type="button"
                                     onClick={() => removeParameter(globalIndex)}
@@ -564,78 +566,80 @@ export default function TestParametersForm({
                       </tbody>
                     </table>
                   </div>
-                ))
-              ) : (
-                // Flat list of parameters
-                <table className="min-w-full divide-y divide-gray-300">
-                  <thead>
+                </div>
+              ))
+            ) : (
+              // Flat list of parameters
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-blue-100">
+                  <thead className="bg-blue-50">
                     <tr>
-                      <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">Parameter</th>
-                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Value</th>
-                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Unit</th>
-                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Reference Range</th>
+                      <th scope="col" className="py-3 pl-4 pr-3 text-left text-sm font-semibold text-gray-700 sm:pl-6">Parameter</th>
+                      <th scope="col" className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Value</th>
+                      <th scope="col" className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Unit</th>
+                      <th scope="col" className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Reference Range</th>
                       {selectedTemplate === 'custom' && (
-                        <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                        <th scope="col" className="relative py-3 pl-3 pr-4 sm:pr-6">
                           <span className="sr-only">Actions</span>
                         </th>
                       )}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody className="divide-y divide-blue-50">
                     {formData.testParameters.map((param, index) => (
                       <tr 
                         key={index}
                         className={getRowBackgroundColor(param.value, param.referenceRange)}
                       >
-                        <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
+                        <td className="py-3 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
                           {selectedTemplate === 'custom' ? (
                             <input
                               type="text"
                               value={param.name}
                               onChange={(e) => handleParameterChange(index, 'name', e.target.value)}
                               placeholder="Parameter name"
-                              className="block w-full rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                              className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
                             />
                           ) : (
                             param.name
                           )}
                         </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm">
+                        <td className="px-3 py-3 text-sm">
                           <input
                             type="text"
                             value={param.value}
                             onChange={(e) => handleParameterChange(index, 'value', e.target.value)}
-                            className="block w-full rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                            className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
                           />
                         </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                        <td className="px-3 py-3 text-sm text-gray-500">
                           {selectedTemplate === 'custom' ? (
                             <input
                               type="text"
                               value={param.unit}
                               onChange={(e) => handleParameterChange(index, 'unit', e.target.value)}
                               placeholder="Unit"
-                              className="block w-full rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                              className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
                             />
                           ) : (
                             param.unit
                           )}
                         </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                        <td className="px-3 py-3 text-sm text-gray-500">
                           {selectedTemplate === 'custom' ? (
                             <input
                               type="text"
                               value={param.referenceRange}
                               onChange={(e) => handleParameterChange(index, 'referenceRange', e.target.value)}
                               placeholder="e.g. 10-20"
-                              className="block w-full rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                              className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
                             />
                           ) : (
                             param.referenceRange
                           )}
                         </td>
                         {selectedTemplate === 'custom' && (
-                          <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                          <td className="relative py-3 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
                             <button
                               type="button"
                               onClick={() => removeParameter(index)}
@@ -649,29 +653,29 @@ export default function TestParametersForm({
                     ))}
                   </tbody>
                 </table>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
+              </div>
+            )}
+          </div>
+        )}
+      </section>
 
       {/* Notes */}
-      <div className="bg-white shadow sm:rounded-lg">
-        <div className="px-4 py-5 sm:p-6">
-          <h3 className="text-lg font-medium leading-6 text-gray-900">Additional Notes</h3>
-          <div className="mt-6">
-            <textarea
-              id="notes"
-              name="notes"
-              rows={3}
-              value={formData.notes}
-              onChange={handleChange}
-              className="block w-full rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
-              placeholder="Add any additional notes or observations here..."
-            />
-          </div>
+      <section className="mb-8">
+        <h2 className="text-xl font-semibold text-blue-700 mb-4 border-b border-blue-100 pb-2">
+          Additional Notes
+        </h2>
+        <div className="mt-4">
+          <textarea
+            id="notes"
+            name="notes"
+            rows={3}
+            value={formData.notes}
+            onChange={handleChange}
+            className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+            placeholder="Add any additional notes or observations here..."
+          />
         </div>
-      </div>
+      </section>
     </>
   );
 }

@@ -3,6 +3,7 @@ const Lab = require('../models/Lab');
 const asyncHandler = require('express-async-handler');
 const fs = require('fs');
 const path = require('path');
+const sharp = require('sharp');
 
 // Create uploads directory if it doesn't exist
 const uploadsDir = path.join(__dirname, '../../uploads');
@@ -147,9 +148,39 @@ exports.updateLabReportSettings = asyncHandler(async (req, res) => {
   }
 });
 
+// Helper function to validate image dimensions
+const validateImageDimensions = async (buffer, type) => {
+  try {
+    const metadata = await sharp(buffer).metadata();
+    
+    if (type === 'header') {
+      // Header should be 2480x480 pixels @ 300 DPI
+      if (metadata.width !== 2480 || metadata.height !== 480) {
+        return {
+          valid: false,
+          message: `Header image must be exactly 2480x480 pixels. Uploaded image is ${metadata.width}x${metadata.height} pixels.`
+        };
+      }
+    } else if (type === 'footer') {
+      // Footer should be 2480x200 pixels @ 300 DPI
+      if (metadata.width !== 2480 || metadata.height !== 200) {
+        return {
+          valid: false,
+          message: `Footer image must be exactly 2480x200 pixels. Uploaded image is ${metadata.width}x${metadata.height} pixels.`
+        };
+      }
+    }
+    
+    return { valid: true };
+  } catch (error) {
+    console.error('Error validating image dimensions:', error);
+    return { valid: false, message: 'Error validating image dimensions' };
+  }
+};
+
 // Helper function to save base64 image to file
 const saveBase64Image = (base64Data, mimeType, labId, type) => {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     try {
       // Create directory for this lab if it doesn't exist
       const labDir = path.join(reportImagesDir, labId.toString());
@@ -163,8 +194,19 @@ const saveBase64Image = (base64Data, mimeType, labId, type) => {
       const filename = `${type}_${timestamp}.${extension}`;
       const filePath = path.join(labDir, filename);
 
-      // Convert base64 to buffer and save to file
+      // Convert base64 to buffer
       const buffer = Buffer.from(base64Data, 'base64');
+      
+      // Validate image dimensions for header and footer
+      if (type === 'header' || type === 'footer') {
+        const validation = await validateImageDimensions(buffer, type);
+        if (!validation.valid) {
+          reject(new Error(validation.message));
+          return;
+        }
+      }
+
+      // Save to file
       fs.writeFileSync(filePath, buffer);
 
       // Return the relative URL path

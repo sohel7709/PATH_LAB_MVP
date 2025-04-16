@@ -86,96 +86,101 @@ const LabList = () => {
   };
 
   return (
-    <div className="bg-white shadow-md rounded-lg overflow-hidden">
-      <div className="px-6 py-4 bg-blue-600 text-white flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold">Lab Management</h1>
-          <p className="text-sm opacity-80">Manage all labs in the system</p>
-        </div>
-        <div className="flex space-x-2">
-          <Link
-            to="/labs/create"
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-700 hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            <PlusCircleIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-            Add New Lab
-          </Link>
-          <button
-            onClick={fetchLabs}
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-700 hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            <ArrowPathIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-            Refresh
-          </button>
-        </div>
-      </div>
-
-      {error && (
-        <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-7xl mx-auto bg-white rounded-2xl shadow-xl border border-blue-100 overflow-hidden">
+        <div className="px-8 py-6 bg-gradient-to-r from-blue-700 to-blue-500">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-extrabold text-white">Lab Management</h1>
+              <p className="text-base text-blue-100 mt-1">
+                Manage all labs in the system
+              </p>
             </div>
-            <div className="ml-3">
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="overflow-x-auto">
-        {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-          </div>
-        ) : labs.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64">
-            <BuildingOfficeIcon className="h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No labs found</h3>
-            <p className="mt-1 text-sm text-gray-500">Get started by creating a new lab.</p>
-            <div className="mt-6">
+            <div className="flex space-x-3">
               <Link
                 to="/labs/create"
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                className="inline-flex items-center justify-center rounded-lg border border-transparent bg-white/20 backdrop-blur-sm px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-blue-600"
               >
                 <PlusCircleIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
                 Add New Lab
               </Link>
+              <button
+                onClick={fetchLabs}
+                className="inline-flex items-center justify-center rounded-lg border border-transparent bg-white/20 backdrop-blur-sm px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-blue-600"
+              >
+                <ArrowPathIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+                Refresh
+              </button>
             </div>
           </div>
+        </div>
+        
+        <div className="p-6">
+
+          {error && (
+            <div className="mb-6 rounded-lg bg-red-100 border-l-4 border-red-500 text-red-700 p-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-red-700">{error}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="overflow-x-auto">
+            {loading ? (
+              <div className="flex justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              </div>
+            ) : labs.length === 0 ? (
+              <div className="p-12 text-center">
+                <BuildingOfficeIcon className="mx-auto h-16 w-16 text-blue-200 mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-1">No labs found</h3>
+                <p className="text-gray-500 mb-6">Get started by creating a new lab</p>
+                <Link
+                  to="/labs/create"
+                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
+                >
+                  <PlusCircleIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+                  Add New Lab
+                </Link>
+              </div>
         ) : (
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Lab Name
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Subscription
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Created
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Users
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+              <table className="min-w-full divide-y divide-blue-200">
+                <thead className="bg-blue-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                      Lab Name
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                      Subscription
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                      Created
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                      Users
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-blue-100">
               {labs.map((lab) => (
-                <tr key={lab._id} className="hover:bg-gray-50">
+                <tr key={lab._id} className="hover:bg-blue-50 transition-colors duration-150">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10 bg-primary-100 rounded-full flex items-center justify-center">
-                        <BuildingOfficeIcon className="h-6 w-6 text-primary-600" />
+                      <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <BuildingOfficeIcon className="h-6 w-6 text-blue-600" />
                       </div>
                       <div className="ml-4">
                         <div className="text-sm font-medium text-gray-900">{lab.name}</div>
@@ -210,35 +215,42 @@ const LabList = () => {
                     {lab.users ? lab.users.length : 0}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex space-x-2">
-                        <Link
-                          to={`/labs/${lab._id}`}
-                          className="text-primary-600 hover:text-primary-900"
-                          title="View Lab Details"
-                        >
-                          <EyeIcon className="h-5 w-5" />
-                        </Link>
+                    <div className="flex space-x-3 justify-end">
+                      <Link
+                        to={`/labs/${lab._id}`}
+                        className="text-blue-600 hover:text-blue-900 p-1 rounded-full hover:bg-blue-50 transition-colors"
+                        title="View Lab Details"
+                      >
+                        <EyeIcon className="h-5 w-5" />
+                      </Link>
                       <Link
                         to={`/labs/${lab._id}/edit`}
-                        className="text-indigo-600 hover:text-indigo-900"
+                        className="text-green-600 hover:text-green-900 p-1 rounded-full hover:bg-green-50 transition-colors"
                         title="Edit Lab"
                       >
                         <PencilSquareIcon className="h-5 w-5" />
                       </Link>
                       <button
                         onClick={() => handleDeleteLab(lab._id)}
-                        className="text-red-600 hover:text-red-900"
+                        className="text-red-600 hover:text-red-900 p-1 rounded-full hover:bg-red-50 transition-colors"
                         title="Delete Lab"
+                        disabled={lab.isDeleting}
                       >
-                        <TrashIcon className="h-5 w-5" />
+                        {lab.isDeleting ? (
+                          <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-red-600"></div>
+                        ) : (
+                          <TrashIcon className="h-5 w-5" />
+                        )}
                       </button>
                     </div>
                   </td>
                 </tr>
               ))}
-            </tbody>
-          </table>
-        )}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

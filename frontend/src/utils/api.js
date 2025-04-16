@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://path-lab-mvp.onrender.com/api';
+const API_BASE_URL = 'http://localhost:5001/api';
 
 // Doctors API calls
 export const doctors = {
@@ -379,23 +379,45 @@ export const superAdmin = {
     const response = await fetch(url, {
       headers: getAuthHeaders(),
     });
-    return handleResponse(response);
+    
+    const result = await handleResponse(response);
+    
+    // Log the response for debugging
+    console.log('User management API response:', result);
+    
+    return result;
   },
 
   createUser: async (userData) => {
+    console.log('Creating user with data in API:', userData);
+    
+    // Ensure labId is properly set for non-super-admin users
+    if (userData.role !== 'super-admin' && !userData.labId) {
+      throw new Error('Lab ID is required for admin and technician roles');
+    }
+    
     const response = await fetch(`${API_BASE_URL}/user-management`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(userData),
     });
-    return handleResponse(response);
+    
+    const result = await handleResponse(response);
+    console.log('User creation API response:', result);
+    return result;
   },
 
   getUser: async (id) => {
     const response = await fetch(`${API_BASE_URL}/user-management/${id}`, {
       headers: getAuthHeaders(),
     });
-    return handleResponse(response);
+    
+    const result = await handleResponse(response);
+    
+    // Log the response for debugging
+    console.log('User details API response:', result);
+    
+    return result;
   },
 
   updateUser: async (id, userData) => {

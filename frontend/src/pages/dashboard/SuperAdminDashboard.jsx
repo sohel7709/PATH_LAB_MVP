@@ -129,33 +129,39 @@ const SuperAdminDashboard = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Welcome Message */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-lg shadow-lg p-6 text-white">
-        <h1 className="text-2xl font-bold">Welcome, {user?.name || 'Super Admin'}!</h1>
-        <p className="mt-2 text-lg opacity-90">Role: {user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Super Admin'}</p>
-        
-        <div className="mt-4 sm:mt-0 flex justify-end">
-          <select
-            id="view-switcher"
-            value={selectedView}
-            onChange={(e) => handleViewChange(e.target.value)}
-            className="block w-full max-w-xs rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900"
-          >
-            <option value="super-admin">Super Admin View</option>
-            <option value="admin">Admin View</option>
-            <option value="technician">Technician View</option>
-          </select>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-7xl mx-auto space-y-6">
+        {/* Welcome Message */}
+        <div className="bg-white rounded-2xl shadow-xl border border-blue-100 overflow-hidden">
+          <div className="px-8 py-6 bg-gradient-to-r from-blue-700 to-blue-500">
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-3xl font-extrabold text-white">Super Admin Dashboard</h1>
+                <p className="text-base text-blue-100 mt-1">
+                  Welcome, {user?.name || 'Super Admin'}! | Role: {user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Super Admin'}
+                </p>
+              </div>
+              <div className="bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2">
+                <label htmlFor="view-switcher" className="text-sm font-medium text-white mr-2">
+                  Switch View:
+                </label>
+                <select
+                  id="view-switcher"
+                  value={selectedView}
+                  onChange={(e) => handleViewChange(e.target.value)}
+                  className="rounded-md border-transparent bg-white/80 py-1 pl-3 pr-10 text-sm font-medium text-blue-800 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                >
+                  <option value="super-admin">Super Admin View</option>
+                  <option value="admin">Admin View</option>
+                  <option value="technician">Technician View</option>
+                </select>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-      
-      {/* Lab Name */}
-      <div className="mt-6 mb-6 text-center">
-        <h2 className="text-2xl font-bold text-gray-800"></h2>
-      </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {/* Total Labs */}
         <div className="overflow-hidden rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow duration-300">
           <div className="p-5 border-b-4 border-blue-500">
@@ -261,12 +267,13 @@ const SuperAdminDashboard = () => {
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="overflow-hidden rounded-lg bg-white shadow-md">
-        <div className="p-6">
-          <h3 className="text-lg font-medium text-gray-900">Quick Actions</h3>
-          
-          <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {/* Quick Actions */}
+        <div className="overflow-hidden rounded-2xl bg-white shadow-xl border border-blue-100">
+          <div className="px-6 py-5 border-b border-blue-100 bg-blue-50">
+            <h3 className="text-lg font-semibold text-blue-800">Quick Actions</h3>
+          </div>
+          <div className="p-6">
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {/* Lab Management */}
             <div className="bg-blue-50 rounded-lg p-4 shadow-sm">
               <h4 className="text-blue-800 font-medium mb-3">Lab Management</h4>
@@ -354,12 +361,14 @@ const SuperAdminDashboard = () => {
         </div>
       </div>
 
-      {/* Recent Labs and Users */}
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-        {/* Recent Labs */}
-        <div className="overflow-hidden rounded-lg bg-white shadow-md">
-          <div className="p-6">
-            <h3 className="text-lg font-medium text-gray-900">Recent Labs</h3>
+        {/* Recent Labs and Users */}
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+          {/* Recent Labs */}
+          <div className="overflow-hidden rounded-2xl bg-white shadow-xl border border-blue-100">
+            <div className="px-6 py-5 border-b border-blue-100 bg-blue-50">
+              <h3 className="text-lg font-semibold text-blue-800">Recent Labs</h3>
+            </div>
+            <div className="p-6">
             {loading ? (
               <div className="mt-4 flex justify-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
@@ -368,7 +377,7 @@ const SuperAdminDashboard = () => {
               <div className="mt-4 text-center text-red-500">{error}</div>
             ) : (
               <div className="mt-4 overflow-hidden">
-                <ul className="divide-y divide-gray-200">
+                <ul className="divide-y divide-blue-100">
                   {recentLabs.length > 0 ? (
                     recentLabs.map((lab) => (
                       <li key={lab._id} className="py-4">
@@ -382,11 +391,11 @@ const SuperAdminDashboard = () => {
                               {lab.subscription.plan.charAt(0).toUpperCase() + lab.subscription.plan.slice(1)} Plan • {lab.subscription.status}
                             </p>
                           </div>
-                          <div className="flex-shrink-0 flex space-x-2">
-                            <Link to={`/labs/${lab._id}`} className="text-blue-600 hover:text-blue-900">
+                          <div className="flex-shrink-0 flex space-x-3">
+                            <Link to={`/labs/${lab._id}`} className="text-blue-600 hover:text-blue-900 p-1 rounded-full hover:bg-blue-50 transition-colors" title="View Lab">
                               <EyeIcon className="h-5 w-5" />
                             </Link>
-                            <Link to={`/labs/${lab._id}/edit`} className="text-gray-600 hover:text-gray-900">
+                            <Link to={`/labs/${lab._id}/edit`} className="text-green-600 hover:text-green-900 p-1 rounded-full hover:bg-green-50 transition-colors" title="Edit Lab">
                               <PencilSquareIcon className="h-5 w-5" />
                             </Link>
                           </div>
@@ -397,8 +406,8 @@ const SuperAdminDashboard = () => {
                     <li className="py-4 text-center text-gray-500">No labs found</li>
                   )}
                 </ul>
-                <div className="mt-4 text-right">
-                  <Link to="/labs" className="text-sm font-medium text-blue-600 hover:text-blue-800">
+                <div className="mt-6 text-center">
+                  <Link to="/labs" className="inline-flex items-center justify-center rounded-lg border border-blue-300 bg-white px-4 py-2 text-sm font-medium text-blue-700 shadow-sm hover:bg-blue-50 transition-all duration-200">
                     View all labs →
                   </Link>
                 </div>
@@ -407,10 +416,12 @@ const SuperAdminDashboard = () => {
           </div>
         </div>
 
-        {/* Recent Users */}
-        <div className="overflow-hidden rounded-lg bg-white shadow-md">
-          <div className="p-6">
-            <h3 className="text-lg font-medium text-gray-900">Recent Users</h3>
+          {/* Recent Users */}
+          <div className="overflow-hidden rounded-2xl bg-white shadow-xl border border-blue-100">
+            <div className="px-6 py-5 border-b border-blue-100 bg-blue-50">
+              <h3 className="text-lg font-semibold text-blue-800">Recent Users</h3>
+            </div>
+            <div className="p-6">
             {loading ? (
               <div className="mt-4 flex justify-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
@@ -419,7 +430,7 @@ const SuperAdminDashboard = () => {
               <div className="mt-4 text-center text-red-500">{error}</div>
             ) : (
               <div className="mt-4 overflow-hidden">
-                <ul className="divide-y divide-gray-200">
+                <ul className="divide-y divide-blue-100">
                   {recentUsers.length > 0 ? (
                     recentUsers.map((user) => (
                       <li key={user._id} className="py-4">
@@ -439,11 +450,11 @@ const SuperAdminDashboard = () => {
                               {user.role.charAt(0).toUpperCase() + user.role.slice(1).replace('-', ' ')} • {user.lab?.name || 'No Lab'}
                             </p>
                           </div>
-                          <div className="flex-shrink-0 flex space-x-2">
-                            <Link to={`/users/${user._id}`} className="text-purple-600 hover:text-purple-900">
+                          <div className="flex-shrink-0 flex space-x-3">
+                            <Link to={`/users/${user._id}`} className="text-blue-600 hover:text-blue-900 p-1 rounded-full hover:bg-blue-50 transition-colors" title="View User">
                               <EyeIcon className="h-5 w-5" />
                             </Link>
-                            <Link to={`/users/${user._id}/edit`} className="text-gray-600 hover:text-gray-900">
+                            <Link to={`/users/${user._id}/edit`} className="text-green-600 hover:text-green-900 p-1 rounded-full hover:bg-green-50 transition-colors" title="Edit User">
                               <PencilSquareIcon className="h-5 w-5" />
                             </Link>
                           </div>
@@ -454,8 +465,8 @@ const SuperAdminDashboard = () => {
                     <li className="py-4 text-center text-gray-500">No users found</li>
                   )}
                 </ul>
-                <div className="mt-4 text-right">
-                  <Link to="/users" className="text-sm font-medium text-purple-600 hover:text-purple-800">
+                <div className="mt-6 text-center">
+                  <Link to="/users" className="inline-flex items-center justify-center rounded-lg border border-blue-300 bg-white px-4 py-2 text-sm font-medium text-blue-700 shadow-sm hover:bg-blue-50 transition-all duration-200">
                     View all users →
                   </Link>
                 </div>
@@ -465,24 +476,24 @@ const SuperAdminDashboard = () => {
         </div>
       </div>
 
-      {/* Analytics Overview */}
-      <div className="overflow-hidden rounded-lg bg-white shadow-md">
-        <div className="p-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium text-gray-900">Analytics Overview</h3>
+        {/* Analytics Overview */}
+        <div className="overflow-hidden rounded-2xl bg-white shadow-xl border border-blue-100">
+          <div className="px-6 py-5 border-b border-blue-100 bg-blue-50">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-blue-800">Analytics Overview</h3>
             <div className="flex space-x-2">
               <button
                 onClick={() => handleExport('analytics', 'csv')}
-                className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                className="inline-flex items-center rounded-lg border border-blue-300 bg-white px-3 py-2 text-sm font-medium text-blue-700 shadow-sm hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 mr-2"
               >
-                <CloudArrowDownIcon className="-ml-1 mr-2 h-5 w-5 text-gray-500" />
+                <CloudArrowDownIcon className="-ml-1 mr-2 h-5 w-5 text-blue-500" />
                 Export CSV
               </button>
               <button
                 onClick={() => handleExport('analytics', 'pdf')}
-                className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                className="inline-flex items-center rounded-lg border border-blue-300 bg-white px-3 py-2 text-sm font-medium text-blue-700 shadow-sm hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               >
-                <DocumentTextIcon className="-ml-1 mr-2 h-5 w-5 text-gray-500" />
+                <DocumentTextIcon className="-ml-1 mr-2 h-5 w-5 text-blue-500" />
                 Export PDF
               </button>
             </div>
@@ -547,7 +558,7 @@ const SuperAdminDashboard = () => {
           <div className="mt-6 text-center">
             <Link
               to="/analytics"
-              className="inline-flex items-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              className="inline-flex items-center rounded-lg border border-transparent bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:from-blue-700 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
             >
               <ChartBarIcon className="-ml-1 mr-2 h-5 w-5" />
               View Detailed Analytics
@@ -556,10 +567,12 @@ const SuperAdminDashboard = () => {
         </div>
       </div>
 
-      {/* System Health */}
-      <div className="overflow-hidden rounded-lg bg-white shadow-md">
-        <div className="p-6">
-          <h3 className="text-lg font-medium text-gray-900">System Health</h3>
+        {/* System Health */}
+        <div className="overflow-hidden rounded-2xl bg-white shadow-xl border border-blue-100">
+          <div className="px-6 py-5 border-b border-blue-100 bg-blue-50">
+            <h3 className="text-lg font-semibold text-blue-800">System Health</h3>
+          </div>
+          <div className="p-6">
           <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-3">
             <div className="overflow-hidden rounded-lg bg-green-50 px-4 py-5 shadow sm:p-6">
               <dt className="truncate text-sm font-medium text-green-800">System Status</dt>
@@ -574,15 +587,16 @@ const SuperAdminDashboard = () => {
               <dd className="mt-1 text-3xl font-semibold tracking-tight text-indigo-900">{systemHealth.lastBackup}</dd>
             </div>
           </div>
-          <div className="mt-6">
-            <button
-              type="button"
-              onClick={refreshSystemStatus}
-              className="inline-flex items-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-            >
-              <ArrowPathIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-              Refresh System Status
-            </button>
+            <div className="mt-6 text-center">
+              <button
+                type="button"
+                onClick={refreshSystemStatus}
+                className="inline-flex items-center rounded-lg border border-transparent bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:from-blue-700 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
+              >
+                <ArrowPathIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+                Refresh System Status
+              </button>
+            </div>
           </div>
         </div>
       </div>

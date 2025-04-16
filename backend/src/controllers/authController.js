@@ -111,13 +111,46 @@ exports.login = async (req, res, next) => {
       });
     }
 
-    // If user is admin or technician, check if their lab is active
-    if (user.role !== 'super-admin' && user.lab) {
-      const lab = await Lab.findById(user.lab);
-      if (!lab || lab.subscription.status !== 'active') {
+    // If user is admin or technician, check if they have a lab assigned
+    if (user.role !== 'super-admin') {
+      // Log the user's lab information for debugging
+      console.log('User lab information:', {
+        userId: user._id,
+        userEmail: user.email,
+        userRole: user.role,
+        userLab: user.lab
+      });
+      
+      if (!user.lab) {
         return res.status(403).json({
           success: false,
-          message: 'Lab account is inactive or suspended'
+          message: 'User has no lab assigned. Please contact administrator.'
+        });
+      }
+
+      // Check if their lab is active
+      try {
+        const lab = await Lab.findById(user.lab);
+        console.log('Found lab:', lab ? { id: lab._id, name: lab.name, status: lab.subscription.status } : 'No lab found');
+        
+        if (!lab) {
+          return res.status(403).json({
+            success: false,
+            message: 'Assigned lab not found. Please contact administrator.'
+          });
+        }
+        
+        if (lab.subscription.status !== 'active') {
+          return res.status(403).json({
+            success: false,
+            message: 'Lab account is inactive or suspended'
+          });
+        }
+      } catch (labError) {
+        console.error('Error finding lab:', labError);
+        return res.status(500).json({
+          success: false,
+          message: 'Error verifying lab information. Please contact administrator.'
         });
       }
     }
@@ -150,6 +183,31 @@ exports.getMe = async (req, res, next) => {
       path: 'lab',
       select: 'name subscription.status'
     });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // For non-super-admin users, verify lab exists and is properly populated
+    if (user.role !== 'super-admin' && !user.lab) {
+      // Try to find the lab directly
+      const userWithLab = await User.findById(req.user.id);
+      
+      if (userWithLab.lab) {
+        // Lab ID exists but wasn't populated, try to get lab details
+        const lab = await Lab.findById(userWithLab.lab);
+        if (lab) {
+          user.lab = lab;
+        } else {
+          console.error(`Lab with ID ${userWithLab.lab} not found for user ${user._id}`);
+        }
+      } else {
+        console.error(`User ${user._id} has no lab assigned`);
+      }
+    }
 
     res.status(200).json({
       success: true,
@@ -249,20 +307,40 @@ exports.logout = async (req, res, next) => {
 // @access  Private
 exports.verifyToken = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id).select('-password');
-    console.log('Verifying token for user:', user); // Log the user being verified
+    // Get user with populated lab information
+    const user = await User.findById(req.user.id)
+      .select('-password')
+      .populate({
+        path: 'lab',
+        select: 'name subscription.status'
+      });
 
-    console.log('Verifying token for user:', user); // Log the user being verified
-
+    console.log('Verifying token for user:', user);
 
     if (!user) {
-      console.log('User not found for token verification'); // Log if user is not found
+      console.log('User not found for token verification');
       return res.status(404).json({
         success: false,
         message: 'User not found'
       });
+    }
 
-
+    // For non-super-admin users, verify lab exists and is properly populated
+    if (user.role !== 'super-admin' && !user.lab) {
+      // Try to find the lab directly
+      const userWithLab = await User.findById(req.user.id);
+      
+      if (userWithLab.lab) {
+        // Lab ID exists but wasn't populated, try to get lab details
+        const lab = await Lab.findById(userWithLab.lab);
+        if (lab) {
+          user.lab = lab;
+        } else {
+          console.error(`Lab with ID ${userWithLab.lab} not found for user ${user._id}`);
+        }
+      } else {
+        console.error(`User ${user._id} has no lab assigned`);
+      }
     }
 
     res.status(200).json({

@@ -330,7 +330,8 @@ const ReportSettings = () => {
                     </button>
                   </div>
                   <p className="mt-2 text-sm text-gray-500">
-                    Recommended size: 800x150 pixels, PNG or JPEG format. This image will be displayed at the top of the report.
+                    <span className="font-semibold text-blue-600">Required size: 2480x480 pixels @ 300 DPI</span>, PNG or JPEG format. 
+                    This image will be displayed at the top of the report. The header area is fixed and will be reserved even if no image is provided.
                   </p>
                 </div>
               </div>
@@ -469,7 +470,8 @@ const ReportSettings = () => {
                     </button>
                   </div>
                   <p className="mt-2 text-sm text-gray-500">
-                    Recommended size: 800x100 pixels, PNG or JPEG format.
+                    <span className="font-semibold text-blue-600">Required size: 2480x200 pixels @ 300 DPI</span>, PNG or JPEG format.
+                    This image will be displayed at the bottom of the report. The footer area is fixed and will be reserved even if no image is provided.
                   </p>
                 </div>
               </div>

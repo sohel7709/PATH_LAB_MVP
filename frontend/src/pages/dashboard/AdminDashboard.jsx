@@ -12,6 +12,7 @@ import {
   ChartBarIcon,
   PlusIcon,
   TrashIcon,
+  PencilSquareIcon,
 } from '@heroicons/react/24/outline';
 
 const AdminDashboard = () => {
@@ -181,53 +182,57 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header with view switcher */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-          <p className="mt-1 text-sm text-gray-500">Full control over lab-specific operations</p>
-        </div>
-        <div className="mt-4 sm:mt-0">
-          <label htmlFor="view-switcher" className="sr-only">
-            Switch View
-          </label>
-          <select
-            id="view-switcher"
-            value={selectedView}
-            onChange={(e) => handleViewChange(e.target.value)}
-            className="block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-primary-500 focus:outline-none focus:ring-primary-500 sm:text-sm"
-          >
-            <option value="admin">Admin View</option>
-            <option value="technician">Technician View</option>
-          </select>
-        </div>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-7xl mx-auto space-y-6">
+        {/* Header with view switcher */}
+        <div className="bg-white rounded-2xl shadow-xl border border-blue-100 overflow-hidden">
+          <div className="px-8 py-6 bg-gradient-to-r from-blue-700 to-blue-500">
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-3xl font-extrabold text-white">Admin Dashboard</h1>
+                <p className="text-base text-blue-100 mt-1">
+                  Welcome, {user?.name || 'Admin'}! | Role: {user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Admin'}
+                </p>
+              </div>
+              <div className="bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2">
+                <label htmlFor="view-switcher" className="text-sm font-medium text-white mr-2">
+                  Switch View:
+                </label>
+                <select
+                  id="view-switcher"
+                  value={selectedView}
+                  onChange={(e) => handleViewChange(e.target.value)}
+                  className="rounded-md border-transparent bg-white/80 py-1 pl-3 pr-10 text-sm font-medium text-blue-800 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                >
+                  <option value="admin">Admin View</option>
+                  <option value="technician">Technician View</option>
+                </select>
+              </div>
+            </div>
+          </div>
       
-      {/* Welcome Message */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-lg shadow-lg p-6 text-white">
-        <h1 className="text-2xl font-bold">Welcome, {user?.name || 'Admin'}!</h1>
-        <p className="mt-2 text-lg opacity-90">Role: {user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Admin'}</p>
-      </div>
-      
-      {/* Lab Name */}
-      <div className="mt-6 mb-6 text-center">
-        <h2 className="text-2xl font-bold text-gray-800">{labDetails?.name || ''}</h2>
-      </div>
+          {/* Lab Name */}
+          {labDetails?.name && (
+            <div className="py-4 text-center bg-blue-50 border-b border-blue-100">
+              <h2 className="text-xl font-bold text-blue-800">{labDetails.name}</h2>
+            </div>
+          )}
+        </div>
 
-      {/* Stats Grid - Removed technician card as requested */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-        <div className="overflow-hidden rounded-lg bg-white shadow">
-          <div className="p-5">
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Reports Card */}
+        <div className="overflow-hidden rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow duration-300">
+          <div className="p-5 border-b-4 border-blue-500">
             <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <DocumentTextIcon className="h-6 w-6 text-gray-400" aria-hidden="true" />
+              <div className="flex-shrink-0 bg-blue-100 p-3 rounded-full">
+                <DocumentTextIcon className="h-6 w-6 text-blue-600" aria-hidden="true" />
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="truncate text-sm font-medium text-gray-500">Reports</dt>
+                  <dt className="truncate text-sm font-medium text-gray-500">Total Reports</dt>
                   <dd>
-                    <div className="text-lg font-medium text-gray-900">{stats.totalReports}</div>
+                    <div className="text-2xl font-bold text-gray-900">{stats.totalReports}</div>
                   </dd>
                 </dl>
               </div>
@@ -235,24 +240,25 @@ const AdminDashboard = () => {
           </div>
           <div className="bg-gray-50 px-5 py-3">
             <div className="text-sm">
-              <Link to="/reports" className="font-medium text-blue-700 hover:text-blue-900">
-                View all
+              <Link to="/reports" className="font-medium text-blue-700 hover:text-blue-900 transition duration-200">
+                View all reports
               </Link>
             </div>
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-lg bg-white shadow">
-          <div className="p-5">
+        {/* Patients Card */}
+        <div className="overflow-hidden rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow duration-300">
+          <div className="p-5 border-b-4 border-green-500">
             <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <UserIcon className="h-6 w-6 text-gray-400" aria-hidden="true" />
+              <div className="flex-shrink-0 bg-green-100 p-3 rounded-full">
+                <UserIcon className="h-6 w-6 text-green-600" aria-hidden="true" />
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="truncate text-sm font-medium text-gray-500">Patients</dt>
+                  <dt className="truncate text-sm font-medium text-gray-500">Total Patients</dt>
                   <dd>
-                    <div className="text-lg font-medium text-gray-900">{stats.totalPatients}</div>
+                    <div className="text-2xl font-bold text-gray-900">{stats.totalPatients}</div>
                   </dd>
                 </dl>
               </div>
@@ -260,130 +266,190 @@ const AdminDashboard = () => {
           </div>
           <div className="bg-gray-50 px-5 py-3">
             <div className="text-sm">
-              <Link to="/patients" className="font-medium text-blue-700 hover:text-blue-900">
-                View all
+              <Link to="/patients" className="font-medium text-blue-700 hover:text-blue-900 transition duration-200">
+                View all patients
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Technicians Card */}
+        <div className="overflow-hidden rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow duration-300">
+          <div className="p-5 border-b-4 border-purple-500">
+            <div className="flex items-center">
+              <div className="flex-shrink-0 bg-purple-100 p-3 rounded-full">
+                <UserGroupIcon className="h-6 w-6 text-purple-600" aria-hidden="true" />
+              </div>
+              <div className="ml-5 w-0 flex-1">
+                <dl>
+                  <dt className="truncate text-sm font-medium text-gray-500">Lab Technicians</dt>
+                  <dd>
+                    <div className="text-2xl font-bold text-gray-900">{stats.totalTechnicians}</div>
+                  </dd>
+                </dl>
+              </div>
+            </div>
+          </div>
+          <div className="bg-gray-50 px-5 py-3">
+            <div className="text-sm">
+              <Link to="/users" className="font-medium text-blue-700 hover:text-blue-900 transition duration-200">
+                Manage technicians
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Revenue Card */}
+        <div className="overflow-hidden rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow duration-300">
+          <div className="p-5 border-b-4 border-yellow-500">
+            <div className="flex items-center">
+              <div className="flex-shrink-0 bg-yellow-100 p-3 rounded-full">
+                <CurrencyDollarIcon className="h-6 w-6 text-yellow-600" aria-hidden="true" />
+              </div>
+              <div className="ml-5 w-0 flex-1">
+                <dl>
+                  <dt className="truncate text-sm font-medium text-gray-500">Monthly Revenue</dt>
+                  <dd>
+                    <div className="text-2xl font-bold text-gray-900">₹{stats.revenueThisMonth}</div>
+                  </dd>
+                </dl>
+              </div>
+            </div>
+          </div>
+          <div className="bg-gray-50 px-5 py-3">
+            <div className="text-sm">
+              <Link to="/finance/reports" className="font-medium text-blue-700 hover:text-blue-900 transition duration-200">
+                View financial reports
               </Link>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="overflow-hidden rounded-lg bg-gray-100 shadow-lg mb-6 border border-gray-300">
+        {/* Quick Actions */}
+        <div className="overflow-hidden rounded-2xl bg-white shadow-xl border border-blue-100">
         <div className="p-6">
-          <h3 className="text-lg font-medium text-gray-900">Quick Actions</h3>
-          <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-4">
+          <h3 className="text-lg font-semibold text-blue-800 mb-4">Quick Actions</h3>
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
             <Link
               to="/patients/add"
-              className="btn-primary flex items-center justify-center"
+              className="flex items-center justify-center px-4 py-3 bg-white rounded-lg shadow-sm border border-blue-200 text-blue-700 font-medium hover:bg-blue-50 transition-all duration-200"
             >
-              <UserIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+              <UserIcon className="h-5 w-5 mr-2" aria-hidden="true" />
               Add Patient
             </Link>
             <Link
               to="/reports/create"
-              className="btn-primary flex items-center justify-center"
+              className="flex items-center justify-center px-4 py-3 bg-white rounded-lg shadow-sm border border-blue-200 text-blue-700 font-medium hover:bg-blue-50 transition-all duration-200"
             >
-              <DocumentTextIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+              <DocumentTextIcon className="h-5 w-5 mr-2" aria-hidden="true" />
               Create Report
             </Link>
             <Link
               to="/doctors"
-              className="btn-primary flex items-center justify-center"
+              className="flex items-center justify-center px-4 py-3 bg-white rounded-lg shadow-sm border border-blue-200 text-blue-700 font-medium hover:bg-blue-50 transition-all duration-200"
             >
-              <UserIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+              <UserIcon className="h-5 w-5 mr-2" aria-hidden="true" />
               Manage Doctors
             </Link>
             <Link
               to="/finance/reports"
-              className="btn-primary flex items-center justify-center"
+              className="flex items-center justify-center px-4 py-3 bg-white rounded-lg shadow-sm border border-blue-200 text-blue-700 font-medium hover:bg-blue-50 transition-all duration-200"
             >
-              <ChartBarIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+              <ChartBarIcon className="h-5 w-5 mr-2" aria-hidden="true" />
               Financial Report
             </Link>
           </div>
         </div>
       </div>
 
-      {/* Recent Reports */}
-      <div className="overflow-hidden rounded-lg bg-white shadow">
-        <div className="p-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-base font-medium text-gray-900">Recent Reports</h3>
-            <Link to="/reports/create" className="text-sm font-medium text-primary-600 hover:text-primary-900">
-              <PlusIcon className="inline-block h-5 w-5 mr-1" />
-              New Report
-            </Link>
+        {/* Recent Reports */}
+        <div className="overflow-hidden rounded-2xl bg-white shadow-xl border border-blue-100">
+          <div className="px-6 py-5 border-b border-blue-100 bg-blue-50">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-blue-800">Recent Reports</h3>
+              <Link to="/reports/create" className="text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center bg-white px-3 py-1 rounded-lg shadow-sm border border-blue-200 transition-colors">
+                <PlusIcon className="h-5 w-5 mr-1" />
+                New Report
+              </Link>
+            </div>
           </div>
-          <div className="mt-6 flow-root">
-            <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-              <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-                <table className="min-w-full divide-y divide-gray-300">
-                  <thead>
-                    <tr>
-                      <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">
-                        Patient
-                      </th>
-                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                        Test
-                      </th>
-                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                        Status
-                      </th>
-                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                        Date
-                      </th>
-                      <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-0">
-                        <span className="sr-only">Actions</span>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {recentReports.map((report) => (
-                      <tr key={report.id}>
-                        <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-0">
-                          {report.patientName}
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{report.testName}</td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm">
-                          <span
-                            className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${
-                              report.status === 'completed'
-                                ? 'bg-green-100 text-green-800'
-                                : report.status === 'pending'
-                                ? 'bg-yellow-100 text-yellow-800'
-                                : 'bg-blue-100 text-blue-800'
-                            }`}
-                          >
-                            {report.status}
-                          </span>
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{report.date}</td>
-                        <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
-                          <Link to={`/reports/${report.id}/print`} className="text-primary-600 hover:text-primary-900 mr-4">
-                            View
+        <div className="p-6">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-blue-50">
+                <tr>
+                  <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                    Patient
+                  </th>
+                  <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                    Test
+                  </th>
+                  <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                    Date
+                  </th>
+                  <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-blue-100">
+                {recentReports.length > 0 ? (
+                  recentReports.map((report) => (
+                    <tr key={report.id} className="hover:bg-blue-50 transition-colors duration-150">
+                      <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {report.patientName}
+                      </td>
+                      <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{report.testName}</td>
+                      <td className="px-3 py-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                            report.status === 'completed' ? 'bg-green-100 text-green-800' : 
+                            report.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'
+                          }`}
+                        >
+                          {report.status?.charAt(0).toUpperCase() + report.status?.slice(1)}
+                        </span>
+                      </td>
+                      <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(report.date).toLocaleDateString()}
+                      </td>
+                      <td className="px-3 py-4 whitespace-nowrap text-sm">
+                        <div className="flex space-x-3">
+                          <Link to={`/reports/${report.id}/print`} className="text-blue-600 hover:text-blue-900 p-1 rounded-full hover:bg-blue-50 transition-colors" title="View Report">
+                            <DocumentTextIcon className="h-5 w-5" aria-hidden="true" />
                           </Link>
-                          <Link to={`/reports/${report.id}/edit`} className="text-primary-600 hover:text-primary-900 mr-4">
-                            Edit
+                          <Link to={`/reports/${report.id}/edit`} className="text-green-600 hover:text-green-900 p-1 rounded-full hover:bg-green-50 transition-colors" title="Edit Report">
+                            <PencilSquareIcon className="h-5 w-5" aria-hidden="true" />
                           </Link>
                           <button 
                             onClick={() => handleDeleteClick(report)}
-                            className="text-red-600 hover:text-red-900"
+                            className="text-red-600 hover:text-red-900 p-1 rounded-full hover:bg-red-50 transition-colors"
+                            title="Delete Report"
                           >
-                            Delete
+                            <TrashIcon className="h-5 w-5" aria-hidden="true" />
                           </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="5" className="px-3 py-4 text-center text-sm text-gray-500">
+                      No reports found
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
           <div className="mt-6">
             <Link
               to="/reports"
-              className="flex w-full items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+              className="flex w-full items-center justify-center rounded-lg border border-blue-300 bg-white px-4 py-2 text-sm font-medium text-blue-700 shadow-sm hover:bg-blue-50 transition-all duration-200"
             >
               View all reports
             </Link>
@@ -391,73 +457,73 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Recent Patients */}
-      <div className="overflow-hidden rounded-lg bg-white shadow">
-        <div className="p-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-base font-medium text-gray-900">Recent Patients</h3>
-            <Link to="/patients/add" className="text-sm font-medium text-primary-600 hover:text-primary-900">
-              <PlusIcon className="inline-block h-5 w-5 mr-1" />
-              Add Patient
-            </Link>
-          </div>
-          <div className="mt-6 flow-root">
-            <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-              <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-                <table className="min-w-full divide-y divide-gray-300">
-                  <thead>
-                    <tr>
-                      <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">
-                        Name
-                      </th>
-                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                        Age/Gender
-                      </th>
-                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                        Contact
-                      </th>
-                      <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-0">
-                        <span className="sr-only">Actions</span>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {recentPatients.length > 0 ? (
-                      recentPatients.map((patient) => (
-                        <tr key={patient.id}>
-                          <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-0">
-                            {patient.name}
-                          </td>
-                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                            {patient.age} / {patient.gender?.charAt(0).toUpperCase() + patient.gender?.slice(1)}
-                          </td>
-                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{patient.contact}</td>
-                          <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
-                            <Link to={`/patients/${patient.id}/edit`} className="text-primary-600 hover:text-primary-900 mr-4">
-                              Edit
-                            </Link>
-                            <Link to={`/reports/create?patientId=${patient.id}`} className="text-primary-600 hover:text-primary-900">
-                              Create Report
-                            </Link>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan="4" className="py-4 text-center text-sm text-gray-500">
-                          No patients found
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+        {/* Recent Patients */}
+        <div className="overflow-hidden rounded-2xl bg-white shadow-xl border border-blue-100 mt-6">
+          <div className="px-6 py-5 border-b border-blue-100 bg-blue-50">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-blue-800">Recent Patients</h3>
+              <Link to="/patients/add" className="text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center bg-white px-3 py-1 rounded-lg shadow-sm border border-blue-200 transition-colors">
+                <PlusIcon className="h-5 w-5 mr-1" />
+                Add Patient
+              </Link>
             </div>
+          </div>
+        <div className="p-6">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-blue-50">
+                <tr>
+                  <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                    Name
+                  </th>
+                  <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                    Age/Gender
+                  </th>
+                  <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                    Contact
+                  </th>
+                  <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-blue-100">
+                {recentPatients.length > 0 ? (
+                  recentPatients.map((patient) => (
+                    <tr key={patient.id} className="hover:bg-blue-50 transition-colors duration-150">
+                      <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {patient.name}
+                      </td>
+                      <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {patient.age} / {patient.gender?.charAt(0).toUpperCase() + patient.gender?.slice(1)}
+                      </td>
+                      <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{patient.contact}</td>
+                      <td className="px-3 py-4 whitespace-nowrap text-sm">
+                        <div className="flex space-x-3">
+                          <Link to={`/patients/${patient.id}/edit`} className="text-green-600 hover:text-green-900 p-1 rounded-full hover:bg-green-50 transition-colors" title="Edit Patient">
+                            <PencilSquareIcon className="h-5 w-5" aria-hidden="true" />
+                          </Link>
+                          <Link to={`/reports/create?patientId=${patient.id}`} className="text-blue-600 hover:text-blue-900 p-1 rounded-full hover:bg-blue-50 transition-colors" title="Create Report">
+                            <DocumentTextIcon className="h-5 w-5" aria-hidden="true" />
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="4" className="px-3 py-4 text-center text-sm text-gray-500">
+                      No patients found
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
           <div className="mt-6">
             <Link
               to="/patients"
-              className="flex w-full items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+              className="flex w-full items-center justify-center rounded-lg border border-blue-300 bg-white px-4 py-2 text-sm font-medium text-blue-700 shadow-sm hover:bg-blue-50 transition-all duration-200"
             >
               View all patients
             </Link>
@@ -465,10 +531,10 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full">
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-xl shadow-xl max-w-md w-full">
             <div className="sm:flex sm:items-start">
               <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
                 <TrashIcon className="h-6 w-6 text-red-600" aria-hidden="true" />
@@ -485,14 +551,14 @@ const AdminDashboard = () => {
             <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
               <button
                 type="button"
-                className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
+                className="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
                 onClick={confirmDelete}
               >
                 Delete
               </button>
               <button
                 type="button"
-                className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:w-auto sm:text-sm"
+                className="mt-3 w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:w-auto sm:text-sm"
                 onClick={cancelDelete}
               >
                 Cancel
@@ -502,7 +568,8 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* No Financial Overview or Inventory Status sections as requested */}
+        {/* No Financial Overview or Inventory Status sections as requested */}
+      </div>
     </div>
   );
 };

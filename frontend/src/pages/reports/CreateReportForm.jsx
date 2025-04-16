@@ -324,69 +324,63 @@ export default function CreateReportForm() {
   };
 
   return (
-    <div>
-      <div className="md:flex md:items-center md:justify-between bg-white p-6 rounded-lg shadow-md mb-6">
-        <div className="min-w-0 flex-1 flex items-center">
-          <DocumentTextIcon className="h-10 w-10 text-blue-600 mr-4" />
-          <div>
-            <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
-              Create New Report
-            </h2>
-            <p className="mt-1 text-sm text-gray-500">
-              Create a new patient report with test results
-            </p>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 py-8 px-2">
+      <div className="w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-blue-100 overflow-hidden">
+        <div className="px-8 py-6 bg-gradient-to-r from-blue-700 to-blue-500">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center">
+              <DocumentTextIcon className="h-8 w-8 text-white mr-3" />
+              <div>
+                <h1 className="text-3xl font-extrabold text-white">Create New Report</h1>
+                <p className="text-base text-blue-100 mt-1">
+                  Create a new patient report with test results
+                </p>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <form className="space-y-8" onSubmit={handleSubmit}>
-        {error && (
-          <div className="rounded-md bg-red-50 p-4">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <ExclamationCircleIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
-              </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">{error}</h3>
+        <form className="p-8 space-y-8" onSubmit={handleSubmit}>
+          {error && (
+            <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded mb-4">
+              <div className="flex items-center">
+                <ExclamationCircleIcon className="h-5 w-5 mr-2 text-red-500" aria-hidden="true" />
+                <span className="font-medium">Error:</span>
+                <span className="ml-2">{error}</span>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {success && (
-          <div className="rounded-md bg-green-50 p-4">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <CheckCircleIcon className="h-5 w-5 text-green-400" aria-hidden="true" />
-              </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-green-800">{success}</h3>
+          {success && (
+            <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded mb-4">
+              <div className="flex items-center">
+                <CheckCircleIcon className="h-5 w-5 mr-2 text-green-500" aria-hidden="true" />
+                <span className="font-medium">Success:</span>
+                <span className="ml-2">{success}</span>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Patient Information */}
-        <div className="bg-white shadow sm:rounded-lg">
-          <div className="px-4 py-5 sm:p-6">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-medium leading-6 text-gray-900">Patient Information</h3>
+          {/* Patient Information */}
+          <section>
+            <h2 className="text-xl font-semibold text-blue-700 mb-4 border-b border-blue-100 pb-2">
+              Patient Information
               {formData.patientId && (
-                <p className="text-sm text-gray-500 italic">
-                  Patient information is locked for data integrity. Only Reference Doctor can be modified.
-                </p>
+                <span className="text-sm text-gray-500 italic ml-2 font-normal">
+                  (Patient information is locked for data integrity. Only Reference Doctor can be modified.)
+                </span>
               )}
-            </div>
+            </h2>
             <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
               <div className="sm:col-span-6">
-                <label htmlFor="patientSelect" className="form-label">
+                <label htmlFor="patientSelect" className="block text-sm font-medium text-gray-700 mb-1">
                   Select Patient
                 </label>
                 <div className="mt-1">
                   <select
                     id="patientSelect"
                     name="patientSelect"
-                    className="block w-full rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                    className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
                     onChange={handlePatientSelect}
                     value={formData.patientId || ''}
                   >
@@ -405,7 +399,7 @@ export default function CreateReportForm() {
               </div>
 
               <div className="sm:col-span-3">
-                <label htmlFor="patientName" className="form-label">
+                <label htmlFor="patientName" className="block text-sm font-medium text-gray-700 mb-1">
                   Full name
                 </label>
                 <div className="mt-1">
@@ -416,14 +410,14 @@ export default function CreateReportForm() {
                     required
                     value={formData.patientName}
                     onChange={handleChange}
-                    className="block w-full rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                    className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
                     readOnly={!!formData.patientId}
                   />
                 </div>
               </div>
 
               <div className="sm:col-span-1">
-                <label htmlFor="patientAge" className="form-label">
+                <label htmlFor="patientAge" className="block text-sm font-medium text-gray-700 mb-1">
                   Age
                 </label>
                 <div className="mt-1">
@@ -436,14 +430,14 @@ export default function CreateReportForm() {
                     max="150"
                     value={formData.patientAge}
                     onChange={handleChange}
-                    className="block w-full rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                    className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
                     readOnly={!!formData.patientId}
                   />
                 </div>
               </div>
 
               <div className="sm:col-span-2">
-                <label htmlFor="patientGender" className="form-label">
+                <label htmlFor="patientGender" className="block text-sm font-medium text-gray-700 mb-1">
                   Gender
                 </label>
                 <div className="mt-1">
@@ -453,7 +447,7 @@ export default function CreateReportForm() {
                     required
                     value={formData.patientGender}
                     onChange={handleChange}
-                    className="block w-full rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                    className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
                     disabled={!!formData.patientId}
                   >
                     <option value="">Select gender</option>
@@ -465,7 +459,7 @@ export default function CreateReportForm() {
               </div>
 
               <div className="sm:col-span-3">
-                <label htmlFor="patientPhone" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="patientPhone" className="block text-sm font-medium text-gray-700 mb-1">
                   Phone number
                 </label>
                 <div className="mt-1">
@@ -476,14 +470,14 @@ export default function CreateReportForm() {
                     required
                     value={formData.patientPhone}
                     onChange={handleChange}
-                    className="block w-full rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                    className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
                     readOnly={!!formData.patientId}
                   />
                 </div>
               </div>
 
               <div className="sm:col-span-3">
-                <label htmlFor="referenceDoctor" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="referenceDoctor" className="block text-sm font-medium text-gray-700 mb-1">
                   Reference Doctor
                 </label>
                 <div className="mt-1">
@@ -492,7 +486,7 @@ export default function CreateReportForm() {
                     name="referenceDoctor"
                     value={formData.referenceDoctor || ''}
                     onChange={handleChange}
-                    className="block w-full rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                    className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
                   >
                     <option value="">Select a reference doctor</option>
                     {doctorList.map(doctor => (
@@ -509,28 +503,35 @@ export default function CreateReportForm() {
                 </div>
               </div>
             </div>
+          </section>
+
+          {/* Test Parameters Form Component */}
+          <TestParametersForm 
+            formData={formData} 
+            setFormData={setFormData} 
+            patientGender={formData.patientGender}
+            setError={setError}
+          />
+
+          {/* Submit Button */}
+          <div className="flex justify-center space-x-4 pt-4 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={() => navigate('/reports')}
+              className="px-6 py-3 rounded-lg border border-gray-300 bg-white text-gray-700 font-semibold shadow hover:bg-gray-50 transition focus:outline-none focus:ring-2 focus:ring-blue-300"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="px-6 py-3 rounded-lg border border-transparent bg-gradient-to-r from-blue-600 to-blue-500 text-white font-semibold shadow hover:from-blue-700 hover:to-blue-600 transition focus:outline-none focus:ring-2 focus:ring-blue-400"
+            >
+              {isLoading ? 'Creating Report...' : 'Create Report'}
+            </button>
           </div>
-        </div>
-
-        {/* Test Parameters Form Component */}
-        <TestParametersForm 
-          formData={formData} 
-          setFormData={setFormData} 
-          patientGender={formData.patientGender}
-          setError={setError}
-        />
-
-        {/* Submit Button */}
-        <div className="flex justify-end">
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          >
-            {isLoading ? 'Creating Report...' : 'Create Report'}
-          </button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 }

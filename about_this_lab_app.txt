@@ -1,0 +1,100 @@
+What is this App?
+-----------------
+This app is like a super-smart notebook for a medical lab. It helps doctors, lab technicians, and admins keep track of patients, tests, and reports, all in one place on the computer. Imagine it as a digital helper that makes sure nothing gets lost and everything is organized!
+
+Who Uses This App?
+------------------
+- **Super Admin**: The boss of all labs. Can create labs and users.
+- **Admin**: Manages one lab. Can add patients, doctors, and manage tests and reports.
+- **Lab Technician**: Helps with tests and reports in the lab.
+
+Main Features
+-------------
+1. **Lab Management**
+   - Each lab has a name, location, contact number, and email.
+   - Labs can be created and managed by the Super Admin.
+
+2. **User Management**
+   - Users can be Super Admins, Admins, or Lab Technicians.
+   - Super Admins can create and manage all users.
+   - Admins and Technicians are linked to a specific lab.
+
+3. **Patient Management**
+   - Add new patients with their name, age, gender, phone, email, and address.
+   - Each patient is linked to a lab.
+   - You can see all patients, update their info, or remove them.
+
+4. **Doctor Management**
+   - Add and manage doctors who work with the lab.
+
+5. **Test Templates**
+   - Create templates for different medical tests (like Blood Test, Urine Test).
+   - Each template has a name, sample type (like blood or urine), category, and a list of things to check (like "Hemoglobin" or "Sugar Level").
+   - Templates help make reports faster and more accurate.
+
+6. **Report Creation**
+   - For each patient, you can create a report using a test template.
+   - Fill in the results for each test parameter.
+   - Reports can be saved, updated, and printed.
+
+7. **Lab Report Settings**
+   - Each lab can choose how their reports look (PDF or HTML).
+   - Labs can set a default test template for reports.
+
+8. **Dashboards**
+   - **Admin Dashboard**: Shows all important info for the lab admin, like number of patients, tests, and reports.
+   - **Lab Technician Dashboard**: Shows tasks for the technician, like which reports need to be done.
+   - **Super Admin Dashboard**: Shows info about all labs and users.
+
+9. **Authentication**
+   - Users must log in with their email and password.
+   - Only people with the right role can see or change certain things.
+
+How Does It Work? (Step by Step)
+--------------------------------
+1. **Login**
+   - Open the app and log in with your email and password.
+
+2. **Choose What You Want To Do**
+   - If you are an Admin, you can add patients, doctors, and manage tests and reports.
+   - If you are a Lab Technician, you can fill out test results and create reports.
+   - If you are a Super Admin, you can create new labs and users.
+
+3. **Add a Patient**
+   - Go to the "Add Patient" page.
+   - Fill in the patient's details and save.
+
+4. **Add a Doctor**
+   - Go to the "Add Doctor" page.
+   - Fill in the doctor's details and save.
+
+5. **Create a Test Template**
+   - Go to the "Create Test Template" page.
+   - Name the test, choose the sample type, category, and add all the things you want to check in the test.
+
+6. **Create a Report**
+   - Go to the "Create Report" page.
+   - Choose a patient and a test template.
+   - Fill in the test results and save the report.
+
+7. **View and Print Reports**
+   - You can see all reports for each patient.
+   - Reports can be printed or downloaded.
+
+8. **Customize Report Settings**
+   - Labs can choose how their reports look and which template to use by default.
+
+Extra Details
+-------------
+- All information is saved safely in the computer, so nothing gets lost.
+- Only people with the right permissions can see or change things.
+- The app is easy to use, with clear buttons and pages for each task.
+
+Why is this App Useful?
+-----------------------
+- No more messy paper records!
+- Easy to find any patient, test, or report.
+- Makes work faster for everyone in the lab.
+- Keeps information safe and organized.
+
+If you can use a phone or a computer, you can use this app! Just follow the steps, and the app will help you manage everything in the lab.

@@ -120,108 +120,113 @@ export default function PatientList() {
   }
 
   return (
-    <div>
-      {/* Success message */}
-      {successMessage && (
-        <div className="mb-4 bg-green-50 p-4 rounded-md">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <CheckCircleIcon className="h-5 w-5 text-green-400" aria-hidden="true" />
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-7xl mx-auto bg-white rounded-2xl shadow-xl border border-blue-100 overflow-hidden">
+        <div className="px-8 py-6 bg-gradient-to-r from-blue-700 to-blue-500">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-extrabold text-white">Patients</h1>
+              <p className="text-base text-blue-100 mt-1">
+                Manage all patients in your laboratory
+              </p>
             </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-green-800">{successMessage}</p>
-            </div>
-            <div className="ml-auto pl-3">
-              <div className="-mx-1.5 -my-1.5">
-                <button
-                  type="button"
-                  className="inline-flex rounded-md bg-green-50 p-1.5 text-green-500 hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2 focus:ring-offset-green-50"
-                  onClick={() => setSuccessMessage('')}
-                >
-                  <span className="sr-only">Dismiss</span>
-                  <XMarkIcon className="h-5 w-5" aria-hidden="true" />
-                </button>
+            <Link
+              to="/patients/add"
+              className="inline-flex items-center justify-center rounded-lg border border-transparent bg-white/20 backdrop-blur-sm px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-blue-600"
+            >
+              <PlusIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+              Add Patient
+            </Link>
+          </div>
+        </div>
+        
+        <div className="p-6">
+          {/* Success message */}
+          {successMessage && (
+            <div className="mb-6 rounded-lg bg-green-100 border-l-4 border-green-500 text-green-700 p-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <CheckCircleIcon className="h-5 w-5 text-green-500" aria-hidden="true" />
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-green-800">{successMessage}</p>
+                </div>
+                <div className="ml-auto pl-3">
+                  <div className="-mx-1.5 -my-1.5">
+                    <button
+                      type="button"
+                      className="inline-flex rounded-md bg-green-100 p-1.5 text-green-500 hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2 focus:ring-offset-green-50"
+                      onClick={() => setSuccessMessage('')}
+                    >
+                      <span className="sr-only">Dismiss</span>
+                      <XMarkIcon className="h-5 w-5" aria-hidden="true" />
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      )}
+          )}
 
-      <div className="sm:flex sm:items-center">
-        <div className="sm:flex-auto">
-          <h1 className="text-2xl font-semibold text-gray-900">Patients</h1>
-          <p className="mt-2 text-sm text-gray-700">
-            A list of all patients in your laboratory.
-          </p>
-        </div>
-        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-          <Link
-            to="/patients/add"
-            className="btn-primary inline-flex items-center"
-          >
-            <PlusIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-            Add Patient
-          </Link>
-        </div>
-      </div>
+          {error && (
+            <div className="mb-6 rounded-lg bg-red-100 border-l-4 border-red-500 text-red-700 p-4">
+              <div className="flex">
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-red-800">{error}</h3>
+                </div>
+              </div>
+            </div>
+          )}
 
-      {error && (
-        <div className="mt-4 bg-red-50 p-4 rounded-md">
-          <div className="flex">
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">{error}</h3>
+          <div className="mb-6">
+            {/* Search */}
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <MagnifyingGlassIcon className="h-5 w-5 text-blue-400" aria-hidden="true" />
+              </div>
+              <input
+                type="text"
+                className="block w-full rounded-lg border border-blue-300 pl-10 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+                placeholder="Search patients by name, phone, or email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
           </div>
-        </div>
-      )}
 
-      <div className="mt-8 flex flex-col">
-        <div className="mb-4">
-          {/* Search */}
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
-            </div>
-            <input
-              type="text"
-              className="input-field pl-10"
-              placeholder="Search patients by name, phone, or email..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-        </div>
-
-        <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-          <div className="inline-block min-w-full py-2 align-middle">
-            <div className="overflow-hidden shadow-sm ring-1 ring-black ring-opacity-5">
-              <table className="min-w-full divide-y divide-gray-300">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6 lg:pl-8">
-                      Patient Name
-                    </th>
-                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                      Age/Gender
-                    </th>
-                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                      Contact
-                    </th>
-                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                      Address
-                    </th>
-                    <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6 lg:pr-8">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-blue-200">
+              <thead className="bg-blue-50">
+                <tr>
+                  <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                    Patient Name
+                  </th>
+                  <th scope="col" className="px-3 py-3.5 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                    Age/Gender
+                  </th>
+                  <th scope="col" className="px-3 py-3.5 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                    Contact
+                  </th>
+                  <th scope="col" className="px-3 py-3.5 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                    Address
+                  </th>
+                  <th scope="col" className="relative py-3.5 pl-3 pr-4">
                       <span className="sr-only">Actions</span>
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200 bg-white">
-                  {filteredPatients.length === 0 ? (
-                    <tr>
-                      <td colSpan="5" className="py-4 text-center text-sm text-gray-500">
-                        No patients found
-                      </td>
-                    </tr>
+              <tbody className="bg-white divide-y divide-blue-100">
+                {filteredPatients.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="py-8 text-center text-sm text-gray-500">
+                      <div className="flex flex-col items-center justify-center">
+                        <svg className="h-12 w-12 text-blue-200 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        <p className="text-base">No patients found</p>
+                        <p className="text-sm text-gray-400 mt-1">Try a different search or add a new patient</p>
+                      </div>
+                    </td>
+                  </tr>
                   ) : (
                     filteredPatients.map((patient) => (
                       <tr key={patient._id}>
@@ -238,38 +243,39 @@ export default function PatientList() {
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                           {patient.address ? patient.address.split(',')[0] : 'N/A'}
                         </td>
-                        <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6 lg:pr-8">
-                          <Link
-                            to={`/reports/create?patientId=${patient._id}`}
-                            className="text-primary-600 hover:text-primary-900 mr-4"
-                          >
-                            <DocumentTextIcon className="inline-block h-4 w-4 mr-1" />
-                            Create Report
-                          </Link>
-                          <Link
-                            to={`/patients/${patient._id}/edit`}
-                            className="text-primary-600 hover:text-primary-900 mr-4"
-                          >
-                            <PencilIcon className="inline-block h-4 w-4 mr-1" />
-                            Edit
-                          </Link>
-                          {/* Only show delete button for admin and super-admin roles */}
-                          {user && (user.role === 'admin' || user.role === 'super-admin') && (
-                            <button
-                              onClick={() => handleDeleteClick(patient)}
-                              className="text-red-600 hover:text-red-900"
+                        <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium">
+                          <div className="flex space-x-3 justify-end">
+                            <Link
+                              to={`/reports/create?patientId=${patient._id}`}
+                              className="text-blue-600 hover:text-blue-900 p-1 rounded-full hover:bg-blue-50 transition-colors"
+                              title="Create Report"
                             >
-                              <TrashIcon className="inline-block h-4 w-4 mr-1" />
-                              Delete
-                            </button>
-                          )}
+                              <DocumentTextIcon className="h-5 w-5" aria-hidden="true" />
+                            </Link>
+                            <Link
+                              to={`/patients/${patient._id}/edit`}
+                              className="text-green-600 hover:text-green-900 p-1 rounded-full hover:bg-green-50 transition-colors"
+                              title="Edit Patient"
+                            >
+                              <PencilIcon className="h-5 w-5" aria-hidden="true" />
+                            </Link>
+                            {/* Only show delete button for admin and super-admin roles */}
+                            {user && (user.role === 'admin' || user.role === 'super-admin') && (
+                              <button
+                                onClick={() => handleDeleteClick(patient)}
+                                className="text-red-600 hover:text-red-900 p-1 rounded-full hover:bg-red-50 transition-colors"
+                                title="Delete Patient"
+                              >
+                                <TrashIcon className="h-5 w-5" aria-hidden="true" />
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))
                   )}
                 </tbody>
-              </table>
-            </div>
+            </table>
           </div>
         </div>
       </div>
@@ -284,7 +290,7 @@ export default function PatientList() {
 
             <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
-            <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+            <div className="inline-block align-bottom bg-white rounded-xl px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
               <div className="sm:flex sm:items-start">
                 <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
                   <ExclamationTriangleIcon className="h-6 w-6 text-red-600" aria-hidden="true" />
@@ -301,7 +307,7 @@ export default function PatientList() {
               <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
                 <button
                   type="button"
-                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
+                  className="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
                   onClick={confirmDelete}
                   disabled={deleteLoading}
                 >
@@ -309,7 +315,7 @@ export default function PatientList() {
                 </button>
                 <button
                   type="button"
-                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:w-auto sm:text-sm"
+                  className="mt-3 w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:w-auto sm:text-sm"
                   onClick={cancelDelete}
                   disabled={deleteLoading}
                 >
