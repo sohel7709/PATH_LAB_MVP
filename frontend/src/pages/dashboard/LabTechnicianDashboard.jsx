@@ -73,14 +73,14 @@ const LabTechnicianDashboard = () => {
           
           // Check if patientsData is an array before using slice
           if (Array.isArray(patientsData)) {
-            setRecentPatients(patientsData.slice(0, 5).map(patient => ({
-              id: patient.id || patient._id,
-              name: patient.fullName,
-              age: patient.age,
-              gender: patient.gender,
-              contact: patient.phone,
-              testType: patient.lastTestType || 'N/A',
-            })));
+                setRecentPatients(patientsData.slice(0, 5).map(patient => ({
+                  id: patient._id,
+                  name: patient.fullName,
+                  age: patient.age,
+                  gender: patient.gender,
+                  contact: patient.phone,
+                  testType: patient.lastTestType || 'N/A',
+                })));
           } else {
             console.error('Patients data is not an array:', patientsData);
             setRecentPatients([]);

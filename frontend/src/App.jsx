@@ -23,10 +23,12 @@ const DashboardLayout = lazy(() => import('./components/layouts/DashboardLayout'
 const AuthLayout = lazy(() => import('./components/layouts/AuthLayout'));
 
 // Auth Pages
-const Login = lazy(() => import('./pages/auth/Login'));
-const Register = lazy(() => import('./pages/auth/Register'));
+const Login = lazy(() => import('./pages/auth/ImprovedLogin'));
 const ForgotPassword = lazy(() => import('./pages/auth/ForgotPasswordWrapper'));
 const ResetPassword = lazy(() => import('./pages/auth/ResetPasswordWrapper'));
+
+import ComingSoon from './pages/ComingSoon';
+import UserIntelligence from './pages/UserIntelligence';
 
 // Dashboard Pages
 const SuperAdminDashboard = lazy(() => import('./pages/dashboard/SuperAdminDashboard'));
@@ -56,6 +58,8 @@ const EditPatient = lazy(() => import('./pages/patients/EditPatient'));
 const LabSettings = lazy(() => import('./pages/settings/LabSettings'));
 const UserManagement = lazy(() => import('./pages/settings/UserManagement'));
 const ReportSettings = lazy(() => import('./pages/settings/ReportSettings'));
+const NotificationSettings = lazy(() => import('./pages/settings/NotificationSettings'));
+const PlanManagement = lazy(() => import('./pages/plans/PlanManagement')); // Import Plan Management page
 
 // Loading Component
 const LoadingSpinner = () => (
@@ -73,7 +77,6 @@ function App() {
             {/* Public Routes */}
             <Route element={<AuthLayout />}>
               <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password/:token" element={<ResetPassword />} />
             </Route>
@@ -113,6 +116,18 @@ function App() {
               <Route path="/labs/:id" element={<LabDetail />} />
               <Route path="/labs/:id/edit" element={<EditLab />} />
               <Route path="/lab-management" element={<Navigate to="/labs" replace />} />
+              {/* Plan Management Route (Super Admin only) */}
+              <Route path="/plans" element={
+                <ProtectedRoute allowedRoles={['super-admin']}>
+                  <PlanManagement />
+                </ProtectedRoute>
+              } />
+              {/* User Intelligence Route (Super Admin only) */}
+              <Route path="/user-intelligence" element={
+                <ProtectedRoute allowedRoles={['super-admin']}>
+                  <UserIntelligence />
+                </ProtectedRoute>
+              } />
             </Route>
 
             {/* User Management Routes */}
@@ -187,11 +202,18 @@ function App() {
               <Route path="/settings/lab" element={<LabSettings />} />
               <Route path="/settings/users" element={<UserManagement />} />
               <Route path="/settings/reports" element={<ReportSettings />} />
+              <Route path="/settings/notifications" element={
+                <ProtectedRoute allowedRoles={['admin', 'super-admin']}>
+                  <NotificationSettings />
+                </ProtectedRoute>
+              } />
               <Route path="/profile" element={<Profile />} />
               
               {/* Coming Soon Feature Pages */}
               <Route path="/inventory" element={<Inventory />} />
               <Route path="/finance/reports" element={<FinancialReports />} />
+              <Route path="/samples" element={<ComingSoon />} />
+              <Route path="/tasks" element={<ComingSoon />} />
             </Route>
 
             {/* Catch all route */}

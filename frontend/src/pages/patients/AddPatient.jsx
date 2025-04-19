@@ -8,6 +8,7 @@ export default function AddPatient() {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [duplicatePatient, setDuplicatePatient] = useState(null);
   const [validationErrors, setValidationErrors] = useState({
     phone: ''
   });
@@ -87,6 +88,7 @@ export default function AddPatient() {
     
     setIsLoading(true);
     setError('');
+    setDuplicatePatient(null);
 
     try {
       // Import the API utility
@@ -98,7 +100,18 @@ export default function AddPatient() {
       // Redirect to patients list or create report page
       navigate('/patients');
     } catch (err) {
-      setError(err.message || 'Failed to add patient');
+      console.error('Error creating patient:', err);
+      
+      // Check if this is a duplicate patient error
+      if (err.response && err.response.data && err.response.data.duplicate) {
+        setDuplicatePatient(err.response.data.patient);
+        setError('Patient already exists in the system');
+      } else if (err.response && err.response.data && err.response.data.message) {
+        // Server returned a specific error message
+        setError(err.response.data.message);
+      } else {
+        setError(err.message || 'Failed to add patient');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -129,6 +142,28 @@ export default function AddPatient() {
                 <span className="font-medium">Error:</span>
                 <span className="ml-2">{error}</span>
               </div>
+              
+              {duplicatePatient && (
+                <div className="mt-3 p-3 bg-white rounded border border-red-200">
+                  <h4 className="font-medium text-red-800 mb-2">Duplicate Patient Details:</h4>
+                  <ul className="text-sm space-y-1">
+                    <li><span className="font-medium">Name:</span> {duplicatePatient.fullName}</li>
+                    <li><span className="font-medium">Age:</span> {duplicatePatient.age}</li>
+                    <li><span className="font-medium">Gender:</span> {duplicatePatient.gender}</li>
+                    <li><span className="font-medium">Phone:</span> {duplicatePatient.phone}</li>
+                    {duplicatePatient.email && <li><span className="font-medium">Email:</span> {duplicatePatient.email}</li>}
+                  </ul>
+                  <div className="mt-3 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/patients/${duplicatePatient._id}`)}
+                      className="text-sm px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                    >
+                      View Patient
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

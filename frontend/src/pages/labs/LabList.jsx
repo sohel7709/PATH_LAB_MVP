@@ -8,10 +8,14 @@ import {
   PlusCircleIcon,
   ArrowPathIcon,
   EyeIcon,
+  CreditCardIcon,
+  MagnifyingGlassIcon, // Icon for search
 } from '@heroicons/react/24/outline';
 
 const LabList = () => {
   const [labs, setLabs] = useState([]);
+  const [filteredLabs, setFilteredLabs] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -24,6 +28,7 @@ const LabList = () => {
       
       if (response.success) {
         setLabs(response.data || []);
+        setFilteredLabs(response.data || []);
       } else {
         setError(response.message || 'Failed to fetch labs');
       }
@@ -38,6 +43,28 @@ const LabList = () => {
   useEffect(() => {
     fetchLabs();
   }, []);
+
+  // Filter labs based on search term
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredLabs(labs);
+      return;
+    }
+
+    const term = searchTerm.toLowerCase().trim();
+    const filtered = labs.filter(lab => 
+      (lab.name && lab.name.toLowerCase().includes(term)) ||
+      (lab.address?.city && lab.address.city.toLowerCase().includes(term)) ||
+      (lab.address?.state && lab.address.state.toLowerCase().includes(term)) ||
+      (lab.subscription?.plan?.name && lab.subscription.plan.name.toLowerCase().includes(term))
+    );
+    
+    setFilteredLabs(filtered);
+  }, [searchTerm, labs]);
+
+  const handleSearch = (e) => {
+    setSearchTerm(e.target.value);
+  };
 
   const handleDeleteLab = async (labId) => {
     if (!window.confirm('Are you sure you want to delete this lab? This action cannot be undone.')) {
@@ -113,6 +140,20 @@ const LabList = () => {
               </button>
             </div>
           </div>
+
+          {/* Search Bar */}
+          <div className="mt-4 relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <MagnifyingGlassIcon className="h-5 w-5 text-blue-300" aria-hidden="true" />
+            </div>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={handleSearch}
+              placeholder="Search labs by name, city, state or plan..."
+              className="block w-full pl-10 pr-3 py-2 border border-transparent rounded-lg bg-white/10 backdrop-blur-sm text-white placeholder-blue-300 focus:outline-none focus:ring-2 focus:ring-white focus:border-white"
+            />
+          </div>
         </div>
         
         <div className="p-6">
@@ -137,7 +178,7 @@ const LabList = () => {
               <div className="flex justify-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
               </div>
-            ) : labs.length === 0 ? (
+            ) : filteredLabs.length === 0 ? (
               <div className="p-12 text-center">
                 <BuildingOfficeIcon className="mx-auto h-16 w-16 text-blue-200 mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-1">No labs found</h3>
@@ -157,11 +198,11 @@ const LabList = () => {
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
                       Lab Name
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
-                      Subscription
+                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                      Plan
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
-                      Status
+                      Lab Status
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
                       Created
@@ -175,7 +216,7 @@ const LabList = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-blue-100">
-              {labs.map((lab) => (
+              {filteredLabs.map((lab) => (
                 <tr key={lab._id} className="hover:bg-blue-50 transition-colors duration-150">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
@@ -188,24 +229,28 @@ const LabList = () => {
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">
-                      {lab.subscription?.plan ? (
-                        lab.subscription.plan.charAt(0).toUpperCase() + lab.subscription.plan.slice(1)
-                      ) : 'No Plan'}
+                      {/* Assuming backend populates plan name */}
+                      {lab.subscription?.plan?.name || <span className="text-gray-400 italic">No Plan</span>}
                     </div>
+                     {lab.subscription?.endDate && (
+                       <div className="text-xs text-gray-500">
+                         Expires: {new Date(lab.subscription.endDate).toLocaleDateString()}
+                       </div>
+                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
+                    {/* Use the main lab.status field */}
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      lab.subscription?.status === 'active' 
-                        ? 'bg-green-100 text-green-800' 
-                        : lab.subscription?.status === 'pending' 
-                        ? 'bg-yellow-100 text-yellow-800' 
-                        : 'bg-red-100 text-red-800'
+                      lab.status === 'active' ? 'bg-green-100 text-green-800' :
+                      lab.status === 'pending_approval' ? 'bg-yellow-100 text-yellow-800' :
+                      lab.status === 'inactive' ? 'bg-gray-100 text-gray-800' :
+                      lab.status === 'suspended' ? 'bg-red-100 text-red-800' :
+                      'bg-gray-100 text-gray-800' // Default fallback
                     }`}>
-                      {lab.subscription?.status ? (
-                        lab.subscription.status.charAt(0).toUpperCase() + lab.subscription.status.slice(1)
-                      ) : 'Inactive'}
+                      {/* Capitalize status */}
+                      {lab.status ? lab.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Unknown'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -223,10 +268,17 @@ const LabList = () => {
                       >
                         <EyeIcon className="h-5 w-5" />
                       </Link>
+                       <Link
+                        to={`/labs/${lab._id}/edit`} // Link to edit page where subscription can be managed
+                        className="text-indigo-600 hover:text-indigo-900 p-1 rounded-full hover:bg-indigo-50 transition-colors"
+                        title="Manage Subscription & Edit Lab"
+                      >
+                        <CreditCardIcon className="h-5 w-5" />
+                      </Link>
                       <Link
-                        to={`/labs/${lab._id}/edit`}
+                        to={`/labs/${lab._id}/edit`} // Keep original edit link as well, or combine logic
                         className="text-green-600 hover:text-green-900 p-1 rounded-full hover:bg-green-50 transition-colors"
-                        title="Edit Lab"
+                        title="Edit Lab Details"
                       >
                         <PencilSquareIcon className="h-5 w-5" />
                       </Link>

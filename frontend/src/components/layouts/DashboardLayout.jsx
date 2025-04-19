@@ -1,4 +1,4 @@
-import { Fragment, useState } from 'react';
+import { Fragment, useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Dialog, Menu, Transition } from '@headlessui/react';
 import {
@@ -13,6 +13,8 @@ import {
   DocumentDuplicateIcon,
   ArrowLeftIcon,
   UserIcon,
+  ChevronDoubleLeftIcon,
+  ChevronDoubleRightIcon,
 } from '@heroicons/react/24/outline';
 import { ChevronDownIcon } from '@heroicons/react/20/solid';
 import { useAuth } from '../../context/AuthContext';
@@ -30,8 +32,9 @@ const getNavigationItems = (role) => {
     { name: 'Labs', href: '/labs', icon: BeakerIcon },
     { name: 'User Management', href: '/users', icon: UserGroupIcon },
     { name: 'Test Templates', href: '/templates', icon: DocumentDuplicateIcon },
-    { name: 'Report Settings', href: '/settings/reports', icon: DocumentTextIcon },
-    { name: 'Subscription Plans', href: '/settings/subscription', icon: CogIcon },
+    { name: 'User Intelligence', href: '/user-intelligence', icon: ClipboardDocumentCheckIcon },
+    { name: 'Notification Settings', href: '/settings/notifications', icon: CogIcon },
+    { name: 'Subscription Plans', href: '/plans', icon: CogIcon },
     { name: 'Audit Logs', href: '/audit-logs', icon: DocumentTextIcon },
   ];
 
@@ -48,8 +51,6 @@ const getNavigationItems = (role) => {
   const technicianItems = [
     ...commonItems,
     { name: 'Patients', href: '/patients', icon: UserGroupIcon },
-    { name: 'Test Samples', href: '/samples', icon: BeakerIcon },
-    { name: 'Tasks', href: '/tasks', icon: ClipboardDocumentCheckIcon },
   ];
 
   switch (role) {
@@ -70,12 +71,53 @@ function classNames(...classes) {
 
 export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [labName, setLabName] = useState('PathLab');
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   
   // Default to admin navigation if user role is not available
   const navigation = getNavigationItems(user?.role || 'admin');
+
+  // Fetch lab name when component mounts or user changes
+  useEffect(() => {
+    if (user?.lab) {
+      fetchLabName(user.lab);
+    }
+  }, [user]);
+
+  // Reset sidebar open state on route change to avoid layout glitches
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [location.pathname]);
+
+  // Function to fetch lab name by ID
+  const fetchLabName = async (labId) => {
+    try {
+      // Skip for super-admin as they don't belong to a specific lab
+      if (user?.role === 'super-admin') {
+        setLabName('Admin Portal');
+        return;
+      }
+
+      const { superAdmin } = await import('../../utils/api');
+      const response = await superAdmin.getLab(labId);
+      
+      if (response && response.data) {
+        setLabName(response.data.name);
+      }
+    } catch (error) {
+      console.error('Error fetching lab name:', error);
+      // Fallback to default name
+      setLabName('PathLab');
+    }
+  };
+
+  // Toggle sidebar collapse state
+  const toggleSidebar = () => {
+    setIsCollapsed(!isCollapsed);
+  };
 
   const handleLogout = () => {
     // Use the logout function from AuthContext
@@ -110,12 +152,18 @@ export default function DashboardLayout() {
             >
               <Dialog.Panel className="relative mr-16 flex w-full max-w-xs flex-1">
                 <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-blue-800 px-6 pb-4">
-                  <div className="flex h-16 shrink-0 items-center">
-                    <img
-                      className="h-8 w-auto"
-                      src="/logo-white.svg"
-                      alt="Pathology Lab"
-                    />
+                  <div className="flex h-16 shrink-0 items-center justify-between">
+                    <div className="flex items-center">
+                      <span className="text-white font-semibold text-lg whitespace-nowrap overflow-hidden text-ellipsis">
+                        {labName}
+                      </span>
+                    </div>
+                    <button 
+                      onClick={() => setSidebarOpen(false)}
+                      className="text-white hover:text-blue-200 transition-colors duration-200"
+                    >
+                      <XMarkIcon className="h-6 w-6" />
+                    </button>
                   </div>
                   <nav className="flex flex-1 flex-col">
                     <ul role="list" className="flex flex-1 flex-col gap-y-7">
@@ -155,14 +203,36 @@ export default function DashboardLayout() {
       </Transition.Root>
 
       {/* Static sidebar for desktop */}
-      <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
+      <div 
+        className={classNames(
+          "hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:flex-col transition-all duration-300 ease-in-out",
+          isCollapsed ? "lg:w-20" : "lg:w-72"
+        )}
+      >
         <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-blue-800 px-6 pb-4">
-          <div className="flex h-16 shrink-0 items-center">
-            <img
-              className="h-8 w-auto"
-              src="/logo-white.svg"
-              alt="Pathology Lab"
-            />
+          <div className="flex h-16 shrink-0 items-center justify-between">
+            <div className="flex items-center">
+              {isCollapsed ? (
+                <div className="h-8 w-8 flex items-center justify-center text-white font-bold text-lg bg-blue-700 rounded-md">
+                  {labName.charAt(0)}
+                </div>
+              ) : (
+                <span className="text-white font-semibold text-lg whitespace-nowrap overflow-hidden text-ellipsis">
+                  {labName}
+                </span>
+              )}
+            </div>
+            <button 
+              onClick={toggleSidebar}
+              className="text-white hover:text-blue-200 transition-colors duration-200"
+              aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {isCollapsed ? (
+                <ChevronDoubleRightIcon className="h-5 w-5" />
+              ) : (
+                <ChevronDoubleLeftIcon className="h-5 w-5" />
+              )}
+            </button>
           </div>
           <nav className="flex flex-1 flex-col">
             <ul role="list" className="flex flex-1 flex-col gap-y-7">
@@ -176,8 +246,10 @@ export default function DashboardLayout() {
                           location.pathname === item.href
                             ? 'bg-blue-900 text-white'
                             : 'text-white hover:text-white hover:bg-blue-700',
-                          'group flex gap-x-3 rounded-md p-3 text-base leading-6 font-semibold transition-all duration-200'
+                          'group flex gap-x-3 rounded-md p-3 text-base leading-6 font-semibold transition-all duration-200',
+                          isCollapsed ? 'justify-center' : ''
                         )}
+                        title={item.name}
                       >
                         <item.icon
                           className={classNames(
@@ -186,7 +258,7 @@ export default function DashboardLayout() {
                           )}
                           aria-hidden="true"
                         />
-                        {item.name}
+                        {!isCollapsed && item.name}
                       </Link>
                     </li>
                   ))}
@@ -198,7 +270,10 @@ export default function DashboardLayout() {
       </div>
 
       {/* Main content */}
-      <div className="lg:pl-72">
+      <div className={classNames(
+        "transition-all duration-300 ease-in-out",
+        isCollapsed ? "lg:pl-20" : "lg:pl-72"
+      )}>
         <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-white px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
           {/* Back button */}
           <button

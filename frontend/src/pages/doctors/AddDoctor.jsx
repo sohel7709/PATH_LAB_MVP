@@ -22,19 +22,64 @@ const AddDoctor = () => {
     }));
   };
 
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
     setError('');
+
+    // Basic form validation
+    if (!formData.name.trim()) {
+      setError('Full Name is required.');
+      return;
+    }
+    if (!formData.specialty.trim()) {
+      setError('Specialty is required.');
+      return;
+    }
+    if (!formData.phone.trim()) {
+      setError('Phone Number is required.');
+      return;
+    }
+    // Check if phone number is exactly 10 digits
+    const phoneDigits = formData.phone.replace(/\D/g, '');
+    if (phoneDigits.length !== 10) {
+      setError('Phone number must be exactly 10 digits.');
+      return;
+    }
+    if (!formData.email.trim()) {
+      setError('Email is required.');
+      return;
+    }
+    // Simple email format check
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+
+    setIsLoading(true);
 
     try {
       await doctors.create(formData);
       navigate('/doctors');
     } catch (err) {
       console.error('Error creating doctor:', err);
-      setError(err.message || 'Failed to create doctor. Please try again.');
+      // Show user-friendly error message
+      let message = err?.response?.data?.message || err.message || 'Failed to create doctor. Please try again.';
+      // Check for duplicate email error (example error message, adjust as per backend)
+      if (message.toLowerCase().includes('duplicate') && message.toLowerCase().includes('email')) {
+        message = 'A doctor with this email is already registered.';
+      }
+      alert(message);
+      setError(message);
       setIsLoading(false);
     }
+  };
+
+  // Optionally, clear error on input change
+  const handleInputChange = (e) => {
+    if (error) setError('');
+    handleChange(e);
   };
 
   return (
@@ -82,31 +127,31 @@ const AddDoctor = () => {
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                   Full Name <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="text"
-                  name="name"
-                  id="name"
-                  required
-                  value={formData.name}
-                  onChange={handleChange}
-                  className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
-                  placeholder="Enter doctor's full name"
-                />
+        <input
+          type="text"
+          name="name"
+          id="name"
+          required
+          value={formData.name}
+          onChange={handleInputChange}
+          className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+          placeholder="Enter doctor's full name"
+        />
               </div>
               <div>
                 <label htmlFor="specialty" className="block text-sm font-medium text-gray-700 mb-1">
                   Specialty <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="text"
-                  name="specialty"
-                  id="specialty"
-                  required
-                  value={formData.specialty}
-                  onChange={handleChange}
-                  className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
-                  placeholder="e.g., Cardiologist, Neurologist"
-                />
+        <input
+          type="text"
+          name="specialty"
+          id="specialty"
+          required
+          value={formData.specialty}
+          onChange={handleInputChange}
+          className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+          placeholder="e.g., Cardiologist, Neurologist"
+        />
               </div>
             </div>
           </section>
@@ -121,31 +166,31 @@ const AddDoctor = () => {
                 <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
                   Phone Number <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="tel"
-                  name="phone"
-                  id="phone"
-                  required
-                  value={formData.phone}
-                  onChange={handleChange}
-                  className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
-                  placeholder="Enter phone number"
-                />
+        <input
+          type="tel"
+          name="phone"
+          id="phone"
+          required
+          value={formData.phone}
+          onChange={handleInputChange}
+          className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+          placeholder="Enter phone number"
+        />
               </div>
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                   Email <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="email"
-                  name="email"
-                  id="email"
-                  required
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
-                  placeholder="Enter email address"
-                />
+        <input
+          type="email"
+          name="email"
+          id="email"
+          required
+          value={formData.email}
+          onChange={handleInputChange}
+          className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+          placeholder="Enter email address"
+        />
               </div>
             </div>
           </section>

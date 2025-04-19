@@ -89,26 +89,27 @@ router.get('/system-stats', protect, authorize('super-admin'), async (req, res) 
       'subscription.status': 'active'
     });
     
-    // Calculate revenue (assuming subscription plans have fixed prices)
-    const subscriptionPrices = {
-      'basic': 100,
-      'premium': 250,
-      'enterprise': 500
-    };
-    
+    // Calculate revenue from active subscriptions
     const labsWithSubscriptions = await Lab.find({
       'subscription.status': 'active'
-    }, 'subscription.plan');
+    }).populate('subscription.plan', 'price');
     
     const revenueThisMonth = labsWithSubscriptions.reduce((total, lab) => {
-      return total + (subscriptionPrices[lab.subscription.plan] || 0);
+      // Check if plan is populated and has a price
+      if (lab.subscription?.plan && typeof lab.subscription.plan === 'object' && lab.subscription.plan.price) {
+        return total + lab.subscription.plan.price;
+      }
+      // Fallback for old string-based plans
+      const legacyPrices = { 'basic': 100, 'premium': 250, 'enterprise': 500 };
+      return total + (legacyPrices[lab.subscription?.plan] || 0);
     }, 0);
     
-    // Get recent labs
+    // Get recent labs with populated plan details
     const recentLabs = await Lab.find()
       .sort({ createdAt: -1 })
       .limit(5)
-      .select('name subscription.plan subscription.status createdAt');
+      .populate('subscription.plan', 'name') // Populate plan name
+      .select('name subscription.plan subscription.status createdAt status');
     
     // Get recent users
     const recentUsers = await User.find()
@@ -117,11 +118,25 @@ router.get('/system-stats', protect, authorize('super-admin'), async (req, res) 
       .populate('lab', 'name')
       .select('name email role lab');
     
-    // Get labs by subscription type
+    // Get labs by subscription type - handle both string and ObjectId references
     const labsBySubscription = await Lab.aggregate([
       {
+        $lookup: {
+          from: 'plans', // The collection name for Plan model
+          localField: 'subscription.plan',
+          foreignField: '_id',
+          as: 'planDetails'
+        }
+      },
+      {
         $group: {
-          _id: '$subscription.plan',
+          _id: { 
+            $cond: {
+              if: { $isArray: '$planDetails' },
+              then: { $arrayElemAt: ['$planDetails.name', 0] },
+              else: '$subscription.plan' // Fallback for old string-based plans
+            }
+          },
           count: { $sum: 1 }
         }
       }

@@ -8,7 +8,8 @@ const {
   updateLab,
   deleteLab,
   getLabStats,
-  updateLabSubscription
+  assignPlanToLab,
+  getSubscriptionHistoryForLab
 } = require('../controllers/labController');
 
 // All routes require authentication
@@ -27,7 +28,8 @@ router.route('/:id')
 // Lab statistics route
 router.get('/:id/stats', authorize('super-admin', 'admin'), checkLabAccess, getLabStats); // Get lab statistics
 
-// Subscription management route (Super Admin only)
-router.put('/:id/subscription', authorize('super-admin'), updateLabSubscription); // Update lab subscription
+// Subscription management routes (Super Admin only)
+router.post('/:id/assign-plan', authorize('super-admin'), assignPlanToLab); // Assign plan to lab
+router.get('/:id/subscription-history', authorize('super-admin', 'admin'), checkLabAccess, getSubscriptionHistoryForLab); // Get subscription history
 
 module.exports = router;

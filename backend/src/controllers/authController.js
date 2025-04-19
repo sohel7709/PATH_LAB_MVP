@@ -131,7 +131,7 @@ exports.login = async (req, res, next) => {
       // Check if their lab is active
       try {
         const lab = await Lab.findById(user.lab);
-        console.log('Found lab:', lab ? { id: lab._id, name: lab.name, status: lab.subscription.status } : 'No lab found');
+        console.log('Found lab:', lab ? { id: lab._id, name: lab.name, status: lab.status } : 'No lab found');
         
         if (!lab) {
           return res.status(403).json({
@@ -140,7 +140,7 @@ exports.login = async (req, res, next) => {
           });
         }
         
-        if (lab.subscription.status !== 'active') {
+        if (lab.status !== 'active') {
           return res.status(403).json({
             success: false,
             message: 'Lab account is inactive or suspended'
@@ -181,7 +181,7 @@ exports.getMe = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id).populate({
       path: 'lab',
-      select: 'name subscription.status'
+      select: 'name status subscription'
     });
 
     if (!user) {
@@ -312,7 +312,7 @@ exports.verifyToken = async (req, res, next) => {
       .select('-password')
       .populate({
         path: 'lab',
-        select: 'name subscription.status'
+        select: 'name status subscription'
       });
 
     console.log('Verifying token for user:', user);

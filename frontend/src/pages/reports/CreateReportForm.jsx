@@ -15,6 +15,8 @@ export default function CreateReportForm() {
   const [success, setSuccess] = useState('');
   const [patientList, setPatientList] = useState([]);
   const [doctorList, setDoctorList] = useState([]);
+  const [patientSearchTerm, setPatientSearchTerm] = useState('');
+  const [showPatientDropdown, setShowPatientDropdown] = useState(false);
   
   // Form data state
   const [formData, setFormData] = useState({
@@ -162,24 +164,6 @@ export default function CreateReportForm() {
     }));
   };
 
-  // Handle patient selection
-  const handlePatientSelect = (e) => {
-    const selectedPatientId = e.target.value;
-    if (selectedPatientId) {
-      fetchPatientDetails(selectedPatientId);
-    } else {
-      // Clear patient fields if "Add New Patient" is selected
-      setFormData(prev => ({
-        ...prev,
-        patientId: '',
-        patientName: '',
-        patientAge: '',
-        patientGender: '',
-        patientPhone: ''
-      }));
-    }
-  };
-
   // Submit form
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -221,6 +205,28 @@ export default function CreateReportForm() {
         }
       }
       
+      // Validate required fields
+      if (!formData.testName || !formData.category || !formData.sampleType) {
+        setError('Please fill in all required test information fields');
+        setIsLoading(false);
+        return;
+      }
+
+      // Validate test parameters
+      if (!formData.testParameters || formData.testParameters.length === 0) {
+        setError('Please select a test template or add at least one test parameter');
+        setIsLoading(false);
+        return;
+      }
+
+      // Check if all test parameters have values
+      const missingValues = formData.testParameters.filter(param => !param.name || !param.value);
+      if (missingValues.length > 0) {
+        setError('Please provide values for all test parameters');
+        setIsLoading(false);
+        return;
+      }
+
       // Generate a unique sample ID
       const sampleId = `SAMPLE-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
       
@@ -246,14 +252,13 @@ export default function CreateReportForm() {
           referenceDoctor: formData.referenceDoctor || '' // Include reference doctor
         },
         results: formData.testParameters.map(param => ({
-          parameter: param.name,
-          value: param.value,
-          unit: param.unit,
-          referenceRange: param.referenceRange,
+          parameter: param.name || 'Unknown Parameter',
+          value: param.value || 'N/A',
+          unit: param.unit || '',
+          referenceRange: param.referenceRange || '',
           flag: param.value && param.referenceRange ? 
             (isValueNormal(param.value, param.referenceRange, formData.patientGender) ? 'normal' : 'high') : 
-            'normal',
-          section: param.section // Include section if available
+            'normal'
         })),
         status: formData.status,
         lab: user?.lab,
@@ -263,6 +268,8 @@ export default function CreateReportForm() {
           version: 1
         }
       };
+
+      console.log('Formatted report data:', JSON.stringify(reportData, null, 2));
       
       console.log('Submitting report data:', reportData);
       
@@ -324,8 +331,8 @@ export default function CreateReportForm() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 py-8 px-2">
-      <div className="w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-blue-100 overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl border border-blue-100 overflow-hidden">
         <div className="px-8 py-6 bg-gradient-to-r from-blue-700 to-blue-500">
           <div className="flex justify-between items-center">
             <div className="flex items-center">
@@ -374,28 +381,87 @@ export default function CreateReportForm() {
             <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
               <div className="sm:col-span-6">
                 <label htmlFor="patientSelect" className="block text-sm font-medium text-gray-700 mb-1">
-                  Select Patient
+                  Select or Search Patient
                 </label>
-                <div className="mt-1">
-                  <select
-                    id="patientSelect"
-                    name="patientSelect"
+                <div className="mt-1 relative">
+                  <input
+                    type="text"
+                    id="patientSearch"
+                    name="patientSearch"
+                    placeholder="Type to search patients by name or phone"
+                    value={patientSearchTerm}
+                    onChange={(e) => {
+                      setPatientSearchTerm(e.target.value);
+                      setShowPatientDropdown(true);
+                    }}
+                    onFocus={() => setShowPatientDropdown(true)}
+                    onBlur={() => {
+                      // Delay hiding dropdown to allow click events to register
+                      setTimeout(() => setShowPatientDropdown(false), 200);
+                    }}
                     className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
-                    onChange={handlePatientSelect}
-                    value={formData.patientId || ''}
-                  >
-                    <option value="">Add New Patient</option>
-                    {patientList.map(patient => {
-                      // Handle both MongoDB _id and id formats
-                      const patientId = patient._id || patient.id;
-                      return (
-                        <option key={patientId} value={patientId}>
-                          {patient.fullName} - {patient.phone}
-                        </option>
-                      );
-                    })}
-                  </select>
+                  />
+                  
+                  {showPatientDropdown && patientSearchTerm && (
+                    <div className="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base overflow-auto focus:outline-none sm:text-sm border border-blue-200">
+                      <div 
+                        className="cursor-pointer select-none relative py-2 pl-3 pr-9 text-gray-900 hover:bg-blue-50"
+                        onClick={() => {
+                          setPatientSearchTerm('');
+                          setFormData(prev => ({
+                            ...prev,
+                            patientId: '',
+                            patientName: '',
+                            patientAge: '',
+                            patientGender: '',
+                            patientPhone: ''
+                          }));
+                          setShowPatientDropdown(false);
+                        }}
+                      >
+                        Add New Patient
+                      </div>
+                      
+                      {patientList
+                        .filter(patient => 
+                          patient.fullName?.toLowerCase().includes(patientSearchTerm.toLowerCase()) || 
+                          patient.phone?.includes(patientSearchTerm)
+                        )
+                        .map(patient => {
+                          // Handle both MongoDB _id and id formats
+                          const patientId = patient._id || patient.id;
+                          return (
+                            <div 
+                              key={patientId} 
+                              className="cursor-pointer select-none relative py-2 pl-3 pr-9 text-gray-900 hover:bg-blue-50"
+                              onClick={() => {
+                                fetchPatientDetails(patientId);
+                                setPatientSearchTerm(`${patient.fullName} - ${patient.phone}`);
+                                setShowPatientDropdown(false);
+                              }}
+                            >
+                              {patient.fullName} - {patient.phone}
+                            </div>
+                          );
+                        })
+                      }
+                      
+                      {patientList.filter(patient => 
+                        patient.fullName?.toLowerCase().includes(patientSearchTerm.toLowerCase()) || 
+                        patient.phone?.includes(patientSearchTerm)
+                      ).length === 0 && (
+                        <div className="cursor-default select-none relative py-2 pl-3 pr-9 text-gray-500">
+                          No patients found. Type to add a new patient.
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
+                {formData.patientId && (
+                  <div className="mt-2 text-sm text-blue-600">
+                    Selected: {formData.patientName} - {formData.patientPhone}
+                  </div>
+                )}
               </div>
 
               <div className="sm:col-span-3">

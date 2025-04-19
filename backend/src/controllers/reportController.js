@@ -1,7 +1,10 @@
-const Report = require('../models/Report');
+ const Report = require('../models/Report');
 const Lab = require('../models/Lab');
 const User = require('../models/User');
 const LabReportSettings = require('../models/LabReportSettings');
+const Patient = require('../models/Patient');
+const Doctor = require('../models/Doctor');
+const whatsappService = require('../utils/whatsappService');
 const fs = require('fs');
 const path = require('path');
 const handlebars = require('handlebars');
@@ -24,6 +27,67 @@ exports.createReport = async (req, res, next) => {
       $inc: { 'stats.totalReports': 1 },
       $set: { 'stats.lastReportDate': Date.now() }
     });
+
+    // Get lab details for notification
+    const lab = await Lab.findById(req.user.lab);
+    
+    // Send WhatsApp notification if patient phone is available
+    try {
+      if (report.patientInfo && report.patientInfo.contact && report.patientInfo.contact.phone) {
+        // Get the base URL for the report link
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const reportLink = `${baseUrl}/reports/view/${report._id}`;
+        
+        // Send WhatsApp notification to patient
+        await whatsappService.sendReportNotification(
+          report.patientInfo.contact.phone,
+          report.patientInfo.name,
+          report.testInfo.name,
+          reportLink,
+          lab.name
+        );
+        
+        // Update report delivery status
+        report.reportMeta.deliveryStatus.whatsapp = {
+          sent: true,
+          sentAt: Date.now(),
+          recipient: report.patientInfo.contact.phone
+        };
+        
+        await report.save();
+        console.log('WhatsApp notification sent to patient');
+      }
+      
+      // If there's a referring doctor, send notification to them as well
+      if (report.testInfo && report.testInfo.referenceDoctor) {
+        // Try to find the doctor in the database
+        const doctor = await Doctor.findOne({ 
+          name: report.testInfo.referenceDoctor,
+          lab: req.user.lab
+        });
+        
+        if (doctor && doctor.phone) {
+          // Get the base URL for the report link
+          const baseUrl = `${req.protocol}://${req.get('host')}`;
+          const reportLink = `${baseUrl}/reports/view/${report._id}`;
+          
+          // Send WhatsApp notification to doctor
+          await whatsappService.sendDoctorNotification(
+            doctor.phone,
+            doctor.name,
+            report.patientInfo.name,
+            report.testInfo.name,
+            reportLink,
+            lab.name
+          );
+          
+          console.log('WhatsApp notification sent to doctor');
+        }
+      }
+    } catch (notificationError) {
+      // Log the error but don't fail the report creation
+      console.error('Error sending WhatsApp notification:', notificationError);
+    }
 
     res.status(201).json({
       success: true,
@@ -774,9 +838,9 @@ exports.generatePdfReport = async (req, res, next) => {
     
     // Set viewport size to A4
     await page.setViewport({
-      width: 1280,
-      height: 720,
-      deviceScaleFactor: 1.5
+      width: 794, // A4 width in pixels (210mm at 96 DPI)
+      height: 1123, // A4 height in pixels (297mm at 96 DPI)
+      deviceScaleFactor: 1
     });
     
     // Set the content of the page with longer timeout
@@ -793,10 +857,10 @@ exports.generatePdfReport = async (req, res, next) => {
       format: 'A4',
       printBackground: true,
       margin: {
-        top: '10mm',
-        right: '10mm',
-        bottom: '10mm',
-        left: '10mm'
+        top: '0',
+        right: '0',
+        bottom: '0',
+        left: '0'
       },
       preferCSSPageSize: true,
       displayHeaderFooter: false,

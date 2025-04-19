@@ -137,30 +137,27 @@ export default function Profile() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">My Profile</h1>
-      
+    <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-md">
+      <h1 className="text-3xl font-bold mb-8 text-gray-900">My Profile</h1>
+
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
           {error}
         </div>
       )}
-      
+
       {success && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
           {success}
         </div>
       )}
-      
-      <div className="bg-white shadow-md rounded-lg overflow-hidden mb-6">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-xl font-semibold">Personal Information</h2>
-        </div>
-        
-        <form onSubmit={handleProfileSubmit} className="p-6">
+
+      <div className="mb-8">
+        <h2 className="text-2xl font-semibold mb-4 text-gray-800">Personal Information</h2>
+        <form onSubmit={handleProfileSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
                 Name
               </label>
               <input
@@ -169,13 +166,13 @@ export default function Profile() {
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
                 required
               />
             </div>
-            
+
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                 Email
               </label>
               <input
@@ -184,10 +181,10 @@ export default function Profile() {
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                className={`w-full px-3 py-2 border border-gray-300 rounded-md ${
-                  profileData?.role === 'super-admin' 
-                    ? 'focus:outline-none focus:ring-2 focus:ring-blue-500' 
-                    : 'bg-gray-100'
+                className={`w-full px-4 py-2 border rounded-md ${
+                  profileData?.role === 'super-admin'
+                    ? 'border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600'
+                    : 'border-gray-200 bg-gray-100 cursor-not-allowed'
                 }`}
                 disabled={profileData?.role !== 'super-admin'}
                 required
@@ -198,9 +195,9 @@ export default function Profile() {
                 </p>
               )}
             </div>
-            
+
             <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
                 Phone
               </label>
               <input
@@ -209,67 +206,67 @@ export default function Profile() {
                 name="phone"
                 value={formData.phone}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
               />
             </div>
-            
+
             <div>
-              <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
                 Role
               </label>
               <input
                 type="text"
                 id="role"
                 value={profileData?.role || user?.role || ''}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100"
                 disabled
               />
             </div>
-            
+
             <div>
-              <label htmlFor="userId" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="userId" className="block text-sm font-medium text-gray-700 mb-2">
                 User ID
               </label>
               <input
                 type="text"
                 id="userId"
                 value={profileData?.id || user?.id || ''}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100"
                 disabled
               />
             </div>
-            
+
             <div>
-              <label htmlFor="lab" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="lab" className="block text-sm font-medium text-gray-700 mb-2">
                 Lab Name
               </label>
               <input
                 type="text"
                 id="lab"
                 value={profileData?.lab?.name || ''}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100"
                 disabled
               />
             </div>
-            
+
             <div>
-              <label htmlFor="labId" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="labId" className="block text-sm font-medium text-gray-700 mb-2">
                 Lab ID
               </label>
               <input
                 type="text"
                 id="labId"
                 value={profileData?.lab?.id || user?.lab || ''}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100"
                 disabled
               />
             </div>
           </div>
-          
+
           <div className="mt-6">
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full md:w-auto px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
               disabled={loading}
             >
               {loading ? 'Saving...' : 'Save Changes'}
@@ -277,16 +274,16 @@ export default function Profile() {
           </div>
         </form>
       </div>
-      
+
       <div className="bg-white shadow-md rounded-lg overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-xl font-semibold">Change Password</h2>
+          <h2 className="text-2xl font-semibold text-gray-800">Change Password</h2>
         </div>
-        
-        <form onSubmit={handlePasswordSubmit} className="p-6">
+
+        <form onSubmit={handlePasswordSubmit} className="p-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-2">
                 Current Password
               </label>
               <input
@@ -295,17 +292,17 @@ export default function Profile() {
                 name="currentPassword"
                 value={passwordData.currentPassword}
                 onChange={handlePasswordChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
                 required
               />
             </div>
-            
+
             <div className="md:col-span-2">
               <div className="h-0 md:h-6"></div>
             </div>
-            
+
             <div>
-              <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-2">
                 New Password
               </label>
               <input
@@ -314,14 +311,14 @@ export default function Profile() {
                 name="newPassword"
                 value={passwordData.newPassword}
                 onChange={handlePasswordChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
                 required
                 minLength={6}
               />
             </div>
-            
+
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
                 Confirm New Password
               </label>
               <input
@@ -330,17 +327,17 @@ export default function Profile() {
                 name="confirmPassword"
                 value={passwordData.confirmPassword}
                 onChange={handlePasswordChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
                 required
                 minLength={6}
               />
             </div>
           </div>
-          
-          <div className="mt-6">
+
+          <div>
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full md:w-auto px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
               disabled={loading}
             >
               {loading ? 'Changing...' : 'Change Password'}

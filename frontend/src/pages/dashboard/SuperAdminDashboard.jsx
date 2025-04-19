@@ -233,7 +233,7 @@ const SuperAdminDashboard = () => {
           </div>
           <div className="bg-gray-50 px-5 py-3">
             <div className="text-sm">
-              <Link to="/subscriptions" className="font-medium text-blue-700 hover:text-blue-900">
+              <Link to="/plans" className="font-medium text-blue-700 hover:text-blue-900">
                 View details
               </Link>
             </div>
@@ -388,7 +388,14 @@ const SuperAdminDashboard = () => {
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-gray-900 truncate">{lab.name}</p>
                             <p className="text-sm text-gray-500 truncate">
-                              {lab.subscription.plan.charAt(0).toUpperCase() + lab.subscription.plan.slice(1)} Plan • {lab.subscription.status}
+                              {/* Handle both object (populated) and string plan references */}
+                              {lab.subscription?.plan?.name 
+                                ? `${lab.subscription.plan.name} Plan` 
+                                : lab.subscription?.plan 
+                                  ? `${lab.subscription.plan.charAt(0).toUpperCase() + lab.subscription.plan.slice(1)} Plan`
+                                  : 'No Plan'} 
+                              {' • '}
+                              {lab.status || lab.subscription?.status || 'Unknown'}
                             </p>
                           </div>
                           <div className="flex-shrink-0 flex space-x-3">

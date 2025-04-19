@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ExclamationCircleIcon, PrinterIcon } from '@heroicons/react/24/outline';
+import { ExclamationCircleIcon, PrinterIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import { reports, labReportSettings } from '../../utils/api';
 import ReportTemplate from '../../components/reports/ReportTemplate';
 
@@ -12,10 +12,8 @@ export default function PrintReport() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [isPrinting] = useState(false);
-  // Removed isDownloading state
-  // Removed isDownloadingServerPdf state as it's no longer needed
-  const [showHeader, setShowHeader] = useState(true);
-  const [showFooter, setShowFooter] = useState(true);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [showHeaderFooter, setShowHeaderFooter] = useState(false);
   const reportRef = useRef(null);
 
   useEffect(() => {
@@ -50,7 +48,48 @@ export default function PrintReport() {
     window.print();
   };
   
-  // Removed PDF download functions
+  const handleDownload = async () => {
+    setIsDownloading(true);
+    try {
+      // Check if html2pdf is available
+      if (typeof window.html2pdf === 'undefined') {
+        // If html2pdf is not loaded, dynamically load it
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+        script.async = true;
+        script.onload = () => {
+          generatePDF();
+        };
+        document.body.appendChild(script);
+      } else {
+        generatePDF();
+      }
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+      setIsDownloading(false);
+    }
+  };
+
+  const generatePDF = async () => {
+    try {
+      const element = reportRef.current;
+      const opt = {
+        margin: [0, 0, 0, 0],
+        filename: `${report.patientInfo?.name || 'Patient'}_Report_${new Date().toLocaleDateString().replace(/\//g, '-')}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+      
+      await window.html2pdf().set(opt).from(element).save();
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   // Prepare the data for the ReportTemplate component
   const prepareReportData = () => {
@@ -63,7 +102,7 @@ export default function PrintReport() {
       doctorName: labSettings.header?.doctorName || 'Dr. Consultant',
       address: labSettings.header?.address || '',
       phone: labSettings.header?.phone || '',
-      showHeader: showHeader,
+      showHeader: showHeaderFooter,
       
       // Patient data
       patientName: report.patientInfo?.name || 'N/A',
@@ -93,7 +132,7 @@ export default function PrintReport() {
       
       // Footer data
       footerImage: labSettings.footer?.footerImage || '',
-      showFooter: showFooter,
+      showFooter: showHeaderFooter,
       
       // Styling
       styling: labSettings.styling || {
@@ -156,8 +195,15 @@ export default function PrintReport() {
           >
             Edit Report
           </button>
-          {/* Download PDF button removed as per user request */}
-          {/* Removed Client PDF Download Button */}
+          <button
+            type="button"
+            onClick={handleDownload}
+            disabled={isDownloading}
+            className={`btn-secondary mr-3 ${isDownloading ? 'opacity-75 cursor-not-allowed' : ''}`}
+          >
+            <ArrowDownTrayIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+            {isDownloading ? 'Downloading...' : 'Download PDF'}
+          </button>
           <button
             type="button"
             onClick={handlePrint}
@@ -176,28 +222,15 @@ export default function PrintReport() {
         <div className="flex flex-wrap gap-6">
           <div className="flex items-center">
             <input
-              id="showHeader"
-              name="showHeader"
+              id="showHeaderFooter"
+              name="showHeaderFooter"
               type="checkbox"
-              checked={showHeader}
-              onChange={(e) => setShowHeader(e.target.checked)}
+              checked={showHeaderFooter}
+              onChange={(e) => setShowHeaderFooter(e.target.checked)}
               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
             />
-            <label htmlFor="showHeader" className="ml-2 block text-sm text-gray-900">
-              Show Header
-            </label>
-          </div>
-          <div className="flex items-center">
-            <input
-              id="showFooter"
-              name="showFooter"
-              type="checkbox"
-              checked={showFooter}
-              onChange={(e) => setShowFooter(e.target.checked)}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            />
-            <label htmlFor="showFooter" className="ml-2 block text-sm text-gray-900">
-              Show Footer
+            <label htmlFor="showHeaderFooter" className="ml-2 block text-sm text-gray-900">
+              Show Header and Footer
             </label>
           </div>
           <div className="text-sm text-gray-500 italic">
@@ -211,13 +244,15 @@ export default function PrintReport() {
         ref={reportRef}
         className="mt-8 bg-white shadow-sm print:shadow-none print:mt-0 print-report-container"
         style={{
-          width: '100%', // Full width
-          maxWidth: '210mm', // A4 width
+          width: '210mm', // A4 width
+          height: '297mm', // A4 height
           margin: '0 auto',
           pageBreakInside: 'avoid',
           boxSizing: 'border-box',
           padding: '0',
-          border: '1px solid #eee'
+          border: '1px solid #eee',
+          position: 'relative',
+          overflow: 'hidden'
         }}
       >
         <style>
@@ -257,7 +292,7 @@ export default function PrintReport() {
               .header-image {
                 width: 100% !important;
                 max-width: 100% !important;
-                height: 480px !important; /* 480px @ 300 DPI */
+                height: 25mm !important; /* Reduced from 35mm to 25mm to match header container */
                 object-fit: contain !important;
               }
               
@@ -281,13 +316,12 @@ export default function PrintReport() {
               /* Ensure content fits on one page */
               .report-content {
                 position: absolute !important;
-                top: 480px !important; /* 480px @ 300 DPI */
-                bottom: 200px !important; /* 200px @ 300 DPI */
+                top: 25mm !important; /* Reduced from 35mm to 25mm */
+                bottom: 25mm !important; /* Reduced from 30mm to 25mm */
                 left: 0 !important;
                 right: 0 !important;
                 padding: 5mm !important;
                 overflow: hidden !important;
-                min-height: 2828px !important; /* 2828px @ 300 DPI */
               }
               
               /* Fixed header */
@@ -296,7 +330,7 @@ export default function PrintReport() {
                 top: 0 !important;
                 left: 0 !important;
                 right: 0 !important;
-                height: 480px !important; /* 480px @ 300 DPI */
+                height: 25mm !important; /* Reduced from 35mm to 25mm */
                 z-index: 100 !important;
               }
               
@@ -306,8 +340,23 @@ export default function PrintReport() {
                 bottom: 0 !important;
                 left: 0 !important;
                 right: 0 !important;
-                height: 200px !important; /* 200px @ 300 DPI */
+                height: 30mm !important;
                 z-index: 100 !important;
+              }
+              
+              /* Fixed doctor sign */
+              .doctor-sign {
+                position: fixed !important;
+                bottom: 30mm !important;
+                left: 0 !important;
+                right: 0 !important;
+                height: 20mm !important;
+                text-align: center !important;
+                z-index: 101 !important;
+                border-top: 1px solid #000 !important;
+                padding-top: 5px !important;
+                font-size: 12pt !important;
+                font-weight: bold !important;
               }
             }
           `}

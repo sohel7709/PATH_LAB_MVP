@@ -2,12 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { users, superAdmin } from '../../utils/api';
-import { PencilIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { PencilIcon, TrashIcon, PlusIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 
 const UserList = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [usersList, setUsersList] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -28,6 +30,7 @@ const UserList = () => {
         }
         
         setUsersList(data);
+        setFilteredUsers(data);
       } catch (err) {
         console.error('Error fetching users:', err);
         setError(err.message || 'Failed to fetch users');
@@ -38,6 +41,28 @@ const UserList = () => {
 
     fetchUsers();
   }, [user?.role]);
+
+  // Filter users based on search term
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredUsers(usersList);
+      return;
+    }
+
+    const term = searchTerm.toLowerCase().trim();
+    const filtered = usersList.filter(userData => 
+      (userData.name && userData.name.toLowerCase().includes(term)) ||
+      (userData.email && userData.email.toLowerCase().includes(term)) ||
+      (userData.role && userData.role.toLowerCase().includes(term)) ||
+      (userData.lab?.name && userData.lab.name.toLowerCase().includes(term))
+    );
+    
+    setFilteredUsers(filtered);
+  }, [searchTerm, usersList]);
+
+  const handleSearch = (e) => {
+    setSearchTerm(e.target.value);
+  };
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this user?')) {
@@ -92,6 +117,20 @@ const UserList = () => {
               Add User
             </Link>
           </div>
+
+          {/* Search Bar */}
+          <div className="mt-4 relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <MagnifyingGlassIcon className="h-5 w-5 text-blue-300" aria-hidden="true" />
+            </div>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={handleSearch}
+              placeholder="Search users by name, email, role or lab..."
+              className="block w-full pl-10 pr-3 py-2 border border-transparent rounded-lg bg-white/10 backdrop-blur-sm text-white placeholder-blue-300 focus:outline-none focus:ring-2 focus:ring-white focus:border-white"
+            />
+          </div>
         </div>
         
         <div className="p-6">
@@ -126,8 +165,8 @@ const UserList = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-blue-100">
-                    {usersList.length > 0 ? (
-                      usersList.map((userData) => (
+                    {filteredUsers.length > 0 ? (
+                      filteredUsers.map((userData) => (
                         <tr key={userData._id}>
                           <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">{userData.name}</td>
                           <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{userData.email}</td>

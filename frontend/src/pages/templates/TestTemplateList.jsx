@@ -41,6 +41,9 @@ const TestTemplateList = () => {
       setLoading(true);
       setError(null);
       
+      // Log the user object from context to verify role
+      console.log('Fetching templates for user:', user); 
+      
       const filters = {};
       if (searchTerm) filters.name = searchTerm;
       if (selectedCategory) filters.category = selectedCategory;
@@ -60,6 +63,12 @@ const TestTemplateList = () => {
     }
   };
 
+  // Fetch templates on initial mount
+  useEffect(() => {
+    fetchTemplates();
+  }, []); // Empty dependency array ensures this runs only once on mount
+
+  // Refetch templates when category changes
   useEffect(() => {
     fetchTemplates();
   }, [selectedCategory]);
@@ -124,7 +133,7 @@ const TestTemplateList = () => {
                 name="category"
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="block w-full rounded-lg border border-blue-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                className="block w-full rounded-lg border border-blue-300 bg-blue-50 h-10 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm font-medium text-blue-700 transition-colors"
               >
                 {categories.map((category) => (
                   <option key={category.value} value={category.value}>
@@ -138,27 +147,27 @@ const TestTemplateList = () => {
                 <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
                   Search Templates
                 </label>
-                <div className="relative rounded-md shadow-sm">
-                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                    <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                <div className="flex">
+                  <div className="relative flex-grow">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                      <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                    </span>
+                    <input
+                      type="text"
+                      name="search"
+                      id="search"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="block w-full rounded-l-lg border border-blue-300 pl-10 focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10"
+                      placeholder="Search by template name"
+                    />
                   </div>
-                  <input
-                    type="text"
-                    name="search"
-                    id="search"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="block w-full rounded-lg border border-blue-300 pl-10 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                    placeholder="Search by template name"
-                  />
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                    <button
-                      type="submit"
-                      className="inline-flex items-center rounded-lg border border-blue-300 bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700 shadow-sm hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                    >
-                      Search
-                    </button>
-                  </div>
+                  <button
+                    type="submit"
+                    className="inline-flex items-center rounded-r-lg border border-l-0 border-blue-300 bg-blue-50 px-4 h-10 text-sm font-medium text-blue-700 shadow-sm hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  >
+                    Search
+                  </button>
                 </div>
               </form>
             </div>

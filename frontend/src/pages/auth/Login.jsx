@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ExclamationCircleIcon } from '@heroicons/react/20/solid';
 import { useAuth } from '../../context/AuthContext';
 import { UserIcon, LockClosedIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
+import LoadingSpinner, { ButtonLoader, SkeletonLoader } from '../../components/common/LoadingSpinner';
 
 export default function Login() {
   const { login } = useAuth();
@@ -13,18 +14,27 @@ export default function Login() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
 
   useEffect(() => {
+    // Simulate page loading
+    const pageLoadTimer = setTimeout(() => {
+      setPageLoading(false);
+    }, 800);
+    
     // Trigger animations after component mounts
     setMounted(true);
     
     // Focus the email input after a short delay
-    const timer = setTimeout(() => {
+    const focusTimer = setTimeout(() => {
       const emailInput = document.getElementById('email');
       if (emailInput) emailInput.focus();
-    }, 500);
+    }, 1000);
     
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(pageLoadTimer);
+      clearTimeout(focusTimer);
+    };
   }, []);
 
   const handleChange = (e) => {
@@ -45,10 +55,26 @@ export default function Login() {
       await login(formData.email, formData.password);
       // Navigation is handled in the AuthContext
     } catch (err) {
-      setError(err.message || 'Login failed');
+      // Check for specific error code from backend middleware
+      if (err.response?.data?.errorCode === 'LAB_INACTIVE_OR_SUSPENDED') {
+        setError(err.response.data.message); // Use the specific message from backend
+      } else {
+        setError(err.response?.data?.message || err.message || 'Login failed. Please check your credentials.'); // More specific fallback
+      }
       setIsLoading(false);
     }
   };
+
+  // Show loading spinner while page is loading
+  if (pageLoading) {
+    return (
+      <div className="flex flex-col h-full bg-gradient-to-br from-blue-50 to-blue-100 p-8 rounded-2xl shadow-xl border border-blue-100 transition-all duration-500 transform hover:shadow-2xl">
+        <div className="flex-grow flex flex-col items-center justify-center">
+          <LoadingSpinner size="lg" color="blue" text="Loading..." />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full bg-gradient-to-br from-blue-50 to-blue-100 p-8 rounded-2xl shadow-xl border border-blue-100 transition-all duration-500 transform hover:shadow-2xl">
@@ -137,13 +163,7 @@ export default function Login() {
             }`}
           >
             {isLoading ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Logging in...
-              </>
+              <ButtonLoader text="Logging in..." />
             ) : (
               <>
                 LOGIN

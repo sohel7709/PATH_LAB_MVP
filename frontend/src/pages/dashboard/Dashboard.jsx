@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import LoadingSpinner, { SkeletonLoader } from "../../components/common/LoadingSpinner";
 import {
   DocumentTextIcon,
   UserGroupIcon,
@@ -36,16 +37,25 @@ export default function Dashboard() {
     completionRate: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [isDataLoading, setIsDataLoading] = useState(true);
   const [animateElements, setAnimateElements] = useState(false);
 
   useEffect(() => {
     // Trigger animations after component mounts
     setAnimateElements(true);
+    
+    // Simulate initial page loading
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 800);
+    
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
+        setIsDataLoading(true);
         // Import API utilities
         const { dashboard } = await import('../../utils/api');
         
@@ -68,12 +78,18 @@ export default function Dashboard() {
           completionRate: 0,
         });
       } finally {
-        setIsLoading(false);
+        // Add a small delay to ensure animations look smooth
+        setTimeout(() => {
+          setIsDataLoading(false);
+        }, 500);
       }
     };
 
-    fetchDashboardData();
-  }, []);
+    // Only fetch data after initial loading animation completes
+    if (!isLoading) {
+      fetchDashboardData();
+    }
+  }, [isLoading]);
 
   const getStatValue = (statName) => {
     switch (statName) {
@@ -89,6 +105,15 @@ export default function Dashboard() {
         return 0;
     }
   };
+
+  // Show loading spinner while the page is initially loading
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 py-8 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
+        <LoadingSpinner size="xl" text="Loading dashboard..." />
+      </div>
+    );
+  }
 
   // Redirect based on user role
   if (user) {
@@ -145,8 +170,8 @@ export default function Dashboard() {
                       </dt>
                       <dd>
                         <div className="text-2xl font-bold text-gray-900">
-                          {isLoading ? (
-                            <div className="h-8 w-16 bg-gray-200 animate-pulse rounded"></div>
+                          {isDataLoading ? (
+                            <div className="h-8 w-16 bg-blue-200 animate-pulse rounded"></div>
                           ) : (
                             getStatValue(stat.name)
                           )}
@@ -174,7 +199,10 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="px-6 py-5">
-            <ul className="divide-y divide-blue-100">
+            {isDataLoading ? (
+              <SkeletonLoader type="list-item" count={3} />
+            ) : (
+              <ul className="divide-y divide-blue-100">
               {recentReports.map((report) => (
                 <li key={report.id} className="py-4 hover:bg-blue-50 rounded-md transition-all duration-300 transform hover:scale-[1.01]">
                   <Link
@@ -223,7 +251,8 @@ export default function Dashboard() {
                   No recent reports found
                 </li>
               )}
-            </ul>
+              </ul>
+            )}
             <div className="mt-6">
               <Link
                 to="/reports"

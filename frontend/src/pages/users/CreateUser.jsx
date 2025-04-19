@@ -9,7 +9,7 @@ const CreateUser = () => {
     name: "",
     email: "",
     password: "",
-    role: "technician",
+    role: "admin",
     lab: "",
   });
 
@@ -18,6 +18,7 @@ const CreateUser = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [fetchingLabs, setFetchingLabs] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Fetch available labs
   useEffect(() => {
@@ -142,20 +143,40 @@ const CreateUser = () => {
                 />
               </div>
 
-              <div>
+              <div className="relative">
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                   Password <span className="text-red-500">*</span>
                 </label>
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   id="password"
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
                   required
-                  className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+                  className="block w-full rounded-lg border border-blue-300 px-4 py-2 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
                   placeholder="Enter password"
                 />
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute top-9 right-3 transform -translate-y-1/2 p-1 focus:outline-none"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? (
+                    // Eye-off SVG
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-5 0-9-4.03-9-9 0-1.657.403-3.22 1.125-4.575m2.122-2.122A8.963 8.963 0 0112 3c5 0 9 4.03 9 9 0 1.657-.403 3.22-1.125 4.575m-2.122 2.122A8.963 8.963 0 0112 21c-1.657 0-3.22-.403-4.575-1.125m-2.122-2.122A8.963 8.963 0 013 12c0-1.657.403-3.22 1.125-4.575m2.122-2.122L21 21" />
+                    </svg>
+                  ) : (
+                    // Eye SVG
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  )}
+                </button>
                 <p className="mt-1 text-xs text-gray-500">Password must be at least 6 characters long</p>
               </div>
             </div>
@@ -178,15 +199,15 @@ const CreateUser = () => {
                   onChange={handleChange}
                   className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
                 >
-                  <option value="technician">Lab Technician</option>
                   <option value="admin">Lab Admin</option>
+                  <option value="lab-technician">Lab Technician</option>
                   <option value="super-admin">Super Admin</option>
                 </select>
                 <p className="mt-1 text-xs text-gray-500">
-                  {formData.role === "technician"
-                    ? "Technicians can create and manage reports"
-                    : formData.role === "admin"
+                  {formData.role === "admin"
                     ? "Admins can manage lab settings and users"
+                    : formData.role === "lab-technician"
+                    ? "Technicians can create and manage reports"
                     : "Super Admins have full system access"}
                 </p>
               </div>
@@ -223,9 +244,9 @@ const CreateUser = () => {
                     </select>
                   )}
                   <p className="mt-1 text-xs text-gray-500">
-                    {formData.role === "technician"
-                      ? "The lab where this technician will work"
-                      : "The lab this admin will manage"}
+                    {formData.role === "admin" 
+                      ? "The lab this admin will manage" 
+                      : "The lab this technician will work in"}
                   </p>
                 </div>
               )}

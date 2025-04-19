@@ -17,7 +17,6 @@ import {
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({
-    totalTechnicians: 0,
     totalReports: 0,
     totalPatients: 0,
     revenueThisMonth: 0,
@@ -61,9 +60,7 @@ const AdminDashboard = () => {
                   console.log('Patient count:', patientCount);
                   
                   setStats({
-                    totalTechnicians: statsData.totalTechnicians || 0,
                     totalReports: statsData.totalReports || 0,
-                    totalPatients: patientCount,
                     revenueThisMonth: statsData.revenueThisMonth || 0,
                     inventoryItems: statsData.inventoryItems || 0,
                   });
@@ -73,11 +70,19 @@ const AdminDashboard = () => {
                 
                 // Fetch patients for this lab
                 try {
+                  console.log('Fetching patients for lab:', user.lab);
+                  if (!user.lab) {
+                    console.error('Lab ID is missing or undefined');
+                  }
                   const patientsData = await patients.getAll(user.lab);
                   console.log('Patients data:', patientsData);
                   
-                  // Set recent patients data
+                  // Update totalPatients count based on patientsData length
                   if (patientsData && Array.isArray(patientsData)) {
+                    setStats(prevStats => ({
+                      ...prevStats,
+                      totalPatients: patientsData.length,
+                    }));
                     setRecentPatients(patientsData.slice(0, 5).map(patient => ({
                       id: patient._id || patient.id,
                       name: patient.fullName,
@@ -85,6 +90,8 @@ const AdminDashboard = () => {
                       gender: patient.gender,
                       contact: patient.phone,
                     })));
+                  } else {
+                    console.error('Patients data is not an array or is empty');
                   }
                 } catch (patientsErr) {
                   console.error('Error fetching patients data:', patientsErr);
@@ -205,7 +212,6 @@ const AdminDashboard = () => {
                   className="rounded-md border-transparent bg-white/80 py-1 pl-3 pr-10 text-sm font-medium text-blue-800 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
                 >
                   <option value="admin">Admin View</option>
-                  <option value="technician">Technician View</option>
                 </select>
               </div>
             </div>
@@ -220,7 +226,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {/* Reports Card */}
         <div className="overflow-hidden rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow duration-300">
           <div className="p-5 border-b-4 border-blue-500">
@@ -273,31 +279,7 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* Technicians Card */}
-        <div className="overflow-hidden rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow duration-300">
-          <div className="p-5 border-b-4 border-purple-500">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 bg-purple-100 p-3 rounded-full">
-                <UserGroupIcon className="h-6 w-6 text-purple-600" aria-hidden="true" />
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="truncate text-sm font-medium text-gray-500">Lab Technicians</dt>
-                  <dd>
-                    <div className="text-2xl font-bold text-gray-900">{stats.totalTechnicians}</div>
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-          <div className="bg-gray-50 px-5 py-3">
-            <div className="text-sm">
-              <Link to="/users" className="font-medium text-blue-700 hover:text-blue-900 transition duration-200">
-                Manage technicians
-              </Link>
-            </div>
-          </div>
-        </div>
+
 
         {/* Revenue Card */}
         <div className="overflow-hidden rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow duration-300">
@@ -490,7 +472,7 @@ const AdminDashboard = () => {
               <tbody className="bg-white divide-y divide-blue-100">
                 {recentPatients.length > 0 ? (
                   recentPatients.map((patient) => (
-                    <tr key={patient.id} className="hover:bg-blue-50 transition-colors duration-150">
+                    <tr key={patient._id} className="hover:bg-blue-50 transition-colors duration-150">
                       <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {patient.name}
                       </td>
@@ -500,10 +482,10 @@ const AdminDashboard = () => {
                       <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{patient.contact}</td>
                       <td className="px-3 py-4 whitespace-nowrap text-sm">
                         <div className="flex space-x-3">
-                          <Link to={`/patients/${patient.id}/edit`} className="text-green-600 hover:text-green-900 p-1 rounded-full hover:bg-green-50 transition-colors" title="Edit Patient">
+                          <Link to={`/patients/${patient._id}/edit`} className="text-green-600 hover:text-green-900 p-1 rounded-full hover:bg-green-50 transition-colors" title="Edit Patient">
                             <PencilSquareIcon className="h-5 w-5" aria-hidden="true" />
                           </Link>
-                          <Link to={`/reports/create?patientId=${patient.id}`} className="text-blue-600 hover:text-blue-900 p-1 rounded-full hover:bg-blue-50 transition-colors" title="Create Report">
+                          <Link to={`/reports/create?patientId=${patient._id}`} className="text-blue-600 hover:text-blue-900 p-1 rounded-full hover:bg-blue-50 transition-colors" title="Create Report">
                             <DocumentTextIcon className="h-5 w-5" aria-hidden="true" />
                           </Link>
                         </div>

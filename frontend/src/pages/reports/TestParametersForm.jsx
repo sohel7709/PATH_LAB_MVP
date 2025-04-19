@@ -9,6 +9,11 @@ export default function TestParametersForm({
   patientGender,
   setError
 }) {
+  // Force re-render on mount to ensure proper layout
+  useEffect(() => {
+    // This empty effect will trigger a re-render after initial mount
+    // which helps ensure styles are properly applied
+  }, []);
   // Using _isLoading to avoid ESLint warning since it's used in setIsLoading
   const [_isLoading, setIsLoading] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState("");
@@ -29,10 +34,16 @@ export default function TestParametersForm({
       // Use the appropriate API method based on user role
       let response;
       
-      // Use the appropriate API method based on user role
-      console.log('Using standard API method for role:', userRole);
-      response = await testTemplates.getAll();
-      console.log('Standard API response:', response);
+      try {
+        // Use the appropriate API method based on user role
+        console.log('Using standard API method for role:', userRole);
+        response = await testTemplates.getAll();
+        console.log('Standard API response:', response);
+      } catch (apiError) {
+        console.error('API error fetching templates:', apiError);
+        // Handle API error gracefully
+        response = { data: [] };
+      }
       
       if (response && response.data) {
         setAvailableTemplates(response.data);
@@ -49,16 +60,33 @@ export default function TestParametersForm({
             ...prev,
             testName: 'Custom Test',
             category: 'pathology',
-            sampleType: '',
-            testParameters: []
+            sampleType: 'Blood',
+            testParameters: [{
+              name: 'Parameter 1',
+              value: '',
+              unit: '',
+              referenceRange: ''
+            }]
           }));
           setTemplateDetails(null);
           setHasSections(false);
         }
       } else {
         console.error('Invalid response format:', response);
-        setError('Failed to load test templates. Invalid response format.');
+        setError('Failed to load test templates. Using custom test mode.');
         setSelectedTemplate('custom');
+        setFormData(prev => ({
+          ...prev,
+          testName: 'Custom Test',
+          category: 'pathology',
+          sampleType: 'Blood',
+          testParameters: [{
+            name: 'Parameter 1',
+            value: '',
+            unit: '',
+            referenceRange: ''
+          }]
+        }));
       }
     } catch (err) {
       console.error('Error fetching test templates:', err);

@@ -18,10 +18,6 @@ const CreateLab = () => {
       phone: "",
       email: "",
     },
-    subscription: {
-      plan: "basic",
-      status: "active",
-    },
     settings: {
       reportHeader: "",
       reportFooter: "",
@@ -78,22 +74,20 @@ const CreateLab = () => {
     }));
   };
 
-  const handleSubscriptionChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
-      subscription: {
-        ...prevData.subscription,
-        [name]: value,
-      },
-    }));
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
     setSuccess("");
+
+    // Mobile number validation: must be exactly 10 digits
+    const phone = formData.contact.phone.trim();
+    if (!/^\d{10}$/.test(phone)) {
+      setError("Mobile number must be exactly 10 digits.");
+      setLoading(false);
+      return;
+    }
 
     try {
       await superAdmin.createLab(formData);
@@ -270,44 +264,11 @@ const CreateLab = () => {
             </div>
           </section>
 
-          {/* Subscription */}
+          {/* Note about subscription */}
           <section>
-            <h2 className="text-xl font-semibold text-blue-700 mb-4 border-b border-blue-100 pb-2">
-              Subscription
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="plan" className="block text-sm font-medium text-gray-700 mb-1">
-                  Subscription Plan
-                </label>
-                <select
-                  id="plan"
-                  name="plan"
-                  value={formData.subscription.plan}
-                  onChange={handleSubscriptionChange}
-                  className="block w-full rounded-lg border border-blue-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-300 transition"
-                >
-                  <option value="basic">Basic</option>
-                  <option value="premium">Premium</option>
-                  <option value="enterprise">Enterprise</option>
-                </select>
-              </div>
-              <div>
-                <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
-                  Status
-                </label>
-                <select
-                  id="status"
-                  name="status"
-                  value={formData.subscription.status}
-                  onChange={handleSubscriptionChange}
-                  className="block w-full rounded-lg border border-blue-200 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-300 transition"
-                >
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                  <option value="suspended">Suspended</option>
-                </select>
-              </div>
+            <div className="bg-blue-50 border-l-4 border-blue-500 text-blue-700 p-4 rounded">
+              <p className="font-medium">Note:</p>
+              <p>Subscription plan can be assigned after lab creation from the lab details page.</p>
             </div>
           </section>
 

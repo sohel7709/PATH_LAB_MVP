@@ -11,7 +11,6 @@ import {
 } from '@heroicons/react/24/outline';
 import { XMarkIcon } from '@heroicons/react/20/solid';
 import { useAuth } from '../../context/AuthContext';
-import { formatPhoneNumber } from '../../utils/helpers';
 
 export default function PatientList() {
   const { user } = useAuth();
@@ -100,6 +99,7 @@ export default function PatientList() {
 
   const filteredPatients = patients.filter((patient) => {
     return (
+      (patient.patientId && patient.patientId.toLowerCase().includes(searchTerm.toLowerCase())) ||
       patient.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       patient.phone.includes(searchTerm) ||
       (patient.email && patient.email.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -186,7 +186,7 @@ export default function PatientList() {
               <input
                 type="text"
                 className="block w-full rounded-lg border border-blue-300 pl-10 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
-                placeholder="Search patients by name, phone, or email..."
+                placeholder="Search patients by ID, name, phone, or email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -197,6 +197,9 @@ export default function PatientList() {
             <table className="min-w-full divide-y divide-blue-200">
               <thead className="bg-blue-50">
                 <tr>
+                  <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                    Patient ID
+                  </th>
                   <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
                     Patient Name
                   </th>
@@ -230,14 +233,17 @@ export default function PatientList() {
                   ) : (
                     filteredPatients.map((patient) => (
                       <tr key={patient._id}>
-                        <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6 lg:pl-8">
+                        <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-blue-600 sm:pl-6 lg:pl-8">
+                          {patient.patientId || 'N/A'}
+                        </td>
+                        <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900">
                           {patient.fullName}
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                           {patient.age} / {patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1)}
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          <div>{formatPhoneNumber(patient.phone)}</div>
+                          <div>{patient.phone.replace(/[()]/g, '')}</div>
                           {patient.email && <div className="text-xs">{patient.email}</div>}
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">

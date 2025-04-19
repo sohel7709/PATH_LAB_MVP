@@ -1,6 +1,9 @@
 const Lab = require('../models/Lab');
 const User = require('../models/User');
 const Report = require('../models/Report');
+const Plan = require('../models/Plan'); // Import Plan model
+const SubscriptionHistory = require('../models/SubscriptionHistory'); // Import SubscriptionHistory model
+const mongoose = require('mongoose'); // Needed for ObjectId validation
 
 // @desc    Create new lab
 // @route   POST /api/super-admin/labs
@@ -10,6 +13,15 @@ exports.createLab = async (req, res, next) => {
     // Add user as lab creator
     req.body.createdBy = req.user.id;
 
+    // Check for duplicate lab name
+    const existingLab = await Lab.findOne({ name: req.body.name });
+    if (existingLab) {
+      return res.status(400).json({
+        success: false,
+        message: 'A lab with this name already exists. Please choose a different name.'
+      });
+    }
+
     const lab = await Lab.create(req.body);
 
     res.status(201).json({
@@ -17,6 +29,21 @@ exports.createLab = async (req, res, next) => {
       data: lab
     });
   } catch (error) {
+    // Handle Mongoose validation errors
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(val => val.message);
+      return res.status(400).json({
+        success: false,
+        message: messages.join(', ')
+      });
+    }
+    // Handle duplicate key error (unique constraint)
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Lab name must be unique. A lab with this name already exists.'
+      });
+    }
     next(error);
   }
 };
@@ -34,6 +61,10 @@ exports.getLabs = async (req, res, next) => {
       .populate({
         path: 'users',
         select: 'name email role'
+      })
+      .populate({ // Add population for the plan within the subscription
+        path: 'subscription.plan',
+        select: 'name' // Select only the name field of the plan
       });
 
     res.status(200).json({
@@ -257,33 +288,119 @@ exports.getLabStats = async (req, res, next) => {
   }
 };
 
-// @desc    Update lab subscription
-// @route   PUT /api/super-admin/labs/:id/subscription
-// @access  Private/Super Admin
-exports.updateLabSubscription = async (req, res, next) => {
-  try {
-    const { plan, status, endDate } = req.body;
 
-    const lab = await Lab.findById(req.params.id);
+// @desc    Assign a subscription plan to a lab
+// @route   POST /api/v1/labs/:id/assign-plan
+// @access  Private (Super Admin)
+exports.assignPlanToLab = async (req, res, next) => {
+    const { planId } = req.body; // Expecting planId in the request body
+    const labId = req.params.id;
 
-    if (!lab) {
-      return res.status(404).json({
-        success: false,
-        message: 'Lab not found'
-      });
+    // Validate IDs
+    if (!mongoose.Types.ObjectId.isValid(labId)) {
+        return res.status(400).json({ success: false, message: 'Invalid Lab ID format' });
+    }
+    if (!mongoose.Types.ObjectId.isValid(planId)) {
+        return res.status(400).json({ success: false, message: 'Invalid Plan ID format' });
     }
 
-    lab.subscription.plan = plan || lab.subscription.plan;
-    lab.subscription.status = status || lab.subscription.status;
-    lab.subscription.endDate = endDate || lab.subscription.endDate;
+    try {
+        const lab = await Lab.findById(labId);
+        if (!lab) {
+            return res.status(404).json({ success: false, message: 'Lab not found' });
+        }
 
-    await lab.save();
+        const plan = await Plan.findById(planId);
+        if (!plan) {
+            return res.status(404).json({ success: false, message: 'Plan not found' });
+        }
+        if (!plan.isActive) {
+             return res.status(400).json({ success: false, message: 'Cannot assign an inactive plan.' });
+        }
 
-    res.status(200).json({
-      success: true,
-      data: lab
-    });
-  } catch (error) {
-    next(error);
-  }
+        const startDate = new Date();
+        const endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + plan.duration); // Calculate end date based on plan duration
+
+        // Update Lab's subscription details and status
+        lab.subscription.plan = plan._id;
+        lab.subscription.startDate = startDate;
+        lab.subscription.endDate = endDate;
+        lab.status = 'active'; // Activate the lab upon plan assignment
+
+        // Create Subscription History record
+        // Consider wrapping lab.save() and history creation in a transaction for atomicity if needed
+        await SubscriptionHistory.create({
+            lab: lab._id,
+            plan: plan._id,
+            startDate: startDate,
+            endDate: endDate,
+            status: 'active', // Initial status
+            createdBy: req.user._id, // Log who assigned the plan
+            paymentDetails: { // Optional: Add payment details if applicable from req.body
+                amount: plan.price,
+                currency: 'USD', // Or get from config/plan
+                paymentDate: new Date(),
+                paymentMethod: 'manual_assignment' // Indicate it was assigned by admin
+            }
+        });
+
+        // Save the updated lab document
+        const updatedLab = await lab.save();
+
+        res.status(200).json({
+            success: true,
+            message: `Plan '${plan.name}' assigned successfully to lab '${lab.name}'. Subscription active until ${endDate.toLocaleDateString()}.`,
+            data: updatedLab
+        });
+
+    } catch (error) {
+        console.error(`Error assigning plan ${planId} to lab ${labId}:`, error);
+        // Handle potential CastError if ID format is invalid (already handled above but good practice)
+        if (error.name === 'CastError') {
+             return res.status(400).json({ success: false, message: 'Invalid ID format provided' });
+        }
+        next(error); // Pass other errors to the global error handler
+    }
+};
+
+// @desc    Get subscription history for a specific lab
+// @route   GET /api/v1/labs/:id/subscription-history
+// @access  Private (Super Admin, Admin of the lab)
+exports.getSubscriptionHistoryForLab = async (req, res, next) => {
+    const labId = req.params.id;
+
+    // Validate ID
+    if (!mongoose.Types.ObjectId.isValid(labId)) {
+        return res.status(400).json({ success: false, message: 'Invalid Lab ID format' });
+    }
+
+    try {
+        // Verify lab exists (optional, but good practice)
+        const labExists = await Lab.exists({ _id: labId });
+        if (!labExists) {
+            return res.status(404).json({ success: false, message: 'Lab not found' });
+        }
+
+        // Authorization check: Ensure user is Super Admin or Admin of this specific lab
+        // The checkLabAccess middleware should already handle this if applied correctly in routes
+        // if (req.user.role !== 'super-admin' && req.user.lab.toString() !== labId) {
+        //     return res.status(403).json({ success: false, message: 'Not authorized to view this lab\'s subscription history' });
+        // }
+
+        const history = await SubscriptionHistory.find({ lab: labId })
+            .populate({ path: 'plan', select: 'name price duration' }) // Populate plan details
+            .populate({ path: 'createdBy', select: 'name email' }) // Populate who created the record
+            .sort({ startDate: -1 }); // Sort by most recent start date
+
+        res.status(200).json({
+            success: true,
+            count: history.length,
+            data: history
+        });
+
+    } catch (error) {
+        console.error(`Error fetching subscription history for lab ${labId}:`, error);
+        next(error);
+    }
 };

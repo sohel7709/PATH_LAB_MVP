@@ -14,7 +14,7 @@
     
     body {
       font-family: {{styling.fontFamily}};
-      font-size: {{styling.fontSize}}pt;
+      font-size: 12pt;
       line-height: 1.4;
       color: #333;
       background-color: white;
@@ -27,8 +27,8 @@
     
     /* Page layout for A4 - single page */
     .page {
-      width: 2480px; /* A4 width @ 300 DPI */
-      height: 3508px; /* A4 height @ 300 DPI */
+      width: 210mm; /* A4 width */
+      height: 297mm; /* A4 height */
       margin: 0;
       position: relative;
       background-color: white;
@@ -47,7 +47,7 @@
       left: 0;
       right: 0;
       background-color: white;
-      height: 480px; /* Fixed header height - 480px @ 300 DPI */
+      height: 35mm; /* Fixed header height */
       overflow: hidden;
       margin: 0;
       padding: 0;
@@ -82,15 +82,14 @@
     /* Content area with padding for header and footer */
     .content {
       position: absolute;
-      top: 480px; /* Start after header - 480px @ 300 DPI */
-      bottom: 200px; /* End before footer - 200px @ 300 DPI */
+      top: 35mm; /* Start after header */
+      bottom: 30mm; /* End before footer */
       left: 0;
       right: 0;
       padding: 5mm;
       overflow: hidden;
       page-break-inside: avoid;
       page-break-after: avoid;
-      min-height: 2828px; /* Content area height - 2828px @ 300 DPI */
     }
     
     /* Patient info section */
@@ -100,6 +99,7 @@
       margin-bottom: 5mm;
       padding-bottom: 2mm;
       border-bottom: 1px solid #ddd;
+      font-size: 12pt;
     }
     
     .patient-info-left, .patient-info-right {
@@ -136,14 +136,18 @@
       background-color: #f5f5f5;
       font-weight: bold;
       text-align: left;
-      padding: 2mm;
+      padding: 3mm;
       border: 1px solid #ddd;
       color: {{styling.primaryColor}};
+      font-size: 12pt;
+      vertical-align: middle;
     }
     
     .test-data td {
-      padding: 2mm;
+      padding: 3mm;
       border: 1px solid #ddd;
+      font-size: 12pt;
+      vertical-align: middle;
     }
     
     .abnormal {
@@ -152,11 +156,15 @@
       background-color: #ffebee;
     }
     
-    /* Signature section */
+    /* Signature section - fixed position above footer */
     .signature-section {
       display: flex;
       justify-content: flex-end;
-      margin-top: 10mm;
+      position: absolute;
+      bottom: 35mm; /* Position above footer */
+      right: 5mm;
+      width: 50mm;
+      height: 25mm;
     }
     
     .signature-container {
@@ -178,10 +186,11 @@
     
     .signature-name {
       font-weight: bold;
+      font-size: 12pt;
     }
     
     .signature-designation {
-      font-size: 9pt;
+      font-size: 12pt;
       color: #666;
     }
     
@@ -194,7 +203,7 @@
       right: 0;
       border-top: 1px solid #ddd;
       background-color: white;
-      height: 200px; /* Fixed footer height - 200px @ 300 DPI */
+      height: 30mm; /* Fixed footer height */
       overflow: hidden;
       margin: 0;
       padding: 0;
@@ -247,33 +256,44 @@
       .page {
         margin: 0 !important;
         padding: 0 !important;
-        width: 100% !important;
-        height: 100% !important;
+        width: 210mm !important;
+        height: 297mm !important;
         box-shadow: none !important;
         page-break-after: avoid !important;
         page-break-before: avoid !important;
-        position: absolute !important;
-        top: 0 !important;
-        left: 0 !important;
+        position: relative !important;
       }
       
-      /* Ensure header and footer are visible when printing */
-      .header, .footer, .signature-section {
+      /* Ensure header, footer and signature are positioned correctly when printing */
+      .header, .footer {
         display: block !important;
-        visibility: visible !important;
         position: fixed !important;
+        /* Visibility is controlled by inline styles */
+      }
+      
+      /* Fixed signature position */
+      .signature-section {
+        display: block !important;
+        position: fixed !important;
+        bottom: 35mm !important; /* Position above footer */
+        right: 5mm !important;
+        width: 50mm !important;
+        height: 25mm !important;
+        z-index: 10 !important;
       }
       
       .header {
         top: 0 !important;
         left: 0 !important;
         right: 0 !important;
+        height: 35mm !important;
       }
       
       .footer {
         bottom: 0 !important;
         left: 0 !important;
         right: 0 !important;
+        height: 30mm !important;
       }
       
       /* Ensure images are visible */
@@ -300,8 +320,8 @@
 <body>
   <div class="page">
     <!-- Header section - only shown if showHeader is true -->
-    {{#if showHeader}}
-    <div class="header">
+    <!-- Always include header div to reserve space, but control visibility -->
+    <div class="header" style="visibility: {{#if showHeader}}visible{{else}}hidden{{/if}};">
       {{#if headerImage}}
         <img src="{{headerImage}}" alt="Lab Header">
       {{else}}
@@ -313,10 +333,6 @@
         </div>
       {{/if}}
     </div>
-    {{else}}
-    <!-- Empty header space to maintain layout -->
-    <div class="header"></div>
-    {{/if}}
     
     <!-- Content area with patient info and test results -->
     <div class="content">
@@ -393,9 +409,8 @@
       </div>
     </div>
     
-    <!-- Footer section - only shown if showFooter is true -->
-    {{#if showFooter}}
-    <div class="footer">
+    <!-- Always include footer div to reserve space, but control visibility -->
+    <div class="footer" style="visibility: {{#if showFooter}}visible{{else}}hidden{{/if}};">
       {{#if footerImage}}
         <img src="{{footerImage}}" alt="Footer">
       {{else}}
@@ -407,10 +422,6 @@
         </div>
       {{/if}}
     </div>
-    {{else}}
-    <!-- Empty footer space to maintain layout -->
-    <div class="footer"></div>
-    {{/if}}
   </div>
 </body>
 </html>
