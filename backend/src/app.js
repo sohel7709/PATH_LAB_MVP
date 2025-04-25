@@ -25,6 +25,7 @@ const testRoutes = require('./routes/testRoutes');
 const planRoutes = require('./routes/planRoutes'); // Import plan routes
 const settingsRoutes = require('./routes/settingsRoutes'); // Import settings routes
 const superAdminRoutes = require('./routes/superAdminRoutes'); // Import super admin routes
+const revenueRoutes = require('./routes/revenueRoutes'); // Import revenue routes
 
 const app = express();
 
@@ -117,6 +118,7 @@ app.use('/api/test', testRoutes);
 app.use('/api/plans', planRoutes); // Mount plan routes
 app.use('/api/settings', settingsRoutes); // Mount settings routes
 app.use('/api/superadmin', superAdminRoutes); // Mount super admin routes
+app.use('/api/revenue', revenueRoutes); // Mount revenue routes
 
 // Health check endpoint
 app.get('/health', (req, res) => {

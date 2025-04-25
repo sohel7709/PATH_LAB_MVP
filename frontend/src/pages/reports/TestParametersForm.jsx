@@ -401,6 +401,26 @@ export default function TestParametersForm({
               />
             </div>
           </div>
+          
+          <div className="sm:col-span-3">
+            <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
+              Test Price
+            </label>
+            <div className="mt-1">
+              <input
+                type="number"
+                name="price"
+                id="price"
+                required
+                min="0"
+                step="0.01" // Allow decimal prices
+                value={formData.price}
+                onChange={handleChange}
+                className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+                placeholder="Enter test price"
+              />
+            </div>
+          </div>
 
           <div className="sm:col-span-3">
             <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">

@@ -45,7 +45,7 @@ const getNavigationItems = (role) => {
     { name: 'Test Templates', href: '/templates', icon: DocumentDuplicateIcon },
     { name: 'Report Settings', href: '/settings/reports', icon: DocumentTextIcon },
     { name: 'Inventory', href: '/inventory', icon: BeakerIcon },
-    { name: 'Financial Reports', href: '/finance/reports', icon: DocumentTextIcon },
+    { name: 'Revenue Dashboard', href: '/finance/revenue', icon: DocumentTextIcon },
   ];
 
   const technicianItems = [

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab Report</title>
+    <style>
+        /* Reset all styles to ensure no colors or borders */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            color: black !important;
+            background-color: white !important;
+            border-color: black !important;
+            font-family: Arial, sans-serif;
+        }
+        
+        body {
+            width: 100%;
+            padding: 20mm;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        
+        /* Patient info section */
+        .patient-info {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        
+        .patient-info-row {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .patient-info-left {
+            width: 48%;
+            text-align: left;
+        }
+        
+        .patient-info-right {
+            width: 48%;
+            text-align: left;
+        }
+        
+        /* Divider line */
+        .divider {
+            width: 100%;
+            border-top: 1px solid black;
+            margin: 10px 0;
+        }
+        
+        /* Report title */
+        .report-title {
+            width: 100%;
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            margin: 10px 0;
+            text-transform: uppercase;
+        }
+        
+        /* Test results table */
+        .test-table {
+            width: 100%;
+            margin-top: 10px;
+            border-collapse: collapse;
+        }
+        
+        .test-table th, .test-table td {
+            padding: 5px;
+            text-align: left;
+            border: none;
+        }
+        
+        .test-table th {
+            font-weight: bold;
+        }
+        
+        /* Abnormal values */
+        .abnormal {
+            font-weight: bold;
+            text-decoration: underline;
+        }
+        
+        /* Signature section */
+        .signature {
+            width: 100%;
+            margin-top: 50px;
+            text-align: right;
+        }
+        
+        .signature-line {
+            display: inline-block;
+            width: 150px;
+            border-top: 1px solid black;
+            padding-top: 5px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- Patient Info -->
+    <div class="patient-info">
+        <div class="patient-info-row">
+            <div class="patient-info-left">
+                <p><strong>Patient Name:</strong> {{patientName}}</p>
+                <p><strong>Age/Gender:</strong> {{patientAge}} Years / {{patientGender}}</p>
+                <p><strong>Patient ID:</strong> {{patientId}}</p>
+            </div>
+            <div class="patient-info-right">
+                <p><strong>Sample Collection:</strong> {{sampleCollectionDate}}</p>
+                <p><strong>Sample Type:</strong> {{sampleType}}</p>
+                <p><strong>Referring Doctor:</strong> {{referringDoctor}}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Report Title -->
+    <div class="report-title">{{testName}}</div>
+
+    <!-- Test Results Table -->
+    <table class="test-table">
+        <thead>
+            <tr>
+                <th>Test</th>
+                <th>Result</th>
+                <th>Unit</th>
+                <th>Reference Range</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{#each testResults}}
+            <tr>
+                <td>{{this.name}}</td>
+                <td {{#if this.isAbnormal}}class="abnormal"{{/if}}>{{this.result}}</td>
+                <td>{{this.unit}}</td>
+                <td>{{this.referenceRange}}</td>
+            </tr>
+            {{/each}}
+        </tbody>
+    </table>
+
+    <!-- Signature Section -->
+    <div class="signature">
+        <div class="signature-line">
+            Dr. Consultant<br>
+            Consultant Pathologist
+        </div>
+    </div>
+</body>
+</html>

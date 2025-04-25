@@ -30,6 +30,7 @@ export default function CreateReportForm() {
     sampleType: '',
     collectionDate: new Date().toISOString().split('T')[0],
     reportDate: new Date().toISOString().split('T')[0],
+    price: '', // Add price field
     status: REPORT_STATUS.PENDING,
     notes: '',
     technicianId: user?.id || '',
@@ -123,7 +124,16 @@ export default function CreateReportForm() {
       // and will return 403 if not authorized
 
       const patientId = patientData._id || patientData.id;
-      
+
+      // Add detailed logging to check the exact values before setting state
+      console.log('--- Updating Form Data ---');
+      console.log('Patient ID:', patientId);
+      console.log('Full Name from API:', patientData.fullName);
+      console.log('Age from API:', patientData.age);
+      console.log('Gender from API:', patientData.gender);
+      console.log('Phone from API:', patientData.phone);
+      console.log('--------------------------');
+
       // Update form data with patient details - these fields will remain editable
       setFormData(prev => ({
         ...prev,
@@ -142,16 +152,8 @@ export default function CreateReportForm() {
       } else {
         setError('Failed to load patient details. Please try again or select a different patient.');
       }
-      
-      // Clear the patient selection
-      setFormData(prev => ({
-        ...prev,
-        patientId: '',
-        patientName: '',
-        patientAge: '',
-        patientGender: '',
-        patientPhone: ''
-      }));
+      // Removed the clearing of form data on error to prevent fields from being wiped.
+      // The error message above will inform the user of the issue.
     }
   };
 
@@ -249,6 +251,7 @@ export default function CreateReportForm() {
           sampleType: formData.sampleType || 'Blood',
           sampleCollectionDate: new Date(formData.collectionDate),
           sampleId: sampleId,
+          price: parseFloat(formData.price) || 0, // Include price
           referenceDoctor: formData.referenceDoctor || '' // Include reference doctor
         },
         results: formData.testParameters.map(param => ({
@@ -432,9 +435,10 @@ export default function CreateReportForm() {
                           const patientId = patient._id || patient.id;
                           return (
                             <div 
-                              key={patientId} 
+                              key={patientId}
                               className="cursor-pointer select-none relative py-2 pl-3 pr-9 text-gray-900 hover:bg-blue-50"
-                              onClick={() => {
+                              onMouseDown={() => { // Changed from onClick to onMouseDown
+                                console.log(`Patient selected: ID=${patientId}, Name=${patient.fullName}`); // Keep log for verification
                                 fetchPatientDetails(patientId);
                                 setPatientSearchTerm(`${patient.fullName} - ${patient.phone}`);
                                 setShowPatientDropdown(false);

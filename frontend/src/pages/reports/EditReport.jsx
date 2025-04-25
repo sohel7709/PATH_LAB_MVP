@@ -20,6 +20,7 @@ export default function EditReport() {
     testName: '',
     category: '',
     collectionDate: '',
+    price: '', // Add price field
     status: '',
     notes: '',
     testParameters: []
@@ -58,6 +59,7 @@ export default function EditReport() {
                        (data.testInfo && data.testInfo.sampleCollectionDate ? 
                         new Date(data.testInfo.sampleCollectionDate).toISOString().split('T')[0] : 
                         new Date().toISOString().split('T')[0]),
+        price: data.price || (data.testInfo ? data.testInfo.price : 0), // Populate price
         
         // Other fields
         status: data.status || REPORT_STATUS.PENDING,
@@ -186,6 +188,7 @@ export default function EditReport() {
         testInfo: {
           name: formData.testName,
           category: formData.category,
+          price: parseFloat(formData.price) || 0, // Include price
           sampleCollectionDate: formData.collectionDate,
           // Preserve other test info fields if they exist
           sampleType: formData.sampleType || 'blood',
@@ -475,6 +478,22 @@ export default function EditReport() {
                     name="testName"
                     id="testName"
                     value={formData.testName}
+                    className="block w-full rounded-lg border border-blue-300 px-4 py-2 bg-gray-100 cursor-not-allowed"
+                    disabled
+                  />
+                </div>
+              </div>
+              
+              <div className="sm:col-span-3">
+                <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
+                  Test Price
+                </label>
+                <div className="mt-1">
+                  <input
+                    type="number"
+                    name="price"
+                    id="price"
+                    value={formData.price}
                     className="block w-full rounded-lg border border-blue-300 px-4 py-2 bg-gray-100 cursor-not-allowed"
                     disabled
                   />

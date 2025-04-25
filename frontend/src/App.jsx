@@ -9,7 +9,7 @@ import LabDetail from './pages/labs/LabDetail';
 import EditLab from './pages/labs/EditLab';
 import Profile from './pages/profile/Profile';
 import Inventory from './pages/inventory';
-import FinancialReports from './pages/finance/reports';
+import RevenueDashboard from './pages/finance/RevenueDashboard';
 import DoctorList from './pages/doctors/DoctorList';
 import AddDoctor from './pages/doctors/AddDoctor';
 import EditDoctor from './pages/doctors/EditDoctor';
@@ -209,9 +209,15 @@ function App() {
               } />
               <Route path="/profile" element={<Profile />} />
               
+              {/* Finance Routes */}
+              <Route path="/finance/revenue" element={
+                <ProtectedRoute allowedRoles={['admin', 'super-admin']}>
+                  <RevenueDashboard />
+                </ProtectedRoute>
+              } />
+              
               {/* Coming Soon Feature Pages */}
               <Route path="/inventory" element={<Inventory />} />
-              <Route path="/finance/reports" element={<FinancialReports />} />
               <Route path="/samples" element={<ComingSoon />} />
               <Route path="/tasks" element={<ComingSoon />} />
             </Route>

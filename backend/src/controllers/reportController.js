@@ -18,7 +18,12 @@ exports.createReport = async (req, res, next) => {
     req.body.lab = req.user.lab;
     req.body.technician = req.user.id;
 
-    console.log('Creating report with data:', JSON.stringify(req.body, null, 2));
+    // Enhanced logging before attempting to create the report
+    console.log('--- Attempting to Create Report ---');
+    console.log('User Lab ID:', req.user.lab);
+    console.log('User Technician ID:', req.user.id);
+    console.log('Received Request Body:', JSON.stringify(req.body, null, 2));
+    console.log('-----------------------------------');
 
     const report = await Report.create(req.body);
 
@@ -455,12 +460,12 @@ exports.generateHtmlReport = async (req, res, next) => {
       });
     }
 
-    // Read the HTML template
-    const reportTemplatePath = path.join(__dirname, '..', 'report.html');
+    // Read the black-only HTML template
+    const reportTemplatePath = path.join(__dirname, '..', 'black-only-report.html');
     let templateSource;
     try {
       templateSource = fs.readFileSync(reportTemplatePath, 'utf8');
-      console.log('Template loaded successfully');
+      console.log('Black-only template loaded successfully for HTML view');
     } catch (err) {
       console.error('Error reading template file:', err);
       return res.status(500).json({
@@ -810,8 +815,8 @@ exports.generatePdfReport = async (req, res, next) => {
     const fs = require('fs');
     const path = require('path');
     
-    // Read the PDF template
-    const pdfTemplatePath = path.join(__dirname, '..', 'pdf-report.html');
+    // Read the black-only template specifically designed for PDF generation
+    const pdfTemplatePath = path.join(__dirname, '..', 'black-only-report.html');
     const templateSource = fs.readFileSync(pdfTemplatePath, 'utf8');
     
     // Compile the template
@@ -819,6 +824,8 @@ exports.generatePdfReport = async (req, res, next) => {
     
     // Generate the HTML
     const html = template(data);
+    
+    console.log('Using black-only template for PDF generation');
     
     // Launch a headless browser with additional configuration
     const browser = await puppeteer.launch({

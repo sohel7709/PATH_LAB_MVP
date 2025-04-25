@@ -380,8 +380,8 @@ const AdminDashboard = () => {
               </thead>
               <tbody className="bg-white divide-y divide-blue-100">
                 {recentReports.length > 0 ? (
-                  recentReports.map((report) => (
-                    <tr key={report.id} className="hover:bg-blue-50 transition-colors duration-150">
+                  recentReports.map((report, index) => (
+                    <tr key={report.id || index} className="hover:bg-blue-50 transition-colors duration-150">
                       <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {report.patientName}
                       </td>

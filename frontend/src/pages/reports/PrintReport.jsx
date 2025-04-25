@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ExclamationCircleIcon, PrinterIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import { reports, labReportSettings } from '../../utils/api';
+import { injectPrintStyles, removePrintStyles } from '../../utils/printStyles';
 import ReportTemplate from '../../components/reports/ReportTemplate';
 
 export default function PrintReport() {
@@ -18,6 +19,14 @@ export default function PrintReport() {
 
   useEffect(() => {
     fetchReportData();
+    
+    // Inject print styles when component mounts
+    injectPrintStyles();
+    
+    // Remove print styles when component unmounts
+    return () => {
+      removePrintStyles();
+    };
   }, [id]);
 
   const fetchReportData = async () => {
@@ -45,6 +54,8 @@ export default function PrintReport() {
   };
 
   const handlePrint = () => {
+    // Make sure print styles are injected before printing
+    injectPrintStyles();
     window.print();
   };
   
@@ -73,12 +84,30 @@ export default function PrintReport() {
 
   const generatePDF = async () => {
     try {
+      // Make sure print styles are injected before generating PDF
+      injectPrintStyles();
+      
       const element = reportRef.current;
       const opt = {
         margin: [0, 0, 0, 0],
         filename: `${report.patientInfo?.name || 'Patient'}_Report_${new Date().toLocaleDateString().replace(/\//g, '-')}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
+        html2canvas: { 
+          scale: 2, 
+          useCORS: true, 
+          logging: false,
+          // Force black text and white background
+          backgroundColor: '#FFFFFF',
+          onclone: (clonedDoc) => {
+            // Apply additional black-only styles to the cloned document
+            const style = clonedDoc.createElement('style');
+            style.innerHTML = `
+              * { color: black !important; background-color: white !important; }
+              table, th, td { border: none !important; }
+            `;
+            clonedDoc.head.appendChild(style);
+          }
+        },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
       

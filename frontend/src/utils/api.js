@@ -1,4 +1,5 @@
-const API_BASE_URL = 'http://localhost:5001/api';
+// Use environment variable or fallback to localhost
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
 
 // Doctors API calls
 export const doctors = {
@@ -741,6 +742,44 @@ export const whatsappSettings = {
   }
 };
 
+// Revenue API calls
+export const revenue = {
+  getData: async (params = {}) => {
+    // Build query string from params
+    const queryParams = new URLSearchParams();
+    if (params.labId) queryParams.append('labId', params.labId);
+    if (params.range) queryParams.append('range', params.range);
+    if (params.from) queryParams.append('from', params.from);
+    if (params.to) queryParams.append('to', params.to);
+    
+    const queryString = queryParams.toString();
+    const url = queryString 
+      ? `${API_BASE_URL}/revenue?${queryString}` 
+      : `${API_BASE_URL}/revenue`;
+    
+    const response = await fetch(url, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  },
+  
+  exportData: async (format, params = {}) => {
+    // Build query string from params
+    const queryParams = new URLSearchParams({
+      format,
+      ...params
+    });
+    
+    const url = `${API_BASE_URL}/export/revenue?${queryParams}`;
+    
+    const response = await fetch(url, {
+      headers: getAuthHeaders(),
+    });
+    
+    return handleResponse(response);
+  }
+};
+
 export default {
   auth,
   reports,
@@ -753,5 +792,6 @@ export default {
   labReportSettings,
   doctors,
   plans,
-  whatsappSettings
+  whatsappSettings,
+  revenue
 };

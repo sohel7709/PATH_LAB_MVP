@@ -1,427 +1,196 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lab Report</title>
-  <style>
-    /* Reset and base styles */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    
-    body {
-      font-family: {{styling.fontFamily}};
-      font-size: 12pt;
-      line-height: 1.4;
-      color: #333;
-      background-color: white;
-      margin: 0;
-      padding: 0;
-      position: relative;
-      width: 100%;
-      height: 100%;
-    }
-    
-    /* Page layout for A4 - single page */
-    .page {
-      width: 210mm; /* A4 width */
-      height: 297mm; /* A4 height */
-      margin: 0;
-      position: relative;
-      background-color: white;
-      padding: 0;
-      overflow: hidden; /* Prevent content from overflowing */
-      page-break-after: avoid;
-      page-break-before: avoid;
-    }
-    
-    /* Header section - fixed height */
-    .header {
-      width: 100%;
-      text-align: center;
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      background-color: white;
-      height: 35mm; /* Fixed header height */
-      overflow: hidden;
-      margin: 0;
-      padding: 0;
-      z-index: 100;
-    }
-    
-    /* Header image - full width */
-    .header img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      margin: 0;
-      padding: 0;
-      display: block;
-    }
-    
-    /* Empty header placeholder */
-    .header-placeholder {
-      width: 100%;
-      height: 100%;
-      background-color: #fff3cd;
-      color: #856404;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 1px solid #ffeeba;
-      border-radius: 4px;
-      text-align: center;
-      padding: 10px;
-    }
-    
-    /* Content area with padding for header and footer */
-    .content {
-      position: absolute;
-      top: 35mm; /* Start after header */
-      bottom: 30mm; /* End before footer */
-      left: 0;
-      right: 0;
-      padding: 5mm;
-      overflow: hidden;
-      page-break-inside: avoid;
-      page-break-after: avoid;
-    }
-    
-    /* Patient info section */
-    .patient-info {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 5mm;
-      padding-bottom: 2mm;
-      border-bottom: 1px solid #ddd;
-      font-size: 12pt;
-    }
-    
-    .patient-info-left, .patient-info-right {
-      width: 48%;
-    }
-    
-    .info-row {
-      margin-bottom: 2mm;
-    }
-    
-    .info-label {
-      font-weight: bold;
-      display: inline-block;
-      margin-right: 2mm;
-    }
-    
-    /* Test title */
-    .test-title {
-      text-align: center;
-      font-size: 16pt;
-      font-weight: bold;
-      margin: 5mm 0;
-      color: {{styling.primaryColor}};
-    }
-    
-    /* Test data table */
-    .test-data {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 0;
-    }
-    
-    .test-data th {
-      background-color: #f5f5f5;
-      font-weight: bold;
-      text-align: left;
-      padding: 3mm;
-      border: 1px solid #ddd;
-      color: {{styling.primaryColor}};
-      font-size: 12pt;
-      vertical-align: middle;
-    }
-    
-    .test-data td {
-      padding: 3mm;
-      border: 1px solid #ddd;
-      font-size: 12pt;
-      vertical-align: middle;
-    }
-    
-    .abnormal {
-      color: #d32f2f;
-      font-weight: bold;
-      background-color: #ffebee;
-    }
-    
-    /* Signature section - fixed position above footer */
-    .signature-section {
-      display: flex;
-      justify-content: flex-end;
-      position: absolute;
-      bottom: 35mm; /* Position above footer */
-      right: 5mm;
-      width: 50mm;
-      height: 25mm;
-    }
-    
-    .signature-container {
-      text-align: center;
-      width: 50mm;
-    }
-    
-    .signature-image {
-      height: 15mm;
-      object-fit: contain;
-      margin-bottom: 2mm;
-    }
-    
-    .signature-line {
-      height: 15mm;
-      border-bottom: 1px solid #000;
-      margin-bottom: 2mm;
-    }
-    
-    .signature-name {
-      font-weight: bold;
-      font-size: 12pt;
-    }
-    
-    .signature-designation {
-      font-size: 12pt;
-      color: #666;
-    }
-    
-    /* Footer section - fixed height */
-    .footer {
-      width: 100%;
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      border-top: 1px solid #ddd;
-      background-color: white;
-      height: 30mm; /* Fixed footer height */
-      overflow: hidden;
-      margin: 0;
-      padding: 0;
-      z-index: 100;
-    }
-    
-    /* Footer image - full width */
-    .footer img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      margin: 0;
-      padding: 0;
-      display: block;
-    }
-    
-    /* Empty footer placeholder */
-    .footer-placeholder {
-      width: 100%;
-      height: 100%;
-      background-color: #fff3cd;
-      color: #856404;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 1px solid #ffeeba;
-      border-radius: 4px;
-      text-align: center;
-      padding: 10px;
-    }
-    
-    /* Print-specific styles */
-    @media print {
-      @page {
-        size: A4 portrait;
-        margin: 0;
-        padding: 0;
-      }
-      
-      body {
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-        color-adjust: exact !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        width: 100% !important;
-        height: 100% !important;
-      }
-      
-      .page {
-        margin: 0 !important;
-        padding: 0 !important;
-        width: 210mm !important;
-        height: 297mm !important;
-        box-shadow: none !important;
-        page-break-after: avoid !important;
-        page-break-before: avoid !important;
-        position: relative !important;
-      }
-      
-      /* Ensure header, footer and signature are positioned correctly when printing */
-      .header, .footer {
-        display: block !important;
-        position: fixed !important;
-        /* Visibility is controlled by inline styles */
-      }
-      
-      /* Fixed signature position */
-      .signature-section {
-        display: block !important;
-        position: fixed !important;
-        bottom: 35mm !important; /* Position above footer */
-        right: 5mm !important;
-        width: 50mm !important;
-        height: 25mm !important;
-        z-index: 10 !important;
-      }
-      
-      .header {
-        top: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        height: 35mm !important;
-      }
-      
-      .footer {
-        bottom: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        height: 30mm !important;
-      }
-      
-      /* Ensure images are visible */
-      .header img, .footer img, .signature-image {
-        display: block !important;
-        visibility: visible !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-        color-adjust: exact !important;
-      }
-      
-      /* Ensure abnormal values are highlighted */
-      .abnormal {
-        color: #d32f2f !important;
-        font-weight: bold !important;
-        background-color: #ffebee !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-        color-adjust: exact !important;
-      }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab Report</title>
+    <link rel="stylesheet" href="print-styles.css">
+    <style>
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        html, body {
+            height: 297mm;
+            width: 210mm;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+            line-height: 1.3;
+            color: #000000; /* All text in black */
+        }
+
+        /* Header and footer spaces */
+        .header-space, .footer-space {
+            width: 100%;
+            position: fixed;
+            left: 0;
+            background: transparent;
+        }
+
+        .header-space {
+            top: 0;
+            height: 35mm;
+        }
+
+        .footer-space {
+            bottom: 0;
+            height: 30mm;
+        }
+
+        /* Printable area between header and footer */
+        .print-area {
+            position: absolute;
+            top: 35mm;
+            bottom: 30mm;
+            left: 15mm;
+            right: 15mm;
+            overflow: hidden;
+        }
+
+        /* Patient info section */
+        .details-container {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+
+        .left-details, .right-details {
+            width: 48%;
+        }
+
+        .left-details p, .right-details p {
+            margin: 2px 0;
+        }
+
+        /* Report title */
+        h2.report-title {
+            text-align: center;
+            margin: 8px 0;
+            text-transform: uppercase;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        /* Test results section - using divs instead of table */
+        .test-results {
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .test-header {
+            display: flex;
+            margin-bottom: 5px;
+        }
+
+        .test-row {
+            display: flex;
+            margin-bottom: 3px;
+        }
+
+        .test-name, .test-header-name {
+            width: 25%;
+            font-weight: bold;
+        }
+
+        .test-result, .test-header-result {
+            width: 25%;
+        }
+
+        .test-unit, .test-header-unit {
+            width: 20%;
+        }
+
+        .test-range, .test-header-range {
+            width: 30%;
+        }
+
+        /* Highlight abnormal values with underline only */
+        .abnormal {
+            font-weight: bold;
+            text-decoration: underline;
+        }
+
+        /* Horizontal line */
+        hr {
+            border: none;
+            border-top: 1px solid black;
+            margin: 5px 0;
+        }
+
+        /* Signature section */
+        .signature {
+            margin-top: 50px;
+            text-align: right;
+        }
+
+        .signature-line {
+            display: inline-block;
+            width: 150px;
+            border-top: 1px solid black;
+            margin-top: 30px;
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
-  <div class="page">
-    <!-- Header section - only shown if showHeader is true -->
-    <!-- Always include header div to reserve space, but control visibility -->
-    <div class="header" style="visibility: {{#if showHeader}}visible{{else}}hidden{{/if}};">
-      {{#if headerImage}}
-        <img src="{{headerImage}}" alt="Lab Header">
-      {{else}}
-        <div class="header-placeholder">
-          <div>
-            <p style="font-weight: bold; margin-bottom: 5px;">⚠️ Header Not Available</p>
-            <p style="font-size: 0.9em;">Please configure header in lab settings</p>
-          </div>
+    <!-- Header space -->
+    <div class="header-space"></div>
+
+    <!-- Footer space -->
+    <div class="footer-space"></div>
+
+    <!-- Main Content -->
+    <div class="print-area">
+        <!-- Patient Info -->
+        <div class="details-container">
+            <div class="left-details">
+                <p><strong>Patient Name:</strong> {{patientName}}</p>
+                <p><strong>Age/Gender:</strong> {{patientAge}} Years / {{patientGender}}</p>
+                <p><strong>Patient ID:</strong> {{patientId}}</p>
+            </div>
+            <div class="right-details">
+                <p><strong>Sample Collection:</strong> {{sampleCollectionDate}}</p>
+                <p><strong>Sample Type:</strong> {{sampleType}}</p>
+                <p><strong>Referring Doctor:</strong> {{referringDoctor}}</p>
+            </div>
         </div>
-      {{/if}}
+
+        <hr>
+
+        <!-- Report Title -->
+        <h2 class="report-title">{{testName}}</h2>
+
+        <!-- Test Results - using divs instead of table -->
+        <div class="test-results">
+            <div class="test-header">
+                <div class="test-header-name">Test</div>
+                <div class="test-header-result">Result</div>
+                <div class="test-header-unit">Unit</div>
+                <div class="test-header-range">Reference Range</div>
+            </div>
+            
+            <hr style="border-top: 0.5px solid #ddd;">
+            
+            {{#each testResults}}
+            <div class="test-row">
+                <div class="test-name">{{this.name}}</div>
+                <div class="test-result {{#if this.isAbnormal}}abnormal{{/if}}">{{this.result}}</div>
+                <div class="test-unit">{{this.unit}}</div>
+                <div class="test-range">{{this.referenceRange}}</div>
+            </div>
+            {{/each}}
+        </div>
+
+        <!-- Signature Section -->
+        <div class="signature">
+            <div class="signature-line">
+                Dr. Consultant<br>
+                Consultant Pathologist
+            </div>
+        </div>
     </div>
-    
-    <!-- Content area with patient info and test results -->
-    <div class="content">
-      <!-- Patient Information -->
-      <div class="patient-info">
-        <div class="patient-info-left">
-          <div class="info-row">
-            <span class="info-label">Patient Name:</span>
-            <span>{{patientName}}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Age/Gender:</span>
-            <span>{{patientAge}} Years / {{patientGender}}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Patient ID:</span>
-            <span>{{patientId}}</span>
-          </div>
-        </div>
-        <div class="patient-info-right">
-          <div class="info-row">
-            <span class="info-label">Sample Collection:</span>
-            <span>{{sampleCollectionDate}}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Sample Type:</span>
-            <span>{{sampleType}}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Referring Doctor:</span>
-            <span>{{referringDoctor}}</span>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Test Title -->
-      <div class="test-title">
-        {{testName}}
-      </div>
-      
-      <!-- Test Results Table -->
-      <table class="test-data">
-        <thead>
-          <tr>
-            <th>Test</th>
-            <th>Result</th>
-            <th>Unit</th>
-            <th>Reference Range</th>
-          </tr>
-        </thead>
-        <tbody>
-          {{#each testResults}}
-          <tr>
-            <td>{{this.name}}</td>
-            <td {{#if this.isAbnormal}}class="abnormal"{{/if}}>{{this.result}}</td>
-            <td>{{this.unit}}</td>
-            <td>{{this.referenceRange}}</td>
-          </tr>
-          {{/each}}
-        </tbody>
-      </table>
-      
-      <!-- Signature Section -->
-      <div class="signature-section">
-        <div class="signature-container">
-          {{#if signatureImage}}
-            <img src="{{signatureImage}}" alt="Signature" class="signature-image">
-          {{else}}
-            <div class="signature-line"></div>
-          {{/if}}
-          <div class="signature-name">Dr. {{verifiedBy}}</div>
-          <div class="signature-designation">{{designation}}</div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Always include footer div to reserve space, but control visibility -->
-    <div class="footer" style="visibility: {{#if showFooter}}visible{{else}}hidden{{/if}};">
-      {{#if footerImage}}
-        <img src="{{footerImage}}" alt="Footer">
-      {{else}}
-        <div class="footer-placeholder">
-          <div>
-            <p style="font-weight: bold; margin-bottom: 5px;">⚠️ Footer Not Available</p>
-            <p style="font-size: 0.9em;">Please configure footer in lab settings</p>
-          </div>
-        </div>
-      {{/if}}
-    </div>
-  </div>
 </body>
 </html>
