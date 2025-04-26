@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ExclamationCircleIcon, PrinterIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import { reports, labReportSettings } from '../../utils/api';
-import { injectPrintStyles, removePrintStyles } from '../../utils/printStyles';
 import ReportTemplate from '../../components/reports/ReportTemplate';
 
 export default function PrintReport() {
@@ -15,19 +14,19 @@ export default function PrintReport() {
   const [isPrinting] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [showHeaderFooter, setShowHeaderFooter] = useState(false);
+  const [showSignature, setShowSignature] = useState(false);
   const reportRef = useRef(null);
 
   useEffect(() => {
     fetchReportData();
-    
-    // Inject print styles when component mounts
-    injectPrintStyles();
-    
-    // Remove print styles when component unmounts
-    return () => {
-      removePrintStyles();
-    };
   }, [id]);
+
+  console.log('Lab settings:', labSettings);
+  console.log('Error:', error);
+  console.log('Is loading:', isLoading);
+  console.log('Is printing:', isPrinting);
+  console.log('Is downloading:', isDownloading);
+  console.log('Show header footer:', showHeaderFooter);
 
   const fetchReportData = async () => {
     try {
@@ -53,10 +52,225 @@ export default function PrintReport() {
     }
   };
 
-  const handlePrint = () => {
-    // Make sure print styles are injected before printing
-    injectPrintStyles();
-    window.print();
+  const handlePrint = async () => {
+    try {
+      if (!reportRef.current) {
+        alert('Report content is not available for printing.');
+        return;
+      }
+      
+      // Create a simplified version of the report for printing
+      const simplifiedReport = document.createElement('div');
+      simplifiedReport.style.width = '210mm';
+      // Adjust padding for pre-printed letterhead when header/footer are not shown
+      // When showHeaderFooter is false, we're printing on pre-printed letterhead
+      // so we need to leave space for the pre-printed header and footer
+      const topPadding = showHeaderFooter ? '40mm' : '45mm'; // More space for pre-printed header
+      const bottomPadding = showHeaderFooter ? '35mm' : '40mm'; // More space for pre-printed footer
+      simplifiedReport.style.padding = `${topPadding} 15mm ${bottomPadding} 15mm`;
+      simplifiedReport.style.boxSizing = 'border-box';
+      simplifiedReport.style.fontFamily = 'Arial, sans-serif';
+      simplifiedReport.style.fontSize = '11pt';
+      simplifiedReport.style.position = 'relative';
+      
+      // Add horizontal line at the top
+      const topLine = document.createElement('div');
+      topLine.style.borderTop = '2px solid black';
+      topLine.style.width = '100%';
+      topLine.style.marginBottom = '10px'; // Reduced from 20px
+      simplifiedReport.appendChild(topLine);
+      
+      // Add patient info
+      const patientInfo = document.createElement('div');
+      patientInfo.style.display = 'grid';
+      patientInfo.style.gridTemplateColumns = '1fr 1fr';
+      patientInfo.style.gap = '10mm';
+      patientInfo.style.marginBottom = '10px'; // Reduced from 20px
+      
+      // Left column
+      const leftCol = document.createElement('div');
+      leftCol.innerHTML = `
+        <div style="margin-bottom: 5px;"><strong>Patient Name:</strong> ${report.patientInfo?.name || 'N/A'}</div>
+        <div style="margin-bottom: 5px;"><strong>Age/Gender:</strong> ${report.patientInfo?.age || 'N/A'} Years / ${report.patientInfo?.gender || 'N/A'}</div>
+        <div style="margin-bottom: 5px;"><strong>Patient ID:</strong> ${report.patientInfo?.patientId || report._id?.substring(0, 8) || 'N/A'}</div>
+      `;
+      
+      // Right column
+      const rightCol = document.createElement('div');
+      rightCol.innerHTML = `
+        <div style="margin-bottom: 5px;"><strong>Sample Collection:</strong> ${new Date(report.testInfo?.sampleCollectionDate || report.createdAt).toLocaleDateString()}</div>
+        <div style="margin-bottom: 5px;"><strong>Sample Type:</strong> ${report.testInfo?.sampleType || 'Blood'}</div>
+        <div style="margin-bottom: 5px;"><strong>Referring Doctor:</strong> ${report.testInfo?.referenceDoctor || 'N/A'}</div>
+      `;
+      
+      patientInfo.appendChild(leftCol);
+      patientInfo.appendChild(rightCol);
+      simplifiedReport.appendChild(patientInfo);
+      
+      // Add bottom line after patient info
+      const bottomLine = document.createElement('div');
+      bottomLine.style.borderTop = '2px solid black';
+      bottomLine.style.width = '100%';
+      bottomLine.style.marginBottom = '10px'; // Reduced from 20px
+      simplifiedReport.appendChild(bottomLine);
+      
+      // Add test title
+      const title = document.createElement('div');
+      title.textContent = report.testInfo?.name || 'Complete Blood Count Parameters';
+      title.style.textAlign = 'center';
+      title.style.fontWeight = 'bold';
+      title.style.fontSize = '14pt';
+      title.style.marginBottom = '10px'; // Reduced from 20px
+      simplifiedReport.appendChild(title);
+      
+      // Add test results table
+      const table = document.createElement('table');
+      table.style.width = '100%';
+      table.style.borderCollapse = 'collapse';
+      table.style.marginBottom = '20px';
+      
+      // Add table header
+      const thead = document.createElement('thead');
+      const headerRow = document.createElement('tr');
+      
+      const headers = ['Test', 'Result', 'Unit', 'Reference Range'];
+      const widths = ['40%', '15%', '10%', '35%'];
+      
+      headers.forEach((header, index) => {
+        const th = document.createElement('th');
+        th.textContent = header;
+        th.style.border = '1px solid black';
+        th.style.borderStyle = 'solid';
+        th.style.borderColor = 'black';
+        th.style.borderWidth = '1px';
+        th.style.padding = '6px 10px';
+        th.style.textAlign = 'left';
+        th.style.fontWeight = 'bold';
+        th.style.width = widths[index];
+        headerRow.appendChild(th);
+      });
+      
+      thead.appendChild(headerRow);
+      table.appendChild(thead);
+      
+      // Add table body
+      const tbody = document.createElement('tbody');
+      
+      if (report.results && report.results.length > 0) {
+        report.results.forEach(param => {
+          const row = document.createElement('tr');
+          
+          // Test name cell
+          const nameCell = document.createElement('td');
+          nameCell.textContent = param.parameter || param.name;
+          nameCell.style.border = '1px solid black';
+          nameCell.style.borderStyle = 'solid';
+          nameCell.style.borderColor = 'black';
+          nameCell.style.borderWidth = '1px';
+          nameCell.style.padding = '6px 10px';
+          row.appendChild(nameCell);
+          
+          // Result cell
+          const resultCell = document.createElement('td');
+          resultCell.textContent = param.value;
+          resultCell.style.border = '1px solid black';
+          resultCell.style.borderStyle = 'solid';
+          resultCell.style.borderColor = 'black';
+          resultCell.style.borderWidth = '1px';
+          resultCell.style.padding = '6px 10px';
+          row.appendChild(resultCell);
+          
+          // Unit cell
+          const unitCell = document.createElement('td');
+          unitCell.textContent = param.unit;
+          unitCell.style.border = '1px solid black';
+          unitCell.style.borderStyle = 'solid';
+          unitCell.style.borderColor = 'black';
+          unitCell.style.borderWidth = '1px';
+          unitCell.style.padding = '6px 10px';
+          row.appendChild(unitCell);
+          
+          // Reference range cell
+          const rangeCell = document.createElement('td');
+          rangeCell.textContent = param.referenceRange;
+          rangeCell.style.border = '1px solid black';
+          rangeCell.style.borderStyle = 'solid';
+          rangeCell.style.borderColor = 'black';
+          rangeCell.style.borderWidth = '1px';
+          rangeCell.style.padding = '6px 10px';
+          row.appendChild(rangeCell);
+          
+          tbody.appendChild(row);
+        });
+      } else {
+        const emptyRow = document.createElement('tr');
+        const emptyCell = document.createElement('td');
+        emptyCell.colSpan = 4;
+        emptyCell.textContent = 'No test parameters available';
+        emptyCell.style.textAlign = 'center';
+        emptyCell.style.padding = '6px';
+        emptyCell.style.border = '1px solid black';
+        emptyRow.appendChild(emptyCell);
+        tbody.appendChild(emptyRow);
+      }
+      
+      table.appendChild(tbody);
+      simplifiedReport.appendChild(table);
+      
+      // Dynamically load html2pdf if not loaded
+      if (typeof window.html2pdf === 'undefined') {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+          script.async = true;
+          script.onload = resolve;
+          script.onerror = () => reject(new Error('Failed to load html2pdf library'));
+          document.body.appendChild(script);
+        });
+      }
+      
+      // Create a temporary container for the simplified report
+      const tempContainer = document.createElement('div');
+      tempContainer.style.position = 'fixed';
+      tempContainer.style.top = '-10000px';
+      tempContainer.style.left = '-10000px';
+      tempContainer.appendChild(simplifiedReport);
+      document.body.appendChild(tempContainer);
+      
+      // Generate PDF
+      const opt = {
+        margin: 0,
+        filename: `${report.patientInfo?.name || 'Patient'}_Report.pdf`,
+        image: { type: 'jpeg', quality: 1 },
+        html2canvas: { 
+          scale: 2,
+          useCORS: true,
+          letterRendering: true
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+      
+      // Generate PDF and open in new window for printing
+      const pdfBlob = await window.html2pdf().set(opt).from(simplifiedReport).outputPdf('blob');
+      
+      // Clean up temporary container
+      document.body.removeChild(tempContainer);
+      
+      // Open the PDF in a new window for printing
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+      const printWindow = window.open(pdfUrl);
+      
+      if (printWindow) {
+        printWindow.addEventListener('load', () => {
+          printWindow.print();
+        });
+      } else {
+        alert('Please allow popups for this website to enable printing.');
+      }
+    } catch (error) {
+      console.error('Error printing report:', error);
+      alert('Failed to print report. Please try again.');
+    }
   };
   
   const handleDownload = async () => {
@@ -84,34 +298,183 @@ export default function PrintReport() {
 
   const generatePDF = async () => {
     try {
-      // Make sure print styles are injected before generating PDF
-      injectPrintStyles();
+      if (!reportRef.current) {
+        alert('Report content is not available for downloading.');
+        return;
+      }
       
-      const element = reportRef.current;
+      // Create a simplified version of the report for downloading
+      const simplifiedReport = document.createElement('div');
+      simplifiedReport.style.width = '210mm';
+      // Adjust padding for pre-printed letterhead when header/footer are not shown
+      // When showHeaderFooter is false, we're printing on pre-printed letterhead
+      // so we need to leave space for the pre-printed header and footer
+      const topPadding = showHeaderFooter ? '40mm' : '45mm'; // More space for pre-printed header
+      const bottomPadding = showHeaderFooter ? '35mm' : '40mm'; // More space for pre-printed footer
+      simplifiedReport.style.padding = `${topPadding} 15mm ${bottomPadding} 15mm`;
+      simplifiedReport.style.boxSizing = 'border-box';
+      simplifiedReport.style.fontFamily = 'Arial, sans-serif';
+      simplifiedReport.style.fontSize = '11pt';
+      simplifiedReport.style.position = 'relative';
+      
+      // Add horizontal line at the top
+      const topLine = document.createElement('div');
+      topLine.style.borderTop = '2px solid black';
+      topLine.style.width = '100%';
+      topLine.style.marginBottom = '10px'; // Reduced from 20px
+      simplifiedReport.appendChild(topLine);
+      
+      // Add patient info
+      const patientInfo = document.createElement('div');
+      patientInfo.style.display = 'grid';
+      patientInfo.style.gridTemplateColumns = '1fr 1fr';
+      patientInfo.style.gap = '10mm';
+      patientInfo.style.marginBottom = '10px'; // Reduced from 20px
+      
+      // Left column
+      const leftCol = document.createElement('div');
+      leftCol.innerHTML = `
+        <div style="margin-bottom: 5px;"><strong>Patient Name:</strong> ${report.patientInfo?.name || 'N/A'}</div>
+        <div style="margin-bottom: 5px;"><strong>Age/Gender:</strong> ${report.patientInfo?.age || 'N/A'} Years / ${report.patientInfo?.gender || 'N/A'}</div>
+        <div style="margin-bottom: 5px;"><strong>Patient ID:</strong> ${report.patientInfo?.patientId || report._id?.substring(0, 8) || 'N/A'}</div>
+      `;
+      
+      // Right column
+      const rightCol = document.createElement('div');
+      rightCol.innerHTML = `
+        <div style="margin-bottom: 5px;"><strong>Sample Collection:</strong> ${new Date(report.testInfo?.sampleCollectionDate || report.createdAt).toLocaleDateString()}</div>
+        <div style="margin-bottom: 5px;"><strong>Sample Type:</strong> ${report.testInfo?.sampleType || 'Blood'}</div>
+        <div style="margin-bottom: 5px;"><strong>Referring Doctor:</strong> ${report.testInfo?.referenceDoctor || 'N/A'}</div>
+      `;
+      
+      patientInfo.appendChild(leftCol);
+      patientInfo.appendChild(rightCol);
+      simplifiedReport.appendChild(patientInfo);
+      
+      // Add bottom line after patient info
+      const bottomLine = document.createElement('div');
+      bottomLine.style.borderTop = '2px solid black';
+      bottomLine.style.width = '100%';
+      bottomLine.style.marginBottom = '10px'; // Reduced from 20px
+      simplifiedReport.appendChild(bottomLine);
+      
+      // Add test title
+      const title = document.createElement('div');
+      title.textContent = report.testInfo?.name || 'Complete Blood Count Parameters';
+      title.style.textAlign = 'center';
+      title.style.fontWeight = 'bold';
+      title.style.fontSize = '14pt';
+      title.style.marginBottom = '10px'; // Reduced from 20px
+      simplifiedReport.appendChild(title);
+      
+      // Add test results table
+      const table = document.createElement('table');
+      table.style.width = '100%';
+      table.style.borderCollapse = 'collapse';
+      table.style.marginBottom = '20px';
+      
+      // Add table header
+      const thead = document.createElement('thead');
+      const headerRow = document.createElement('tr');
+      
+      const headers = ['Test', 'Result', 'Unit', 'Reference Range'];
+      const widths = ['40%', '15%', '10%', '35%'];
+      
+      headers.forEach((header, index) => {
+        const th = document.createElement('th');
+        th.textContent = header;
+        th.style.border = '1px solid black';
+        th.style.borderStyle = 'solid';
+        th.style.borderColor = 'black';
+        th.style.borderWidth = '1px';
+        th.style.padding = '6px 10px';
+        th.style.textAlign = 'left';
+        th.style.fontWeight = 'bold';
+        th.style.width = widths[index];
+        headerRow.appendChild(th);
+      });
+      
+      thead.appendChild(headerRow);
+      table.appendChild(thead);
+      
+      // Add table body
+      const tbody = document.createElement('tbody');
+      
+      if (report.results && report.results.length > 0) {
+        report.results.forEach(param => {
+          const row = document.createElement('tr');
+          
+          // Test name cell
+          const nameCell = document.createElement('td');
+          nameCell.textContent = param.parameter || param.name;
+          nameCell.style.border = '1px solid black';
+          nameCell.style.borderStyle = 'solid';
+          nameCell.style.borderColor = 'black';
+          nameCell.style.borderWidth = '1px';
+          nameCell.style.padding = '6px 10px';
+          row.appendChild(nameCell);
+          
+          // Result cell
+          const resultCell = document.createElement('td');
+          resultCell.textContent = param.value;
+          resultCell.style.border = '1px solid black';
+          resultCell.style.borderStyle = 'solid';
+          resultCell.style.borderColor = 'black';
+          resultCell.style.borderWidth = '1px';
+          resultCell.style.padding = '6px 10px';
+          row.appendChild(resultCell);
+          
+          // Unit cell
+          // Reference range cell
+          const rangeCell = document.createElement('td');
+          rangeCell.textContent = param.referenceRange;
+          rangeCell.style.border = '1px solid black';
+          rangeCell.style.padding = '6px 10px';
+          row.appendChild(rangeCell);
+          
+          tbody.appendChild(row);
+        });
+      } else {
+        const emptyRow = document.createElement('tr');
+        const emptyCell = document.createElement('td');
+        emptyCell.colSpan = 4;
+        emptyCell.textContent = 'No test parameters available';
+        emptyCell.style.textAlign = 'center';
+        emptyCell.style.padding = '6px';
+        emptyCell.style.border = '1px solid black';
+        emptyRow.appendChild(emptyCell);
+        tbody.appendChild(emptyRow);
+      }
+      
+      table.appendChild(tbody);
+      simplifiedReport.appendChild(table);
+      
+      // Create a temporary container for the simplified report
+      const tempContainer = document.createElement('div');
+      tempContainer.style.position = 'fixed';
+      tempContainer.style.top = '-10000px';
+      tempContainer.style.left = '-10000px';
+      tempContainer.appendChild(simplifiedReport);
+      document.body.appendChild(tempContainer);
+      
+      // Generate PDF
       const opt = {
-        margin: [0, 0, 0, 0],
-        filename: `${report.patientInfo?.name || 'Patient'}_Report_${new Date().toLocaleDateString().replace(/\//g, '-')}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
+        margin: 0,
+        filename: `${report.patientInfo?.name || 'Patient'}_Report.pdf`,
+        image: { type: 'jpeg', quality: 1 },
         html2canvas: { 
-          scale: 2, 
-          useCORS: true, 
-          logging: false,
-          // Force black text and white background
-          backgroundColor: '#FFFFFF',
-          onclone: (clonedDoc) => {
-            // Apply additional black-only styles to the cloned document
-            const style = clonedDoc.createElement('style');
-            style.innerHTML = `
-              * { color: black !important; background-color: white !important; }
-              table, th, td { border: none !important; }
-            `;
-            clonedDoc.head.appendChild(style);
-          }
+          scale: 2,
+          useCORS: true,
+          letterRendering: true
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
       
-      await window.html2pdf().set(opt).from(element).save();
+      // Generate and save the PDF
+      await window.html2pdf().set(opt).from(simplifiedReport).save();
+      
+      // Clean up temporary container
+      document.body.removeChild(tempContainer);
     } catch (error) {
       console.error('Error generating PDF:', error);
       alert('Failed to generate PDF. Please try again.');
@@ -155,13 +518,14 @@ export default function PrintReport() {
       })) || [],
       
       // Signature data
-      signatureImage: labSettings.footer?.signature || '',
-      verifiedBy: labSettings.footer?.verifiedBy || 'Consultant',
-      designation: labSettings.footer?.designation || 'Pathologist',
+      signatureImage: showSignature ? (labSettings.footer?.signature || '') : '',
+      verifiedBy: showSignature ? (labSettings.footer?.verifiedBy || 'Consultant') : '',
+      designation: showSignature ? (labSettings.footer?.designation || 'Pathologist') : '',
       
       // Footer data
       footerImage: labSettings.footer?.footerImage || '',
       showFooter: showHeaderFooter,
+      showSignature: showSignature,
       
       // Styling
       styling: labSettings.styling || {
@@ -259,7 +623,20 @@ export default function PrintReport() {
               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
             />
             <label htmlFor="showHeaderFooter" className="ml-2 block text-sm text-gray-900">
-              Show Header and Footer
+              Show Header and Footer (uncheck for pre-printed letterhead)
+            </label>
+          </div>
+          <div className="flex items-center">
+            <input
+              id="showSignature"
+              name="showSignature"
+              type="checkbox"
+              checked={showSignature}
+              onChange={(e) => setShowSignature(e.target.checked)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <label htmlFor="showSignature" className="ml-2 block text-sm text-gray-900">
+              Show Signature
             </label>
           </div>
           <div className="text-sm text-gray-500 italic">
@@ -279,7 +656,6 @@ export default function PrintReport() {
           pageBreakInside: 'avoid',
           boxSizing: 'border-box',
           padding: '0',
-          border: '1px solid #eee',
           position: 'relative',
           overflow: 'hidden'
         }}
@@ -293,6 +669,7 @@ export default function PrintReport() {
                 margin: 0 !important;
                 padding: 0 !important;
                 border: none !important;
+                box-shadow: none !important;
                 page-break-after: avoid !important;
                 page-break-before: avoid !important;
               }
@@ -306,22 +683,22 @@ export default function PrintReport() {
               html, body {
                 margin: 0 !important;
                 padding: 0 !important;
-                height: 100% !important;
-                overflow: hidden !important;
+                height: auto !important;
+                overflow: visible !important;
               }
               
               body {
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
                 color-adjust: exact !important;
-                font-size: 10pt !important;
+                font-size: 12pt !important;
               }
               
               /* Ensure header image uses full width */
               .header-image {
                 width: 100% !important;
                 max-width: 100% !important;
-                height: 25mm !important; /* Reduced from 35mm to 25mm to match header container */
+                height: auto !important;
                 object-fit: contain !important;
               }
               
@@ -330,6 +707,9 @@ export default function PrintReport() {
                 width: 100% !important;
                 text-align: center !important;
                 display: block !important;
+                position: static !important;
+                height: auto !important;
+                z-index: auto !important;
               }
               
               /* Hide placeholders when printing */
@@ -344,46 +724,31 @@ export default function PrintReport() {
               
               /* Ensure content fits on one page */
               .report-content {
-                position: absolute !important;
-                top: 25mm !important; /* Reduced from 35mm to 25mm */
-                bottom: 25mm !important; /* Reduced from 30mm to 25mm */
-                left: 0 !important;
-                right: 0 !important;
-                padding: 5mm !important;
-                overflow: hidden !important;
+                position: static !important;
+                top: auto !important;
+                bottom: auto !important;
+                left: auto !important;
+                right: auto !important;
+                padding: 10mm !important; /* Inner padding for content */
+                overflow: visible !important;
               }
               
-              /* Fixed header */
-              .report-header {
-                position: fixed !important;
-                top: 0 !important;
-                left: 0 !important;
-                right: 0 !important;
-                height: 25mm !important; /* Reduced from 35mm to 25mm */
-                z-index: 100 !important;
+              /* Add top margin before patient details for pre-printed letterhead */
+              .patient-info {
+                margin-top: 25mm !important;
               }
               
-              /* Fixed footer */
-              .footer {
-                position: fixed !important;
-                bottom: 0 !important;
-                left: 0 !important;
-                right: 0 !important;
-                height: 30mm !important;
-                z-index: 100 !important;
-              }
-              
-              /* Fixed doctor sign */
+              /* Remove fixed positioning for header, footer, and doctor sign */
               .doctor-sign {
-                position: fixed !important;
-                bottom: 30mm !important;
-                left: 0 !important;
-                right: 0 !important;
-                height: 20mm !important;
+                position: static !important;
+                bottom: auto !important;
+                left: auto !important;
+                right: auto !important;
+                height: auto !important;
                 text-align: center !important;
-                z-index: 101 !important;
-                border-top: 1px solid #000 !important;
-                padding-top: 5px !important;
+                z-index: auto !important;
+                border-top: none !important;
+                padding-top: 0 !important;
                 font-size: 12pt !important;
                 font-weight: bold !important;
               }

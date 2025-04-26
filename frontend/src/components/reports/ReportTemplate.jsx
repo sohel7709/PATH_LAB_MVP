@@ -5,10 +5,6 @@ const ReportTemplate = ({ reportData }) => {
   const {
     // Header data
     headerImage,
-    // labName, // Removed unused variable
-    // doctorName, // Removed unused variable
-    // address, // Removed unused variable
-    // phone, // Removed unused variable
     showHeader = true,
     
     // Patient data
@@ -34,11 +30,12 @@ const ReportTemplate = ({ reportData }) => {
     // Footer data
     footerImage,
     showFooter = true,
+    showSignature = true,
     
     // Styling
     styling = {
-      primaryColor: '#007bff',
-      secondaryColor: '#6c757d',
+      primaryColor: '#000000', // Changed to black for better printing
+      secondaryColor: '#000000',
       fontFamily: 'Arial, sans-serif',
       fontSize: 12 // Default screen font size
     }
@@ -236,19 +233,39 @@ const ReportTemplate = ({ reportData }) => {
         border-collapse: collapse !important;
         font-size: 12pt !important; /* Standard font size */
         table-layout: fixed !important; /* Fixed table layout for better width control */
+        border: 1px solid black !important;
       }
       
-      .test-data th, .test-data td {
+      .test-data td {
         padding: 3mm !important; /* Increased padding */
-        border: 1px solid #ddd !important;
+        border: 1px solid black !important;
         vertical-align: middle !important; /* Center content vertically */
         font-size: 12pt !important; /* Ensure consistent font size */
-      }
+       }
+       
        .test-data th {
-         background-color: #f5f5f5 !important;
+         padding: 3mm !important; /* Increased padding */
+         border: 2px solid black !important;
+         vertical-align: middle !important; /* Center content vertically */
+         font-size: 12pt !important; /* Ensure consistent font size */
          color: ${styling.primaryColor || '#007bff'} !important;
          font-weight: bold !important;
          text-align: left !important;
+       }
+       
+       /* Ensure table borders are visible */
+       .test-data, .test-data th, .test-data td {
+         border-style: solid !important;
+         border-color: black !important;
+         border-width: 1px !important;
+       }
+       
+       .test-data th {
+         border-width: 1px !important;
+       }
+       
+       .test-data td {
+         border-width: 1px !important;
        }
 
       td[style*="fontWeight: bold"] {
@@ -308,224 +325,280 @@ const ReportTemplate = ({ reportData }) => {
         width: '210mm',
         margin: '0 auto'
       }}>
-      {/* Header Section */}
-      <div className="report-header" style={{ 
-        width: '100%', 
-        display: 'block', /* Always reserve space even when not showing content */
-        position: 'relative',
-        height: '35mm', /* Fixed header height */
-        overflow: 'hidden',
-        visibility: showHeader ? 'visible' : 'hidden' /* Hide content but keep space */
-      }}>
-        {headerImage ? (
-          <img 
-            src={headerImage} 
-            alt="Lab Header" 
-            className="header-image"
-            style={{ 
-              width: '100%', 
-              height: '100%',
-              objectFit: 'contain',
-              display: 'block',
-              margin: '0 auto' 
-            }}
-          />
-        ) : (
-          // Show warning message if header data is not available
-          <div className="header-warning" style={{ 
-            padding: '15px', 
-            backgroundColor: '#fff3cd', 
-            color: '#856404',
-            border: '1px solid #ffeeba',
-            borderRadius: '4px',
-            textAlign: 'center',
-            margin: '10px 0'
-          }}>
-            <p style={{ fontWeight: 'bold', marginBottom: '5px' }}>⚠️ Header Not Available</p>
-            <p style={{ fontSize: '0.9em' }}>Please configure header in lab settings</p>
-          </div>
-        )}
-      </div>
-
-      {/* Content area with patient info and test results */}
-      <div className="report-content" style={{
-        position: 'relative',
-        top: showHeader ? '35mm' : '0',
-        paddingTop: '5mm',
-        paddingBottom: showFooter ? '30mm' : '5mm',
-        paddingLeft: '5mm',
-        paddingRight: '5mm',
-        overflow: 'hidden'
-      }}>
-        {/* Patient Information */}
-        <div className="patient-info" style={{
-          marginTop: '0', 
-          display: 'flex',
-          justifyContent: 'space-between',
-          padding: '0 0 5px 0', 
-          borderBottom: `1px solid #ddd`,
-          fontSize: '12pt'
+        {/* Header Section */}
+        <div className="report-header" style={{ 
+          width: '100%', 
+          display: 'block', /* Always reserve space even when not showing content */
+          position: 'relative',
+          height: '35mm', /* Fixed header height */
+          overflow: 'hidden',
+          visibility: showHeader ? 'visible' : 'hidden' /* Hide content but keep space */
         }}>
-        <div className="patient-info-left" style={{ width: '48%' }}>
-          <div className="info-row" style={{ marginBottom: '5px' }}>
-            <span className="info-label" style={{ fontWeight: 'bold', display: 'inline-block', marginRight: '5px' }}>Patient Name:</span>
-            <span>{patientName || 'N/A'}</span>
-          </div>
-          <div className="info-row" style={{ marginBottom: '5px' }}>
-            <span className="info-label" style={{ fontWeight: 'bold', display: 'inline-block', marginRight: '5px' }}>Age/Gender:</span>
-            <span>{patientAge || 'N/A'} Years / {patientGender || 'N/A'}</span>
-          </div>
-          <div className="info-row" style={{ marginBottom: '5px' }}>
-            <span className="info-label" style={{ fontWeight: 'bold', display: 'inline-block', marginRight: '5px' }}>Patient ID:</span>
-            <span>{patientId || 'N/A'}</span>
-          </div>
-        </div>
-        <div className="patient-info-right" style={{ width: '48%' }}>
-          <div className="info-row" style={{ marginBottom: '5px' }}>
-            <span className="info-label" style={{ fontWeight: 'bold', display: 'inline-block', marginRight: '5px' }}>Sample Collection:</span>
-            <span>{sampleCollectionDate || 'N/A'}</span>
-          </div>
-          <div className="info-row" style={{ marginBottom: '5px' }}>
-            <span className="info-label" style={{ fontWeight: 'bold', display: 'inline-block', marginRight: '5px' }}>Sample Type:</span>
-            <span>{sampleType || 'Blood'}</span>
-          </div>
-          <div className="info-row" style={{ marginBottom: '5px' }}>
-            <span className="info-label" style={{ fontWeight: 'bold', display: 'inline-block', marginRight: '5px' }}>Referring Doctor:</span>
-            <span>{referringDoctor || 'N/A'}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Test Title */}
-      <div className="test-title" style={{
-        textAlign: 'center',
-        fontSize: '16pt', 
-        fontWeight: 'bold',
-        margin: '20px 0', // Screen margin
-        color: styling.primaryColor
-      }}>
-        {testName || 'COMPLETE BLOOD COUNT (CBC)'}
-      </div>
-
-      {/* Test Results Table */}
-      <table className="test-data" style={{
-        width: '100%',
-        borderCollapse: 'collapse',
-        margin: '0',
-        border: '1px solid #ddd'
-      }}>
-        <thead>
-          <tr>
-            <th style={{
-              backgroundColor: '#f5f5f5',
-              fontWeight: 'bold',
-              textAlign: 'left',
-              padding: '10px', // Increased padding
-              border: '1px solid #ddd',
-              color: styling.primaryColor,
-              fontSize: '12pt',
-              verticalAlign: 'middle'
-            }}>Test</th>
-            <th style={{
-              backgroundColor: '#f5f5f5',
-              fontWeight: 'bold',
-              textAlign: 'left',
-              padding: '10px', // Increased padding
-              border: '1px solid #ddd',
-              color: styling.primaryColor,
-              fontSize: '12pt',
-              verticalAlign: 'middle'
-            }}>Result</th>
-            <th style={{
-              backgroundColor: '#f5f5f5',
-              fontWeight: 'bold',
-              textAlign: 'left',
-              padding: '10px', // Increased padding
-              border: '1px solid #ddd',
-              color: styling.primaryColor,
-              fontSize: '12pt',
-              verticalAlign: 'middle'
-            }}>Unit</th>
-            <th style={{
-              backgroundColor: '#f5f5f5',
-              fontWeight: 'bold',
-              textAlign: 'left',
-              padding: '10px', // Increased padding
-              border: '1px solid #ddd',
-              color: styling.primaryColor,
-              fontSize: '12pt',
-              verticalAlign: 'middle'
-            }}>Reference Range</th>
-          </tr>
-        </thead>
-        <tbody>
-          {testResults && testResults.length > 0 ? (
-            testResults.map((param, index) => {
-              const abnormal = isOutsideRange(param.result, param.referenceRange) || param.isAbnormal;
-              return (
-                <tr key={index}>
-                  <td style={{ 
-                    padding: '10px', 
-                    border: '1px solid #ddd',
-                    fontSize: '12pt',
-                    verticalAlign: 'middle'
-                  }}>{param.name}</td>
-                  <td style={{ 
-                    padding: '10px', 
-                    border: '1px solid #ddd',
-                    color: abnormal ? 'black' : 'inherit',
-                    fontWeight: abnormal ? 'bold' : 'normal',
-                    backgroundColor: abnormal ? '#fff0f0' : 'transparent',
-                    fontSize: '12pt',
-                    verticalAlign: 'middle'
-                  }}>
-                    {param.result}
-                  </td>
-                  <td style={{ 
-                    padding: '10px', 
-                    border: '1px solid #ddd',
-                    fontSize: '12pt',
-                    verticalAlign: 'middle'
-                  }}>{param.unit}</td>
-                  <td style={{ 
-                    padding: '10px', 
-                    border: '1px solid #ddd',
-                    fontSize: '12pt',
-                    verticalAlign: 'middle'
-                  }}>{param.referenceRange}</td>
-                </tr>
-              );
-            })
+          {headerImage ? (
+            <img 
+              src={headerImage} 
+              alt="Lab Header" 
+              className="header-image"
+              style={{ 
+                width: '100%', 
+                height: '100%',
+                objectFit: 'contain',
+                display: 'block',
+                margin: '0 auto' 
+              }}
+            />
           ) : (
-            <tr>
-              <td colSpan="4" style={{ textAlign: 'center', padding: '8px', border: '1px solid #ddd' }}>
-                No test parameters available
-              </td>
-            </tr>
+            // Show warning message if header data is not available
+            <div className="header-warning" style={{ 
+              padding: '15px', 
+              backgroundColor: '#fff3cd', 
+              color: '#856404',
+              border: '1px solid #ffeeba',
+              borderRadius: '4px',
+              textAlign: 'center',
+              margin: '10px 0'
+            }}>
+              <p style={{ fontWeight: 'bold', marginBottom: '5px' }}>⚠️ Header Not Available</p>
+              <p style={{ fontSize: '0.9em' }}>Please configure header in lab settings</p>
+            </div>
           )}
-        </tbody>
-      </table>
+        </div>
 
-      {/* Signature Section - Right aligned at the bottom of content */}
-      <div className="signature-section" style={{
-        display: 'flex',
-        justifyContent: 'flex-end',
-        marginTop: 'auto', /* Push to bottom of content */
-        marginBottom: '10mm',
-        width: '100%'
-      }}>
-        <div className="signature-container" style={{
-          textAlign: 'center',
-          width: '200px' 
+        {/* Content area with patient info and test results */}
+        <div className="report-content" style={{
+          position: 'relative',
+          top: showHeader ? '35mm' : '0',
+          paddingTop: '5mm',
+          paddingBottom: showFooter ? '30mm' : '5mm',
+          paddingLeft: '5mm',
+          paddingRight: '5mm',
+          overflow: 'hidden',
+          border: 'none' /* Ensure no border on the content container */
         }}>
-          {signatureImage ? (
-            <div style={{ width: '100%', textAlign: 'center', overflow: 'hidden' }}>
+          {/* Horizontal line above patient info */}
+          <div style={{
+            borderTop: '2px solid black',
+            marginBottom: '8px',
+            width: '100%'
+          }}></div>
+
+          {/* Patient Information */}
+          <div className="patient-info" style={{
+            marginTop: '0',
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            columnGap: '10mm',
+            padding: '5px 0 5px 0',
+            borderBottom: '2px solid black',
+            fontSize: '11pt',
+            lineHeight: '1.3'
+          }}>
+            <div className="patient-info-left" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <div className="info-row" style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                <span className="info-label" style={{ fontWeight: 'bold', minWidth: '110px' }}>Patient Name:</span>
+                <span>{patientName || 'N/A'}</span>
+              </div>
+              <div className="info-row" style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                <span className="info-label" style={{ fontWeight: 'bold', minWidth: '110px' }}>Age/Gender:</span>
+                <span>{patientAge || 'N/A'} Years / {patientGender || 'N/A'}</span>
+              </div>
+              <div className="info-row" style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                <span className="info-label" style={{ fontWeight: 'bold', minWidth: '110px' }}>Patient ID:</span>
+                <span>{patientId || 'N/A'}</span>
+              </div>
+            </div>
+            <div className="patient-info-right" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <div className="info-row" style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                <span className="info-label" style={{ fontWeight: 'bold', minWidth: '110px' }}>Sample Collection:</span>
+                <span>{sampleCollectionDate || 'N/A'}</span>
+              </div>
+              <div className="info-row" style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                <span className="info-label" style={{ fontWeight: 'bold', minWidth: '110px' }}>Sample Type:</span>
+                <span>{sampleType || 'Blood'}</span>
+              </div>
+              <div className="info-row" style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                <span className="info-label" style={{ fontWeight: 'bold', minWidth: '110px' }}>Referring Doctor:</span>
+                <span>{referringDoctor || 'N/A'}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Test Title */}
+          <div className="test-title" style={{
+            textAlign: 'center',
+            fontSize: '14pt', 
+            fontWeight: 'bold',
+            margin: '15px 0 10px 0', // Adjusted margin
+            color: styling.primaryColor
+          }}>
+            {testName || 'COMPLETE BLOOD COUNT (CBC)'}
+          </div>
+
+          {/* Test Results Table */}
+          <table className="test-data" style={{
+            width: '100%',
+            borderCollapse: 'collapse',
+            margin: '0',
+            border: '1px solid black',
+            tableLayout: 'fixed' // Ensure fixed layout for consistent layout
+          }}>
+            <thead>
+              <tr>
+                <th style={{
+                  fontWeight: 'bold',
+                  textAlign: 'left',
+                  padding: '6px 10px',
+                  border: '1px solid black',
+                  borderCollapse: 'collapse',
+                  color: styling.primaryColor,
+                  fontSize: '11pt',
+                  verticalAlign: 'middle',
+                  width: '40%'
+                }}>Test</th>
+                <th style={{
+                  fontWeight: 'bold',
+                  textAlign: 'left',
+                  padding: '6px 10px',
+                  border: '1px solid black',
+                  borderCollapse: 'collapse',
+                  color: styling.primaryColor,
+                  fontSize: '11pt',
+                  verticalAlign: 'middle',
+                  width: '15%'
+                }}>Result</th>
+                <th style={{
+                  fontWeight: 'bold',
+                  textAlign: 'left',
+                  padding: '6px 10px',
+                  border: '1px solid black',
+                  borderCollapse: 'collapse',
+                  color: styling.primaryColor,
+                  fontSize: '11pt',
+                  verticalAlign: 'middle',
+                  width: '10%'
+                }}>Unit</th>
+                <th style={{
+                  fontWeight: 'bold',
+                  textAlign: 'left',
+                  padding: '6px 10px',
+                  border: '1px solid black',
+                  borderCollapse: 'collapse',
+                  color: styling.primaryColor,
+                  fontSize: '11pt',
+                  verticalAlign: 'middle',
+                  width: '35%'
+                }}>Reference Range</th>
+              </tr>
+            </thead>
+            <tbody>
+              {testResults && testResults.length > 0 ? (
+                testResults.map((param, index) => {
+                  const abnormal = isOutsideRange(param.result, param.referenceRange) || param.isAbnormal;
+                  return (
+                    <tr key={index}>
+                      <td style={{ 
+                        padding: '6px 10px', 
+                        border: '1px solid black',
+                        fontSize: '11pt',
+                        verticalAlign: 'middle'
+                      }}>{param.name}</td>
+                      <td style={{ 
+                        padding: '6px 10px', 
+                        border: '1px solid black',
+                        color: abnormal ? 'black' : 'inherit',
+                        fontWeight: abnormal ? 'bold' : 'normal',
+                        backgroundColor: abnormal ? '#fff0f0' : 'transparent',
+                        fontSize: '11pt',
+                        verticalAlign: 'middle'
+                      }}>
+                        {param.result === '-' ? '' : param.result}
+                      </td>
+                      <td style={{ 
+                        padding: '6px 10px', 
+                        border: '1px solid black',
+                        fontSize: '11pt',
+                        verticalAlign: 'middle'
+                      }}>{param.unit}</td>
+                      <td style={{ 
+                        padding: '6px 10px', 
+                        border: '1px solid black',
+                        fontSize: '11pt',
+                        verticalAlign: 'middle'
+                      }}>{param.referenceRange}</td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan="4" style={{ textAlign: 'center', padding: '6px', border: '1px solid black' }}>
+                    No test parameters available
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+
+          {showSignature && (
+            <div className="signature-section" style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              marginTop: 'auto', /* Push to bottom of content */
+              marginBottom: '10mm',
+              width: '100%'
+            }}>
+              <div className="signature-container" style={{
+                textAlign: 'center',
+                width: '200px' 
+              }}>
+                {signatureImage ? (
+                  <div style={{ width: '100%', textAlign: 'center', overflow: 'hidden' }}>
+                    <img 
+                      src={signatureImage} 
+                      alt="Signature" 
+                      className="signature-image"
+                      style={{ 
+                        height: '60px', 
+                        objectFit: 'contain',
+                        display: 'block',
+                        margin: '0 auto'
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div style={{ height: '60px', borderBottom: '1px solid #000' }}></div> 
+                )}
+                <div className="signature-name" style={{ fontWeight: 'bold', marginTop: '5px', fontSize: '12pt' }}> 
+                  Dr. {verifiedBy || 'Consultant'}
+                </div>
+                <div className="signature-designation" style={{ fontSize: '12pt', color: '#666' }}> 
+                  {designation || 'Pathologist'}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+        
+        {/* Footer Section */}
+        <div className="footer" style={{
+          width: '100%',
+          position: 'absolute',
+          bottom: '0',
+          left: '0',
+          right: '0',
+          borderTop: `1px solid black`,
+          height: '30mm', /* Fixed footer height */
+          overflow: 'hidden',
+          display: 'block', /* Always reserve space even when not showing content */
+          visibility: showFooter ? 'visible' : 'hidden' /* Hide content but keep space */
+        }}>
+          {footerImage ? (
+            <div style={{ width: '100%', height: '100%', overflow: 'hidden' }}>
               <img 
-                src={signatureImage} 
-                alt="Signature" 
-                className="signature-image"
+                src={footerImage} 
+                alt="Footer" 
                 style={{ 
-                  height: '60px', 
+                  width: '100%', 
+                  height: '100%', 
                   objectFit: 'contain',
                   display: 'block',
                   margin: '0 auto'
@@ -533,63 +606,22 @@ const ReportTemplate = ({ reportData }) => {
               />
             </div>
           ) : (
-            <div style={{ height: '60px', borderBottom: '1px solid #000' }}></div> 
+            // Show warning message if footer data is not available
+            <div className="footer-warning" style={{ 
+              padding: '15px', 
+              backgroundColor: '#fff3cd', 
+              color: '#856404',
+              border: '1px solid black',
+              borderRadius: '4px',
+              textAlign: 'center',
+              margin: '10px 0'
+            }}>
+              <p style={{ fontWeight: 'bold', marginBottom: '5px' }}>⚠️ Footer Not Available</p>
+              <p style={{ fontSize: '0.9em' }}>Please configure footer in lab settings</p>
+            </div>
           )}
-          <div className="signature-name" style={{ fontWeight: 'bold', marginTop: '5px', fontSize: '12pt' }}> 
-            Dr. {verifiedBy || 'Consultant'}
-          </div>
-          <div className="signature-designation" style={{ fontSize: '12pt', color: '#666' }}> 
-            {designation || 'Pathologist'}
-          </div>
         </div>
       </div>
-
-      </div>
-      
-      {/* Footer Section */}
-      <div className="footer" style={{
-        width: '100%',
-        position: 'absolute',
-        bottom: '0',
-        left: '0',
-        right: '0',
-        borderTop: `1px solid #ddd`,
-        height: '30mm', /* Fixed footer height */
-        overflow: 'hidden',
-        display: 'block', /* Always reserve space even when not showing content */
-        visibility: showFooter ? 'visible' : 'hidden' /* Hide content but keep space */
-      }}>
-        {footerImage ? (
-          <div style={{ width: '100%', height: '100%', overflow: 'hidden' }}>
-            <img 
-              src={footerImage} 
-              alt="Footer" 
-              style={{ 
-                width: '100%', 
-                height: '100%', 
-                objectFit: 'contain',
-                display: 'block',
-                margin: '0 auto'
-              }}
-            />
-          </div>
-        ) : (
-          // Show warning message if footer data is not available
-          <div className="footer-warning" style={{ 
-            padding: '15px', 
-            backgroundColor: '#fff3cd', 
-            color: '#856404',
-            border: '1px solid #ffeeba',
-            borderRadius: '4px',
-            textAlign: 'center',
-            margin: '10px 0'
-          }}>
-            <p style={{ fontWeight: 'bold', marginBottom: '5px' }}>⚠️ Footer Not Available</p>
-            <p style={{ fontSize: '0.9em' }}>Please configure footer in lab settings</p>
-          </div>
-        )}
-      </div>
-    </div>
     </>
   );
 };
