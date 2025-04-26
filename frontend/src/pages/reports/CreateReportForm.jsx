@@ -123,7 +123,7 @@ export default function CreateReportForm() {
       // No need to check lab ID here as the backend already does this
       // and will return 403 if not authorized
 
-      const patientId = patientData._id || patientData.id;
+      const patientId = patientData.patientId || patientData._id || patientData.id;
 
       // Add detailed logging to check the exact values before setting state
       console.log('--- Updating Form Data ---');
@@ -195,7 +195,7 @@ export default function CreateReportForm() {
         try {
           const createdPatient = await patients.create(newPatientData);
           console.log('New patient created:', createdPatient);
-          patientId = createdPatient._id || createdPatient.id;
+          patientId = createdPatient.patientId || createdPatient._id || createdPatient.id;
           
           // Update the patient list to include this new patient
           setPatientList(prev => [...prev, createdPatient]);

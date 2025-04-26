@@ -173,11 +173,22 @@ export default function PrintReport() {
           // Result cell
           const resultCell = document.createElement('td');
           resultCell.textContent = param.value;
+          // Bold abnormal values in downloaded PDF
+          if (param.flag === 'high' || param.flag === 'low' || param.flag === 'critical') {
+            resultCell.style.fontWeight = 'bold';
+          }
+      // Bold abnormal results
+      if (param.flag === 'high' || param.flag === 'low' || param.flag === 'critical') {
+        resultCell.style.fontWeight = 'bold';
+      }
           resultCell.style.border = '1px solid black';
           resultCell.style.borderStyle = 'solid';
           resultCell.style.borderColor = 'black';
           resultCell.style.borderWidth = '1px';
           resultCell.style.padding = '6px 10px';
+          if (param.flag === 'high' || param.flag === 'low' || param.flag === 'critical') {
+            resultCell.style.fontWeight = 'bold';
+          }
           row.appendChild(resultCell);
           
           // Unit cell
@@ -422,6 +433,9 @@ export default function PrintReport() {
           resultCell.style.borderColor = 'black';
           resultCell.style.borderWidth = '1px';
           resultCell.style.padding = '6px 10px';
+          if (param.flag === 'high' || param.flag === 'low' || param.flag === 'critical') {
+            resultCell.style.fontWeight = 'bold';
+          }
           row.appendChild(resultCell);
           
           // Unit cell
