@@ -3,8 +3,9 @@ const mongoose = require('mongoose');
 const labSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: [true, 'Please provide a lab name'],
+    required: [true, 'Lab name is required.'], // Updated message
     trim: true,
+    unique: true, // Added unique constraint as it's usually desired for lab names
     maxlength: [100, 'Lab name cannot be more than 100 characters']
   },
   address: {
@@ -24,22 +25,25 @@ const labSchema = new mongoose.Schema({
       ]
     }
   },
+  // Subscription details linked to the Plan model
   subscription: {
     plan: {
-      type: String,
-      enum: ['basic', 'premium', 'enterprise'],
-      default: 'basic'
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Plan',
+      // required: true // Might not be required immediately upon lab creation
     },
-    startDate: {
+    startDate: { // Start date of the current subscription period
       type: Date,
-      default: Date.now
+      // default: Date.now // Set when a plan is assigned
     },
-    endDate: Date,
-    status: {
-      type: String,
-      enum: ['active', 'inactive', 'suspended'],
-      default: 'active'
-    }
+    endDate: Date, // End date of the current subscription period
+  },
+  // Overall status of the lab account
+  status: {
+    type: String,
+    enum: ['active', 'inactive', 'pending_approval', 'suspended'],
+    default: 'pending_approval', // Default to pending until approved/plan assigned
+    required: true,
   },
   settings: {
     reportHeader: String,
@@ -104,7 +108,9 @@ labSchema.pre('save', function(next) {
 
 // Index for faster queries
 labSchema.index({ name: 1 });
-labSchema.index({ 'subscription.status': 1 });
+labSchema.index({ status: 1 }); // Index the new top-level status
+labSchema.index({ 'subscription.plan': 1 }); // Index the plan reference
+labSchema.index({ 'subscription.endDate': 1 }); // Index the subscription end date
 labSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model('Lab', labSchema);

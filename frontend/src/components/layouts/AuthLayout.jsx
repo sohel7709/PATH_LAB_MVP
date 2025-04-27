@@ -1,16 +1,16 @@
 import { Outlet, useLocation } from 'react-router-dom';
-import AuthPage from '../../pages/auth/AuthPage';
+import ImprovedLogin from '../../pages/auth/ImprovedLogin';
 
 export default function AuthLayout() {
   const location = useLocation();
   
-  // Check if the current route is a login or register page
-  const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
+  // Check if the current route is a login page
+  const isLoginPage = location.pathname === '/login';
   // Check if the current route is a forgot password or reset password page
   const isForgotPasswordPage = location.pathname === '/forgot-password' || location.pathname.startsWith('/reset-password/');
   
-  if (isAuthPage) {
-    return <AuthPage />;
+  if (isLoginPage) {
+    return <ImprovedLogin />;
   }
   
   if (isForgotPasswordPage) {

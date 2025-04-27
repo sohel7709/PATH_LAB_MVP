@@ -8,7 +8,9 @@ const {
   updateLab,
   deleteLab,
   getLabStats,
-  updateLabSubscription
+  // updateLabSubscription, // Replaced by assignPlanToLab
+  assignPlanToLab, // Import the new controller function
+  getSubscriptionHistoryForLab // Import the history controller function
 } = require('../controllers/labController');
 
 // All routes require authentication
@@ -28,7 +30,12 @@ router.route('/:id')
 // Lab statistics route
 router.get('/:id/stats', authorize('super-admin', 'admin'), checkLabAccess, getLabStats);
 
-// Subscription management route (Super Admin only)
-router.put('/:id/subscription', authorize('super-admin'), updateLabSubscription);
+// Assign plan to lab route (Super Admin only)
+// Using :labId to be consistent with the controller function parameter name
+router.post('/:labId/assign-plan', authorize('super-admin'), assignPlanToLab);
+
+// Get subscription history for a specific lab (Super Admin or Lab Admin)
+router.get('/:labId/subscription-history', authorize('super-admin', 'admin'), checkLabAccess, getSubscriptionHistoryForLab);
+
 
 module.exports = router;

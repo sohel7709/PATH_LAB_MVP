@@ -2,6 +2,30 @@ const Patient = require('../models/Patient');
 const Lab = require('../models/Lab');
 const asyncHandler = require('express-async-handler');
 
+// Helper function to generate patient ID (2 characters + dash + 6 digits)
+const generatePatientId = async (labId) => {
+  // Get the lab code (first 2 characters)
+  const lab = await Lab.findById(labId);
+  let labCode = lab.name.substring(0, 2).toUpperCase();
+  
+  // Find the highest existing patient ID for this lab
+  const highestPatient = await Patient.find({ patientId: new RegExp(`^${labCode}-\\d{6}$`) })
+    .sort({ patientId: -1 })
+    .limit(1);
+  
+  let nextNumber = 1;
+  if (highestPatient.length > 0) {
+    // Extract the number part and increment
+    const lastId = highestPatient[0].patientId;
+    const lastNumber = parseInt(lastId.split('-')[1]);
+    nextNumber = lastNumber + 1;
+  }
+  
+  // Format with leading zeros to ensure 6 digits
+  const numberPart = nextNumber.toString().padStart(6, '0');
+  return `${labCode}-${numberPart}`;
+};
+
 // @desc    Create a new patient
 // @route   POST /api/patients
 // @access  Private (super-admin, admin, technician)
@@ -22,9 +46,51 @@ exports.createPatient = asyncHandler(async (req, res) => {
     return res.status(404).json({ message: 'Lab not found' });
   }
 
-  // Create patient
-  const patient = await Patient.create(req.body);
-  res.status(201).json(patient);
+  try {
+    // Check for duplicate patient
+    const { fullName, phone, age, gender, email } = req.body;
+    
+    // Build query to check for duplicate
+    const duplicateQuery = {
+      fullName: fullName,
+      phone: phone,
+      labId: req.body.labId
+    };
+    
+    // Add additional fields to query if they exist
+    if (age) duplicateQuery.age = parseInt(age);
+    if (gender) duplicateQuery.gender = gender;
+    if (email) duplicateQuery.email = email;
+    
+    console.log('Checking for duplicate patient with query:', duplicateQuery);
+    
+    const existingPatient = await Patient.findOne(duplicateQuery);
+    
+    if (existingPatient) {
+      console.log('Duplicate patient found:', existingPatient);
+      return res.status(400).json({ 
+        message: 'Patient already exists',
+        duplicate: true,
+        patient: existingPatient
+      });
+    }
+  } catch (error) {
+    console.error('Error checking for duplicate patient:', error);
+    return res.status(500).json({ message: 'Error checking for duplicate patient' });
+  }
+
+  try {
+    // Generate patient ID
+    const patientId = await generatePatientId(req.body.labId);
+    req.body.patientId = patientId;
+    
+    // Create patient
+    const patient = await Patient.create(req.body);
+    res.status(201).json(patient);
+  } catch (error) {
+    console.error('Error creating patient:', error);
+    return res.status(500).json({ message: 'Error creating patient' });
+  }
 });
 
 // @desc    Get all patients (filtered by lab if user is not super-admin)
@@ -61,8 +127,8 @@ exports.getPatient = asyncHandler(async (req, res) => {
   try {
     const patient = await Patient.findById(req.params.id);
     console.log('Patient found:', patient);
-    console.log('Patient labId:', patient.labId.toString());
-    console.log('User lab:', req.user.lab.toString());
+    console.log('Patient labId:', patient.labId ? patient.labId.toString() : 'undefined');
+    console.log('User lab:', req.user.lab ? req.user.lab.toString() : 'undefined');
     console.log('User role:', req.user.role);
 
     if (!patient) {
@@ -71,8 +137,9 @@ exports.getPatient = asyncHandler(async (req, res) => {
     }
 
     // Check if user has access to this patient's lab
-    if (req.user.role !== 'super-admin' && patient.labId.toString() !== req.user.lab.toString()) {
-      console.log('User not authorized to access patient\'s lab. Expected:', req.user.lab.toString(), 'Got:', patient.labId.toString());
+    if (req.user.role !== 'super-admin' && 
+        (!patient.labId || !req.user.lab || patient.labId.toString() !== req.user.lab.toString())) {
+      console.log('User not authorized to access patient\'s lab. Expected:', req.user.lab ? req.user.lab.toString() : 'undefined', 'Got:', patient.labId ? patient.labId.toString() : 'undefined');
       return res.status(403).json({ message: 'Not authorized to access this patient' });
     }
 

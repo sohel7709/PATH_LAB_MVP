@@ -18,8 +18,10 @@
     "jspdf": "^3.0.1",
     "prop-types": "^15.8.1",
     "react": "^19.0.0",
+    "react-bootstrap": "^2.10.9",
     "react-dom": "^19.0.0",
-    "react-router-dom": "^7.4.1"
+    "react-router-dom": "^7.4.1",
+    "recharts": "^2.15.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",

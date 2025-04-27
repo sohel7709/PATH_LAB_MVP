@@ -1,7 +1,10 @@
-const Report = require('../models/Report');
+ const Report = require('../models/Report');
 const Lab = require('../models/Lab');
 const User = require('../models/User');
 const LabReportSettings = require('../models/LabReportSettings');
+const Patient = require('../models/Patient');
+const Doctor = require('../models/Doctor');
+const whatsappService = require('../utils/whatsappService');
 const fs = require('fs');
 const path = require('path');
 const handlebars = require('handlebars');
@@ -15,7 +18,12 @@ exports.createReport = async (req, res, next) => {
     req.body.lab = req.user.lab;
     req.body.technician = req.user.id;
 
-    console.log('Creating report with data:', JSON.stringify(req.body, null, 2));
+    // Enhanced logging before attempting to create the report
+    console.log('--- Attempting to Create Report ---');
+    console.log('User Lab ID:', req.user.lab);
+    console.log('User Technician ID:', req.user.id);
+    console.log('Received Request Body:', JSON.stringify(req.body, null, 2));
+    console.log('-----------------------------------');
 
     const report = await Report.create(req.body);
 
@@ -24,6 +32,67 @@ exports.createReport = async (req, res, next) => {
       $inc: { 'stats.totalReports': 1 },
       $set: { 'stats.lastReportDate': Date.now() }
     });
+
+    // Get lab details for notification
+    const lab = await Lab.findById(req.user.lab);
+    
+    // Send WhatsApp notification if patient phone is available
+    try {
+      if (report.patientInfo && report.patientInfo.contact && report.patientInfo.contact.phone) {
+        // Get the base URL for the report link
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const reportLink = `${baseUrl}/reports/view/${report._id}`;
+        
+        // Send WhatsApp notification to patient
+        await whatsappService.sendReportNotification(
+          report.patientInfo.contact.phone,
+          report.patientInfo.name,
+          report.testInfo.name,
+          reportLink,
+          lab.name
+        );
+        
+        // Update report delivery status
+        report.reportMeta.deliveryStatus.whatsapp = {
+          sent: true,
+          sentAt: Date.now(),
+          recipient: report.patientInfo.contact.phone
+        };
+        
+        await report.save();
+        console.log('WhatsApp notification sent to patient');
+      }
+      
+      // If there's a referring doctor, send notification to them as well
+      if (report.testInfo && report.testInfo.referenceDoctor) {
+        // Try to find the doctor in the database
+        const doctor = await Doctor.findOne({ 
+          name: report.testInfo.referenceDoctor,
+          lab: req.user.lab
+        });
+        
+        if (doctor && doctor.phone) {
+          // Get the base URL for the report link
+          const baseUrl = `${req.protocol}://${req.get('host')}`;
+          const reportLink = `${baseUrl}/reports/view/${report._id}`;
+          
+          // Send WhatsApp notification to doctor
+          await whatsappService.sendDoctorNotification(
+            doctor.phone,
+            doctor.name,
+            report.patientInfo.name,
+            report.testInfo.name,
+            reportLink,
+            lab.name
+          );
+          
+          console.log('WhatsApp notification sent to doctor');
+        }
+      }
+    } catch (notificationError) {
+      // Log the error but don't fail the report creation
+      console.error('Error sending WhatsApp notification:', notificationError);
+    }
 
     res.status(201).json({
       success: true,
@@ -391,12 +460,12 @@ exports.generateHtmlReport = async (req, res, next) => {
       });
     }
 
-    // Read the HTML template
-    const reportTemplatePath = path.join(__dirname, '..', 'report.html');
+    // Read the black-only HTML template
+    const reportTemplatePath = path.join(__dirname, '..', 'black-only-report.html');
     let templateSource;
     try {
       templateSource = fs.readFileSync(reportTemplatePath, 'utf8');
-      console.log('Template loaded successfully');
+      console.log('Black-only template loaded successfully for HTML view');
     } catch (err) {
       console.error('Error reading template file:', err);
       return res.status(500).json({
@@ -486,8 +555,7 @@ exports.generateHtmlReport = async (req, res, next) => {
       patientId: report.patientInfo?.patientId || 'N/A',
       
       // Sample data
-      sampleCollectionDate: new Date(report.testInfo?.sampleCollectionDate || Date.now()).toLocaleDateString(),
-      sampleType: report.testInfo?.sampleType || 'Blood',
+      reportDate: new Date(report.createdAt).toLocaleDateString(),
       referringDoctor: report.testInfo?.referenceDoctor || 'N/A',
       
       // Test data
@@ -636,6 +704,15 @@ exports.generatePdfReport = async (req, res, next) => {
     // Get lab report settings
     const labReportSettings = await LabReportSettings.findOne({ lab: report.lab });
     
+    // Get lab details
+    const lab = await Lab.findById(report.lab);
+    if (!lab) {
+      return res.status(404).json({
+        success: false,
+        message: 'Lab not found'
+      });
+    }
+    
     // Check if header and footer settings exist
     const hasHeaderSettings = labReportSettings && 
                              (labReportSettings.header.headerImage || 
@@ -646,32 +723,184 @@ exports.generatePdfReport = async (req, res, next) => {
                              (labReportSettings.footer.signature || 
                               labReportSettings.footer.footerImage);
 
-    // In a real implementation, we would:
-    // 1. Generate HTML using the same template as generateHtmlReport
-    // 2. Convert HTML to PDF using a library like puppeteer or html-pdf
-    // 3. Return the PDF file
+    // Process test results to include abnormal flag
+    const testResults = [];
+    if (report.results && report.results.length > 0) {
+      report.results.forEach(param => {
+        const result = {
+          name: param.parameter,
+          result: param.value,
+          unit: param.unit,
+          referenceRange: param.referenceRange,
+          isAbnormal: param.flag === 'high' || param.flag === 'low' || param.flag === 'critical'
+        };
+        testResults.push(result);
+      });
+    } else if (report.testInfo?.parameters) {
+      report.testInfo.parameters.forEach(param => {
+        const min = param.normalRange?.min;
+        const max = param.normalRange?.max;
+        const value = parseFloat(param.value);
+        const isAbnormal = !isNaN(value) && (value < min || value > max);
+        
+        const result = {
+          name: param.name,
+          result: param.value,
+          unit: param.unit,
+          referenceRange: `${min} - ${max}`,
+          isAbnormal: isAbnormal
+        };
+        testResults.push(result);
+      });
+    }
     
-    // For now, we'll just return a message with more detailed information
-    res.status(200).json({
-      success: true,
-      message: 'PDF generation is not fully implemented yet. In a production environment, this would generate and return a PDF file.',
-      data: {
-        reportId: report._id,
-        patientName: report.patientInfo?.name,
-        testName: report.testInfo?.name,
-        options: {
-          showHeader: showHeader && hasHeaderSettings,
-          showFooter: showFooter && hasFooterSettings
-        },
-        labSettings: {
-          headerAvailable: hasHeaderSettings,
-          footerAvailable: hasFooterSettings,
-          headerImage: labReportSettings?.header.headerImage ? 'Available' : 'Not available',
-          signature: labReportSettings?.footer.signature ? 'Available' : 'Not available',
-          footerImage: labReportSettings?.footer.footerImage ? 'Available' : 'Not available'
-        }
+    // Get the server's base URL for image paths
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    
+    // Prepare data for the template
+    const data = {
+      // Header data - only include if settings exist and showHeader is true
+      showHeader: showHeader && hasHeaderSettings,
+      headerImage: (showHeader && hasHeaderSettings && labReportSettings.header.headerImage) ? 
+                   `${baseUrl}${labReportSettings.header.headerImage}` : '',
+      labName: (showHeader && hasHeaderSettings) ? 
+               (labReportSettings.header.labName || lab.name || 'Pathology Laboratory') : '',
+      doctorName: (showHeader && hasHeaderSettings) ? 
+                  (labReportSettings.header.doctorName || 'Dr. Consultant') : '',
+      address: (showHeader && hasHeaderSettings) ? 
+               (labReportSettings.header.address || lab.address || 'Lab Address') : '',
+      phone: (showHeader && hasHeaderSettings) ? 
+             (labReportSettings.header.phone || lab.phone || '') : '',
+      email: (showHeader && hasHeaderSettings) ? 
+             (labReportSettings.header.email || lab.email || '') : '',
+      
+      // Patient data
+      patientName: report.patientInfo?.name || 'N/A',
+      patientAge: report.patientInfo?.age || 'N/A',
+      patientGender: report.patientInfo?.gender || 'N/A',
+      patientId: report.patientInfo?.patientId || 'N/A',
+      
+      // Sample data
+      sampleCollectionDate: new Date(report.testInfo?.sampleCollectionDate || Date.now()).toLocaleDateString(),
+      sampleType: report.testInfo?.sampleType || 'Blood',
+      referringDoctor: report.testInfo?.referenceDoctor || 'N/A',
+      
+      // Test data
+      testName: report.testInfo?.name || 'COMPLETE BLOOD COUNT (CBC)',
+      testResults: testResults,
+      
+      // Footer data - only include if settings exist and showFooter is true
+      showFooter: showFooter && hasFooterSettings,
+      signatureImage: (showFooter && hasFooterSettings && labReportSettings.footer.signature) ? 
+                      `${baseUrl}${labReportSettings.footer.signature}` : '',
+      verifiedBy: (showFooter && hasFooterSettings) ? 
+                  (labReportSettings.footer.verifiedBy || 'Lab Incharge') : '',
+      designation: (showFooter && hasFooterSettings) ? 
+                   (labReportSettings.footer.designation || 'Pathologist') : '',
+      footerImage: (showFooter && hasFooterSettings && labReportSettings.footer.footerImage) ? 
+                   `${baseUrl}${labReportSettings.footer.footerImage}` : '',
+      
+      // Styling
+      styling: {
+        primaryColor: labReportSettings?.styling?.primaryColor || '#007bff',
+        secondaryColor: labReportSettings?.styling?.secondaryColor || '#6c757d',
+        fontFamily: labReportSettings?.styling?.fontFamily || 'Arial, sans-serif',
+        fontSize: labReportSettings?.styling?.fontSize || 12
       }
+    };
+
+    // Import puppeteer
+    const puppeteer = require('puppeteer');
+    const fs = require('fs');
+    const path = require('path');
+    
+    // Read the black-only template specifically designed for PDF generation
+    const pdfTemplatePath = path.join(__dirname, '..', 'black-only-report.html');
+    const templateSource = fs.readFileSync(pdfTemplatePath, 'utf8');
+    
+    // Compile the template
+    const template = handlebars.compile(templateSource);
+    
+    // Generate the HTML
+    const html = template(data);
+    
+    console.log('Using black-only template for PDF generation');
+    
+    // Launch a headless browser with additional configuration
+    const browser = await puppeteer.launch({
+      headless: 'new',
+      args: [
+        '--no-sandbox', 
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--disable-gpu',
+        '--window-size=1280,720'
+      ]
     });
+    
+    // Create a new page
+    const page = await browser.newPage();
+    
+    // Set viewport size to A4
+    await page.setViewport({
+      width: 794, // A4 width in pixels (210mm at 96 DPI)
+      height: 1123, // A4 height in pixels (297mm at 96 DPI)
+      deviceScaleFactor: 1
+    });
+    
+    // Set the content of the page with longer timeout
+    await page.setContent(html, {
+      waitUntil: 'networkidle0',
+      timeout: 30000
+    });
+    
+    // Add debug logging
+    console.log('Page content set successfully');
+    
+    // Set the PDF options with more detailed configuration
+    const pdfOptions = {
+      format: 'A4',
+      printBackground: true,
+      margin: {
+        top: '0',
+        right: '0',
+        bottom: '0',
+        left: '0'
+      },
+      preferCSSPageSize: true,
+      displayHeaderFooter: false,
+      scale: 1,
+      landscape: false
+    };
+    
+    // Add debug logging
+    console.log('Generating PDF with options:', JSON.stringify(pdfOptions));
+    
+    try {
+      // Generate the PDF
+      const pdf = await page.pdf(pdfOptions);
+      console.log('PDF generated successfully');
+      
+      // Close the browser
+      await browser.close();
+      console.log('Browser closed successfully');
+      
+      // Set the response headers
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="report-${report._id}.pdf"`);
+      
+      // Send the PDF as the response
+      res.send(pdf);
+    } catch (pdfError) {
+      console.error('Error in PDF generation step:', pdfError);
+      await browser.close();
+      return res.status(500).json({
+        success: false,
+        message: 'Error generating PDF',
+        error: pdfError.message
+      });
+    }
   } catch (error) {
     console.error('Error generating PDF report:', error);
     next(error);

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test PDF Report</title>
+    <link rel="stylesheet" href="print-styles.css">
+    <style>
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        html, body {
+            height: 297mm;
+            width: 210mm;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #000000; /* All text in black color */
+            padding: 20mm;
+        }
+
+        /* Patient info section */
+        .details-container {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        .left-details, .right-details {
+            width: 48%;
+        }
+
+        .left-details p, .right-details p {
+            margin: 3px 0;
+        }
+
+        /* Report title */
+        h2.report-title {
+            text-align: center;
+            margin: 10px 0;
+            text-transform: uppercase;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        /* Test results section */
+        .test-results {
+            margin-top: 15px;
+            width: 100%;
+        }
+
+        .test-header {
+            display: flex;
+            margin-bottom: 5px;
+        }
+
+        .test-row {
+            display: flex;
+            margin-bottom: 3px;
+        }
+
+        .test-name, .test-header-name {
+            width: 25%;
+            font-weight: bold;
+        }
+
+        .test-result, .test-header-result {
+            width: 25%;
+        }
+
+        .test-unit, .test-header-unit {
+            width: 20%;
+        }
+
+        .test-range, .test-header-range {
+            width: 30%;
+        }
+
+        /* Highlight abnormal values with underline only */
+        .abnormal {
+            font-weight: bold;
+            text-decoration: underline;
+        }
+
+        /* Horizontal line */
+        hr {
+            border: none;
+            border-top: 1px solid black;
+            margin: 5px 0;
+        }
+
+        /* Signature section */
+        .signature {
+            margin-top: 50px;
+            text-align: right;
+        }
+
+        .signature-line {
+            display: inline-block;
+            width: 150px;
+            border-top: 1px solid black;
+            margin-top: 30px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- Main Content -->
+    <div class="report-container">
+        <!-- Patient Info -->
+        <div class="details-container">
+            <div class="left-details">
+                <p><strong>Patient Name:</strong> John Doe</p>
+                <p><strong>Age/Gender:</strong> 45 Years / Male</p>
+                <p><strong>Patient ID:</strong> PAT-12345</p>
+            </div>
+            <div class="right-details">
+                <p><strong>Sample Collection:</strong> 2025-04-23</p>
+                <p><strong>Sample Type:</strong> Blood</p>
+                <p><strong>Referring Doctor:</strong> Dr. Smith</p>
+            </div>
+        </div>
+
+        <hr>
+
+        <!-- Report Title -->
+        <h2 class="report-title">COMPLETE BLOOD COUNT</h2>
+
+        <!-- Test Results - using divs instead of table -->
+        <div class="test-results">
+            <div class="test-header">
+                <div class="test-header-name">Test</div>
+                <div class="test-header-result">Result</div>
+                <div class="test-header-unit">Unit</div>
+                <div class="test-header-range">Reference Range</div>
+            </div>
+            
+            <hr style="border-top: 0.5px solid #ddd;">
+            
+            <div class="test-row">
+                <div class="test-name">Hemoglobin</div>
+                <div class="test-result">14.5</div>
+                <div class="test-unit">g/dL</div>
+                <div class="test-range">13.0 - 17.0</div>
+            </div>
+            
+            <div class="test-row">
+                <div class="test-name">WBC</div>
+                <div class="test-result abnormal">12.5</div>
+                <div class="test-unit">10³/µL</div>
+                <div class="test-range">4.5 - 11.0</div>
+            </div>
+            
+            <div class="test-row">
+                <div class="test-name">RBC</div>
+                <div class="test-result">5.2</div>
+                <div class="test-unit">10⁶/µL</div>
+                <div class="test-range">4.5 - 5.5</div>
+            </div>
+            
+            <div class="test-row">
+                <div class="test-name">Platelets</div>
+                <div class="test-result">250</div>
+                <div class="test-unit">10³/µL</div>
+                <div class="test-range">150 - 450</div>
+            </div>
+        </div>
+
+        <!-- Signature Section -->
+        <div class="signature">
+            <div class="signature-line">
+                Dr. Consultant<br>
+                Consultant Pathologist
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -73,24 +73,26 @@ export const AuthProvider = ({ children }) => {
         throw new Error('No token received from the server');
       }
 
-      // Set user directly from login response
-      setUser(data.user);
-      
-      // Parse token to get role information
+      // Parse token to get role information and set user state
       try {
         const tokenParts = data.token.split('.');
         if (tokenParts.length === 3) {
           const payload = JSON.parse(atob(tokenParts[1]));
-          console.log('Token payload for navigation:', payload, 'User role:', payload.role);
+          console.log('Token payload for setting user and navigation:', payload, 'User role:', payload.role);
           
-          // Set user from token payload to ensure we have the role
-          setUser({
+          // Set user state based primarily on token payload, merging other data
+          const currentUser = {
             id: payload.id,
             role: payload.role,
             lab: payload.lab,
-            ...data.user // Include any additional user data from the response
-          });
-          
+            // Merge other relevant fields from data.user if needed, ensuring payload takes precedence for core fields
+            name: data.user?.name || payload.name || 'User', 
+            email: data.user?.email || payload.email,
+            // Add other fields from data.user as necessary
+          };
+          setUser(currentUser);
+          console.log('User state set:', currentUser);
+
           // Navigate based on role from token
           const userRole = payload.role;
           console.log('Navigating based on role:', userRole);

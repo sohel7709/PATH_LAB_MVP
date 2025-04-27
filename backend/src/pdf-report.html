@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab Report</title>
+    <link rel="stylesheet" href="print-styles.css">
+    <style>
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        html, body {
+            height: 297mm;
+            width: 210mm;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+            line-height: 1.3;
+            color: #000000; /* All text in black */
+        }
+
+        /* Header and footer spaces */
+        .header-space, .footer-space {
+            width: 100%;
+            position: fixed;
+            left: 0;
+            background: transparent;
+        }
+
+        .header-space {
+            top: 0;
+            height: 35mm;
+        }
+
+        .footer-space {
+            bottom: 0;
+            height: 30mm;
+        }
+
+        /* Printable area between header and footer */
+        .print-area {
+            position: absolute;
+            top: 35mm;
+            bottom: 30mm;
+            left: 15mm;
+            right: 15mm;
+            overflow: hidden;
+        }
+
+        /* Patient info section */
+        .details-container {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+
+        .left-details, .right-details {
+            width: 48%;
+        }
+
+        .left-details p, .right-details p {
+            margin: 2px 0;
+        }
+
+        /* Report title */
+        h2.report-title {
+            text-align: center;
+            margin: 8px 0;
+            text-transform: uppercase;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        /* Test results section - using divs instead of table */
+        .test-results {
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .test-header {
+            display: flex;
+            margin-bottom: 5px;
+        }
+
+        .test-row {
+            display: flex;
+            margin-bottom: 3px;
+        }
+
+        .test-name, .test-header-name {
+            width: 25%;
+            font-weight: bold;
+        }
+
+        .test-result, .test-header-result {
+            width: 25%;
+        }
+
+        .test-unit, .test-header-unit {
+            width: 20%;
+        }
+
+        .test-range, .test-header-range {
+            width: 30%;
+        }
+
+        /* Highlight abnormal values with underline only */
+        .abnormal {
+            font-weight: bold;
+            text-decoration: underline;
+        }
+
+        /* Horizontal line */
+        hr {
+            border: none;
+            border-top: 1px solid black;
+            margin: 5px 0;
+        }
+
+        /* Signature section */
+        .signature {
+            margin-top: 50px;
+            text-align: right;
+        }
+
+        .signature-line {
+            display: inline-block;
+            width: 150px;
+            border-top: 1px solid black;
+            margin-top: 30px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header space -->
+    <div class="header-space"></div>
+
+    <!-- Footer space -->
+    <div class="footer-space"></div>
+
+    <!-- Main Content -->
+    <div class="print-area">
+        <!-- Patient Info -->
+        <div class="details-container">
+            <div class="left-details">
+                <p><strong>Patient Name:</strong> {{patientName}}</p>
+                <p><strong>Age/Gender:</strong> {{patientAge}} Years / {{patientGender}}</p>
+                <p><strong>Patient ID:</strong> {{patientId}}</p>
+            </div>
+            <div class="right-details">
+                <p><strong>Sample Collection:</strong> {{sampleCollectionDate}}</p>
+                <p><strong>Sample Type:</strong> {{sampleType}}</p>
+                <p><strong>Referring Doctor:</strong> {{referringDoctor}}</p>
+            </div>
+        </div>
+
+        <hr>
+
+        <!-- Report Title -->
+        <h2 class="report-title">{{testName}}</h2>
+
+        <!-- Test Results - using divs instead of table -->
+        <div class="test-results">
+            <div class="test-header">
+                <div class="test-header-name">Test</div>
+                <div class="test-header-result">Result</div>
+                <div class="test-header-unit">Unit</div>
+                <div class="test-header-range">Reference Range</div>
+            </div>
+            
+            <hr style="border-top: 0.5px solid #ddd;">
+            
+            {{#each testResults}}
+            <div class="test-row">
+                <div class="test-name">{{this.name}}</div>
+                <div class="test-result {{#if this.isAbnormal}}abnormal{{/if}}">{{this.result}}</div>
+                <div class="test-unit">{{this.unit}}</div>
+                <div class="test-range">{{this.referenceRange}}</div>
+            </div>
+            {{/each}}
+        </div>
+
+        <!-- Signature Section -->
+        <div class="signature">
+            <div class="signature-line">
+                Dr. Consultant<br>
+                Consultant Pathologist
+            </div>
+        </div>
+    </div>
+</body>
+</html>

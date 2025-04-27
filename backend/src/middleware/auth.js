@@ -1,6 +1,8 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Lab = require('../models/Lab'); // Import Lab model
 
+// Original verifyToken function (restored)
 const verifyToken = async (req, res, next) => {
   let token;
 
@@ -39,9 +41,9 @@ const verifyToken = async (req, res, next) => {
   }
 };
 
-// Protect routes
 
-exports.verifyToken = verifyToken;
+// Protect routes
+exports.verifyToken = verifyToken; // Export the restored function
 exports.protect = async (req, res, next) => {
 
   try {
@@ -64,7 +66,8 @@ exports.protect = async (req, res, next) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
       // Add user to req object
-      req.user = await User.findById(decoded.id);
+      // Select 'lab' field explicitly if needed, otherwise it might be excluded by default schema settings
+      req.user = await User.findById(decoded.id).select('+lab');
 
       if (!req.user) {
         return res.status(401).json({
@@ -73,8 +76,34 @@ exports.protect = async (req, res, next) => {
         });
       }
 
+      // --- Lab Status Check ---
+      // Check if the user's lab is inactive (skip for super-admin)
+      if (req.user.role !== 'super-admin' && req.user.lab) {
+        const userLab = await Lab.findById(req.user.lab);
+        // If lab not found or lab is inactive/suspended, deny access
+        if (!userLab || userLab.status === 'inactive' || userLab.status === 'suspended') {
+          let message = 'Your lab account is currently inactive. Please contact the Super Admin.';
+          if (userLab && userLab.status === 'suspended') {
+            message = 'Your lab account has been suspended. Please contact the Super Admin.';
+          }
+          return res.status(403).json({ // 403 Forbidden
+            success: false,
+            message: message,
+            errorCode: 'LAB_INACTIVE_OR_SUSPENDED' // Add an error code for frontend handling
+          });
+        }
+         // Optionally attach lab features to req for feature toggle checks later
+         // This would require populating the plan within the Lab model query or here
+         // Example (if Lab model populates plan):
+         // if (userLab.subscription && userLab.subscription.plan && userLab.subscription.plan.features) {
+         //    req.labFeatures = userLab.subscription.plan.features;
+         // }
+      }
+      // --- End Lab Status Check ---
+
       next();
     } catch (err) {
+       console.error('Auth Protect Error:', err); // Log the actual error
       return res.status(401).json({
         success: false,
         message: 'Not authorized to access this route'
@@ -97,6 +126,75 @@ exports.authorize = (...roles) => {
     next();
   };
 };
+
+// Middleware to check if a specific feature is enabled for the lab's plan
+exports.checkFeature = (...requiredFeatures) => {
+  return async (req, res, next) => {
+    // Super Admins have access to all features
+    if (req.user.role === 'super-admin') {
+      return next();
+    }
+
+    // Check if user belongs to a lab
+    if (!req.user.lab) {
+       return res.status(403).json({
+        success: false,
+        message: 'User is not associated with any lab.'
+      });
+    }
+
+    try {
+      // Fetch the lab and populate the plan details, specifically the features
+      const lab = await Lab.findById(req.user.lab).populate({
+        path: 'subscription.plan',
+        select: 'features name', // Select only the features and name for efficiency
+      });
+
+      // Double-check lab status (already done in protect, but good for safety)
+      if (!lab || lab.status !== 'active') {
+         return res.status(403).json({
+          success: false,
+          message: 'Lab is not active.',
+          errorCode: 'LAB_INACTIVE_OR_SUSPENDED'
+        });
+      }
+
+      // Check if the lab has an active plan assigned
+      if (!lab.subscription || !lab.subscription.plan) {
+        return res.status(403).json({
+          success: false,
+          message: 'No active subscription plan found for this lab.'
+        });
+      }
+
+      const planFeatures = lab.subscription.plan.features || {};
+      const planName = lab.subscription.plan.name || 'Unnamed Plan';
+
+      // Check if all required features are enabled in the plan
+      const missingFeatures = requiredFeatures.filter(feature => !planFeatures[feature]);
+
+      if (missingFeatures.length > 0) {
+        return res.status(403).json({
+          success: false,
+          message: `Access denied. Your current plan ('${planName}') does not include the required feature(s): ${missingFeatures.join(', ')}.`,
+          errorCode: 'FEATURE_NOT_ENABLED'
+        });
+      }
+
+      // Attach features to request object for potential use in controllers (optional)
+      req.labFeatures = planFeatures;
+      next();
+
+    } catch (error) {
+      console.error('Feature Check Error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error checking feature access.'
+      });
+    }
+  };
+};
+
 
 // Check if user belongs to lab
 exports.checkLabAccess = async (req, res, next) => {

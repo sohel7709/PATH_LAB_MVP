@@ -8,10 +8,14 @@ import {
   PlusCircleIcon,
   ArrowPathIcon,
   EyeIcon,
+  CreditCardIcon,
+  MagnifyingGlassIcon, // Icon for search
 } from '@heroicons/react/24/outline';
 
 const LabList = () => {
   const [labs, setLabs] = useState([]);
+  const [filteredLabs, setFilteredLabs] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -24,6 +28,7 @@ const LabList = () => {
       
       if (response.success) {
         setLabs(response.data || []);
+        setFilteredLabs(response.data || []);
       } else {
         setError(response.message || 'Failed to fetch labs');
       }
@@ -38,6 +43,28 @@ const LabList = () => {
   useEffect(() => {
     fetchLabs();
   }, []);
+
+  // Filter labs based on search term
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredLabs(labs);
+      return;
+    }
+
+    const term = searchTerm.toLowerCase().trim();
+    const filtered = labs.filter(lab => 
+      (lab.name && lab.name.toLowerCase().includes(term)) ||
+      (lab.address?.city && lab.address.city.toLowerCase().includes(term)) ||
+      (lab.address?.state && lab.address.state.toLowerCase().includes(term)) ||
+      (lab.subscription?.plan?.name && lab.subscription.plan.name.toLowerCase().includes(term))
+    );
+    
+    setFilteredLabs(filtered);
+  }, [searchTerm, labs]);
+
+  const handleSearch = (e) => {
+    setSearchTerm(e.target.value);
+  };
 
   const handleDeleteLab = async (labId) => {
     if (!window.confirm('Are you sure you want to delete this lab? This action cannot be undone.')) {
@@ -86,96 +113,115 @@ const LabList = () => {
   };
 
   return (
-    <div className="bg-white shadow-md rounded-lg overflow-hidden">
-      <div className="px-6 py-4 bg-blue-600 text-white flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold">Lab Management</h1>
-          <p className="text-sm opacity-80">Manage all labs in the system</p>
-        </div>
-        <div className="flex space-x-2">
-          <Link
-            to="/labs/create"
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-700 hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            <PlusCircleIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-            Add New Lab
-          </Link>
-          <button
-            onClick={fetchLabs}
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-700 hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            <ArrowPathIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-            Refresh
-          </button>
-        </div>
-      </div>
-
-      {error && (
-        <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-7xl mx-auto bg-white rounded-2xl shadow-xl border border-blue-100 overflow-hidden">
+        <div className="px-8 py-6 bg-gradient-to-r from-blue-700 to-blue-500">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-extrabold text-white">Lab Management</h1>
+              <p className="text-base text-blue-100 mt-1">
+                Manage all labs in the system
+              </p>
             </div>
-            <div className="ml-3">
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="overflow-x-auto">
-        {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-          </div>
-        ) : labs.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64">
-            <BuildingOfficeIcon className="h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No labs found</h3>
-            <p className="mt-1 text-sm text-gray-500">Get started by creating a new lab.</p>
-            <div className="mt-6">
+            <div className="flex space-x-3">
               <Link
                 to="/labs/create"
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                className="inline-flex items-center justify-center rounded-lg border border-transparent bg-white/20 backdrop-blur-sm px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-blue-600"
               >
                 <PlusCircleIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
                 Add New Lab
               </Link>
+              <button
+                onClick={fetchLabs}
+                className="inline-flex items-center justify-center rounded-lg border border-transparent bg-white/20 backdrop-blur-sm px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-blue-600"
+              >
+                <ArrowPathIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+                Refresh
+              </button>
             </div>
           </div>
+
+          {/* Search Bar */}
+          <div className="mt-4 relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <MagnifyingGlassIcon className="h-5 w-5 text-blue-300" aria-hidden="true" />
+            </div>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={handleSearch}
+              placeholder="Search labs by name, city, state or plan..."
+              className="block w-full pl-10 pr-3 py-2 border border-transparent rounded-lg bg-white/10 backdrop-blur-sm text-white placeholder-blue-300 focus:outline-none focus:ring-2 focus:ring-white focus:border-white"
+            />
+          </div>
+        </div>
+        
+        <div className="p-6">
+
+          {error && (
+            <div className="mb-6 rounded-lg bg-red-100 border-l-4 border-red-500 text-red-700 p-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-red-700">{error}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="overflow-x-auto">
+            {loading ? (
+              <div className="flex justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              </div>
+            ) : filteredLabs.length === 0 ? (
+              <div className="p-12 text-center">
+                <BuildingOfficeIcon className="mx-auto h-16 w-16 text-blue-200 mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-1">No labs found</h3>
+                <p className="text-gray-500 mb-6">Get started by creating a new lab</p>
+                <Link
+                  to="/labs/create"
+                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
+                >
+                  <PlusCircleIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+                  Add New Lab
+                </Link>
+              </div>
         ) : (
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Lab Name
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Subscription
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Created
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Users
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {labs.map((lab) => (
-                <tr key={lab._id} className="hover:bg-gray-50">
+              <table className="min-w-full divide-y divide-blue-200">
+                <thead className="bg-blue-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                      Lab Name
+                    </th>
+                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                      Plan
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                      Lab Status
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                      Created
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                      Users
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-blue-100">
+              {filteredLabs.map((lab) => (
+                <tr key={lab._id} className="hover:bg-blue-50 transition-colors duration-150">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10 bg-primary-100 rounded-full flex items-center justify-center">
-                        <BuildingOfficeIcon className="h-6 w-6 text-primary-600" />
+                      <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <BuildingOfficeIcon className="h-6 w-6 text-blue-600" />
                       </div>
                       <div className="ml-4">
                         <div className="text-sm font-medium text-gray-900">{lab.name}</div>
@@ -183,24 +229,28 @@ const LabList = () => {
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">
-                      {lab.subscription?.plan ? (
-                        lab.subscription.plan.charAt(0).toUpperCase() + lab.subscription.plan.slice(1)
-                      ) : 'No Plan'}
+                      {/* Assuming backend populates plan name */}
+                      {lab.subscription?.plan?.name || <span className="text-gray-400 italic">No Plan</span>}
                     </div>
+                     {lab.subscription?.endDate && (
+                       <div className="text-xs text-gray-500">
+                         Expires: {new Date(lab.subscription.endDate).toLocaleDateString()}
+                       </div>
+                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
+                    {/* Use the main lab.status field */}
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      lab.subscription?.status === 'active' 
-                        ? 'bg-green-100 text-green-800' 
-                        : lab.subscription?.status === 'pending' 
-                        ? 'bg-yellow-100 text-yellow-800' 
-                        : 'bg-red-100 text-red-800'
+                      lab.status === 'active' ? 'bg-green-100 text-green-800' :
+                      lab.status === 'pending_approval' ? 'bg-yellow-100 text-yellow-800' :
+                      lab.status === 'inactive' ? 'bg-gray-100 text-gray-800' :
+                      lab.status === 'suspended' ? 'bg-red-100 text-red-800' :
+                      'bg-gray-100 text-gray-800' // Default fallback
                     }`}>
-                      {lab.subscription?.status ? (
-                        lab.subscription.status.charAt(0).toUpperCase() + lab.subscription.status.slice(1)
-                      ) : 'Inactive'}
+                      {/* Capitalize status */}
+                      {lab.status ? lab.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Unknown'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -210,35 +260,49 @@ const LabList = () => {
                     {lab.users ? lab.users.length : 0}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex space-x-2">
-                        <Link
-                          to={`/labs/${lab._id}`}
-                          className="text-primary-600 hover:text-primary-900"
-                          title="View Lab Details"
-                        >
-                          <EyeIcon className="h-5 w-5" />
-                        </Link>
+                    <div className="flex space-x-3 justify-end">
                       <Link
-                        to={`/labs/${lab._id}/edit`}
-                        className="text-indigo-600 hover:text-indigo-900"
-                        title="Edit Lab"
+                        to={`/labs/${lab._id}`}
+                        className="text-blue-600 hover:text-blue-900 p-1 rounded-full hover:bg-blue-50 transition-colors"
+                        title="View Lab Details"
+                      >
+                        <EyeIcon className="h-5 w-5" />
+                      </Link>
+                       <Link
+                        to={`/labs/${lab._id}/edit`} // Link to edit page where subscription can be managed
+                        className="text-indigo-600 hover:text-indigo-900 p-1 rounded-full hover:bg-indigo-50 transition-colors"
+                        title="Manage Subscription & Edit Lab"
+                      >
+                        <CreditCardIcon className="h-5 w-5" />
+                      </Link>
+                      <Link
+                        to={`/labs/${lab._id}/edit`} // Keep original edit link as well, or combine logic
+                        className="text-green-600 hover:text-green-900 p-1 rounded-full hover:bg-green-50 transition-colors"
+                        title="Edit Lab Details"
                       >
                         <PencilSquareIcon className="h-5 w-5" />
                       </Link>
                       <button
                         onClick={() => handleDeleteLab(lab._id)}
-                        className="text-red-600 hover:text-red-900"
+                        className="text-red-600 hover:text-red-900 p-1 rounded-full hover:bg-red-50 transition-colors"
                         title="Delete Lab"
+                        disabled={lab.isDeleting}
                       >
-                        <TrashIcon className="h-5 w-5" />
+                        {lab.isDeleting ? (
+                          <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-red-600"></div>
+                        ) : (
+                          <TrashIcon className="h-5 w-5" />
+                        )}
                       </button>
                     </div>
                   </td>
                 </tr>
               ))}
-            </tbody>
-          </table>
-        )}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -207,7 +207,12 @@ export default function ViewReport() {
           <div className="px-4 py-5 sm:p-6">
             <h3 className="text-lg font-medium leading-6 text-gray-900">Patient Information</h3>
             <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-              <div className="sm:col-span-3">
+              <div className="sm:col-span-2">
+                <dt className="text-sm font-medium text-gray-500">Patient ID</dt>
+                <dd className="mt-1 text-sm text-blue-600 font-medium">{report.patientInfo?.patientId || 'N/A'}</dd>
+              </div>
+              
+              <div className="sm:col-span-2">
                 <dt className="text-sm font-medium text-gray-500">Full name</dt>
                 <dd className="mt-1 text-sm text-gray-900">{report.patientInfo?.name}</dd>
               </div>
@@ -222,7 +227,7 @@ export default function ViewReport() {
                 <dd className="mt-1 text-sm text-gray-900">{report.patientInfo?.gender}</dd>
               </div>
 
-              <div className="sm:col-span-1">
+              <div className="sm:col-span-2">
                 <dt className="text-sm font-medium text-gray-500">Phone</dt>
                 <dd className="mt-1 text-sm text-gray-900">{report.patientInfo?.contact?.phone}</dd>
               </div>

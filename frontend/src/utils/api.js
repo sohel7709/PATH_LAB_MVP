@@ -1,4 +1,5 @@
-const API_BASE_URL = 'https://path-lab-mvp.onrender.com/api';
+// Use environment variable or fallback to localhost
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
 
 // Doctors API calls
 export const doctors = {
@@ -54,7 +55,10 @@ const handleResponse = async (response) => {
   try {
     const data = await response.json();
     if (!response.ok) {
-      throw new Error(data.message || 'An error occurred');
+      // Create an error object with the response data
+      const error = new Error(data.message || 'An error occurred');
+      error.response = { data };
+      throw error;
     }
     return data;
   } catch (error) {
@@ -66,8 +70,7 @@ const handleResponse = async (response) => {
   }
 };
 
-// Helper function to get auth headers
-const getAuthHeaders = () => {
+export const getAuthHeaders = () => {
   const token = localStorage.getItem('token');
   return {
     'Content-Type': 'application/json',
@@ -379,23 +382,45 @@ export const superAdmin = {
     const response = await fetch(url, {
       headers: getAuthHeaders(),
     });
-    return handleResponse(response);
+    
+    const result = await handleResponse(response);
+    
+    // Log the response for debugging
+    console.log('User management API response:', result);
+    
+    return result;
   },
 
   createUser: async (userData) => {
+    console.log('Creating user with data in API:', userData);
+    
+    // Ensure labId is properly set for non-super-admin users
+    if (userData.role !== 'super-admin' && !userData.labId) {
+      throw new Error('Lab ID is required for admin and technician roles');
+    }
+    
     const response = await fetch(`${API_BASE_URL}/user-management`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(userData),
     });
-    return handleResponse(response);
+    
+    const result = await handleResponse(response);
+    console.log('User creation API response:', result);
+    return result;
   },
 
   getUser: async (id) => {
     const response = await fetch(`${API_BASE_URL}/user-management/${id}`, {
       headers: getAuthHeaders(),
     });
-    return handleResponse(response);
+    
+    const result = await handleResponse(response);
+    
+    // Log the response for debugging
+    console.log('User details API response:', result);
+    
+    return result;
   },
 
   updateUser: async (id, userData) => {
@@ -455,8 +480,8 @@ export const testTemplates = {
     // Use different endpoints based on user role
     let baseEndpoint = '/admin/test-templates';
     if (role === 'super-admin') {
-      // For superadmin, we'll use the admin endpoint since we've updated the backend to allow superadmin access
-      baseEndpoint = '/admin/test-templates';
+      // For superadmin, use the dedicated super-admin endpoint
+      baseEndpoint = '/super-admin/test-templates';
     } else if (role === 'technician') {
       // For technicians, use the technician-specific endpoint
       baseEndpoint = '/technician/test-templates/all';
@@ -485,8 +510,8 @@ export const testTemplates = {
     // Use different endpoints based on user role
     let baseEndpoint = '/admin/test-templates';
     if (role === 'super-admin') {
-      // For superadmin, we'll use the admin endpoint since we've updated the backend to allow superadmin access
-      baseEndpoint = '/admin/test-templates';
+      // For superadmin, use the dedicated super-admin endpoint
+      baseEndpoint = '/super-admin/test-templates';
     } else if (role === 'technician') {
       // For technicians, use the technician-specific endpoint
       baseEndpoint = '/technician/test-templates';
@@ -533,7 +558,9 @@ export const testTemplates = {
 
   create: async (templateData) => {
     // Both admin and super-admin can create templates
-    const baseEndpoint = '/admin/test-templates';
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const role = user.role || '';
+    const baseEndpoint = role === 'super-admin' ? '/super-admin/test-templates' : '/admin/test-templates';
     
     const response = await fetch(`${API_BASE_URL}${baseEndpoint}`, {
       method: 'POST',
@@ -545,7 +572,9 @@ export const testTemplates = {
 
   update: async (id, templateData) => {
     // Both admin and super-admin can update templates
-    const baseEndpoint = '/admin/test-templates';
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const role = user.role || '';
+    const baseEndpoint = role === 'super-admin' ? '/super-admin/test-templates' : '/admin/test-templates';
     
     const response = await fetch(`${API_BASE_URL}${baseEndpoint}/${id}`, {
       method: 'PUT',
@@ -557,7 +586,9 @@ export const testTemplates = {
 
   delete: async (id) => {
     // Both admin and super-admin can delete templates
-    const baseEndpoint = '/admin/test-templates';
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const role = user.role || '';
+    const baseEndpoint = role === 'super-admin' ? '/super-admin/test-templates' : '/admin/test-templates';
     
     const response = await fetch(`${API_BASE_URL}${baseEndpoint}/${id}`, {
       method: 'DELETE',
@@ -649,6 +680,106 @@ export const labReportSettings = {
   }
 };
 
+// Plans API calls
+export const plans = {
+  getAll: async () => {
+    const response = await fetch(`${API_BASE_URL}/plans`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  },
+
+  getById: async (id) => {
+    const response = await fetch(`${API_BASE_URL}/plans/${id}`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  },
+
+  create: async (planData) => {
+    const response = await fetch(`${API_BASE_URL}/plans`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(planData),
+    });
+    return handleResponse(response);
+  },
+
+  update: async (id, planData) => {
+    const response = await fetch(`${API_BASE_URL}/plans/${id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(planData),
+    });
+    return handleResponse(response);
+  },
+
+  delete: async (id) => {
+    const response = await fetch(`${API_BASE_URL}/plans/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  },
+};
+
+// WhatsApp Notification Settings API calls
+export const whatsappSettings = {
+  getSettings: async () => {
+    const response = await fetch(`${API_BASE_URL}/settings/whatsapp`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  },
+
+  updateSettings: async (settings) => {
+    const response = await fetch(`${API_BASE_URL}/settings/whatsapp`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(settings),
+    });
+    return handleResponse(response);
+  }
+};
+
+// Revenue API calls
+export const revenue = {
+  getData: async (params = {}) => {
+    // Build query string from params
+    const queryParams = new URLSearchParams();
+    if (params.labId) queryParams.append('labId', params.labId);
+    if (params.range) queryParams.append('range', params.range);
+    if (params.from) queryParams.append('from', params.from);
+    if (params.to) queryParams.append('to', params.to);
+    
+    const queryString = queryParams.toString();
+    const url = queryString 
+      ? `${API_BASE_URL}/revenue?${queryString}` 
+      : `${API_BASE_URL}/revenue`;
+    
+    const response = await fetch(url, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  },
+  
+  exportData: async (format, params = {}) => {
+    // Build query string from params
+    const queryParams = new URLSearchParams({
+      format,
+      ...params
+    });
+    
+    const url = `${API_BASE_URL}/export/revenue?${queryParams}`;
+    
+    const response = await fetch(url, {
+      headers: getAuthHeaders(),
+    });
+    
+    return handleResponse(response);
+  }
+};
+
 export default {
   auth,
   reports,
@@ -659,5 +790,8 @@ export default {
   superAdmin,
   testTemplates,
   labReportSettings,
-  doctors
+  doctors,
+  plans,
+  whatsappSettings,
+  revenue
 };

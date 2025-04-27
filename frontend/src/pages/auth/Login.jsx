@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ExclamationCircleIcon } from '@heroicons/react/20/solid';
 import { useAuth } from '../../context/AuthContext';
 import { UserIcon, LockClosedIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
+import LoadingSpinner, { ButtonLoader, SkeletonLoader } from '../../components/common/LoadingSpinner';
 
 export default function Login() {
   const { login } = useAuth();
@@ -13,18 +14,27 @@ export default function Login() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
 
   useEffect(() => {
+    // Simulate page loading
+    const pageLoadTimer = setTimeout(() => {
+      setPageLoading(false);
+    }, 800);
+    
     // Trigger animations after component mounts
     setMounted(true);
     
     // Focus the email input after a short delay
-    const timer = setTimeout(() => {
+    const focusTimer = setTimeout(() => {
       const emailInput = document.getElementById('email');
       if (emailInput) emailInput.focus();
-    }, 500);
+    }, 1000);
     
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(pageLoadTimer);
+      clearTimeout(focusTimer);
+    };
   }, []);
 
   const handleChange = (e) => {
@@ -45,18 +55,41 @@ export default function Login() {
       await login(formData.email, formData.password);
       // Navigation is handled in the AuthContext
     } catch (err) {
-      setError(err.message || 'Login failed');
+      // Check for specific error code from backend middleware
+      if (err.response?.data?.errorCode === 'LAB_INACTIVE_OR_SUSPENDED') {
+        setError(err.response.data.message); // Use the specific message from backend
+      } else {
+        setError(err.response?.data?.message || err.message || 'Login failed. Please check your credentials.'); // More specific fallback
+      }
       setIsLoading(false);
     }
   };
 
+  // Show loading spinner while page is loading
+  if (pageLoading) {
+    return (
+      <div className="flex flex-col h-full bg-gradient-to-br from-blue-50 to-blue-100 p-8 rounded-2xl shadow-xl border border-blue-100 transition-all duration-500 transform hover:shadow-2xl">
+        <div className="flex-grow flex flex-col items-center justify-center">
+          <LoadingSpinner size="lg" color="blue" text="Loading..." />
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col h-full">
-      <h1 className={`text-3xl sm:text-4xl font-bold text-gray-800 mb-6 transition-all duration-700 ease-in-out ${
-        mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-      }`}>
-        Login
-      </h1>
+    <div className="flex flex-col h-full bg-gradient-to-br from-blue-50 to-blue-100 p-8 rounded-2xl shadow-xl border border-blue-100 transition-all duration-500 transform hover:shadow-2xl">
+      <div className="px-6 py-4 bg-gradient-to-r from-blue-700 to-blue-500 -m-8 mb-8 rounded-t-2xl">
+        <h1 className={`text-3xl sm:text-4xl font-extrabold text-white transition-all duration-700 ease-in-out ${
+          mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+        }`}>
+          Login
+        </h1>
+        <p className={`text-base text-blue-100 mt-1 transition-all duration-700 ease-in-out delay-100 ${
+          mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+        }`}>
+          Sign in to your account to continue
+        </p>
+      </div>
 
       <form 
         className="space-y-6 flex-grow" 
@@ -68,7 +101,7 @@ export default function Login() {
           }`}>
             <div className="flex">
               <div className="flex-shrink-0">
-                <ExclamationCircleIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
+                <ExclamationCircleIcon className="h-5 w-5 text-red-500" aria-hidden="true" />
               </div>
               <div className="ml-3">
                 <h3 className="text-sm font-medium text-red-800">{error}</h3>
@@ -82,7 +115,7 @@ export default function Login() {
         }`}>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <UserIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
+              <UserIcon className="h-5 w-5 text-blue-500" aria-hidden="true" />
             </div>
             <input
               id="email"
@@ -93,7 +126,7 @@ export default function Login() {
               placeholder="Username"
               value={formData.email}
               onChange={handleChange}
-              className="input-field pl-10 py-4 w-full rounded-lg"
+              className="block w-full rounded-lg border border-blue-300 pl-10 py-4 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-300 hover:border-blue-400"
             />
           </div>
         </div>
@@ -103,7 +136,7 @@ export default function Login() {
         }`}>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <LockClosedIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
+              <LockClosedIcon className="h-5 w-5 text-blue-500" aria-hidden="true" />
             </div>
             <input
               id="password"
@@ -114,7 +147,7 @@ export default function Login() {
               placeholder="Password"
               value={formData.password}
               onChange={handleChange}
-              className="input-field pl-10 py-4 w-full rounded-lg"
+              className="block w-full rounded-lg border border-blue-300 pl-10 py-4 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-300 hover:border-blue-400"
             />
           </div>
         </div>
@@ -125,18 +158,12 @@ export default function Login() {
           <button
             type="submit"
             disabled={isLoading}
-            className={`w-full flex justify-center items-center bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 px-4 rounded-lg transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg ${
+            className={`w-full flex justify-center items-center bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-medium py-3 px-4 rounded-lg transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg ${
               isLoading ? 'opacity-75 cursor-not-allowed' : ''
             }`}
           >
             {isLoading ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Logging in...
-              </>
+              <ButtonLoader text="Logging in..." />
             ) : (
               <>
                 LOGIN
@@ -151,7 +178,7 @@ export default function Login() {
         }`}>
           <Link
             to="/forgot-password"
-            className="font-medium text-primary-600 hover:text-primary-500 transition-colors"
+            className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
           >
             Forgot your password?
           </Link>
@@ -166,7 +193,7 @@ export default function Login() {
           {['facebook', 'twitter', 'google', 'linkedin'].map((platform) => (
             <button
               key={platform}
-              className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-all duration-300 transform hover:-translate-y-1"
+              className="w-10 h-10 rounded-full border border-blue-300 flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md"
             >
               <span className="sr-only">Sign in with {platform}</span>
               {platform === 'facebook' && <span className="text-xl">f</span>}

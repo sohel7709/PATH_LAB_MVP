@@ -8,6 +8,7 @@ export default function AddPatient() {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [duplicatePatient, setDuplicatePatient] = useState(null);
   const [validationErrors, setValidationErrors] = useState({
     phone: ''
   });
@@ -87,6 +88,7 @@ export default function AddPatient() {
     
     setIsLoading(true);
     setError('');
+    setDuplicatePatient(null);
 
     try {
       // Import the API utility
@@ -98,59 +100,85 @@ export default function AddPatient() {
       // Redirect to patients list or create report page
       navigate('/patients');
     } catch (err) {
-      setError(err.message || 'Failed to add patient');
+      console.error('Error creating patient:', err);
+      
+      // Check if this is a duplicate patient error
+      if (err.response && err.response.data && err.response.data.duplicate) {
+        setDuplicatePatient(err.response.data.patient);
+        setError('Patient already exists in the system');
+      } else if (err.response && err.response.data && err.response.data.message) {
+        // Server returned a specific error message
+        setError(err.response.data.message);
+      } else {
+        setError(err.message || 'Failed to add patient');
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div>
-      <div className="md:flex md:items-center md:justify-between bg-gradient-to-r from-blue-600 to-blue-800 p-6 rounded-lg shadow-md mb-6 text-white">
-        <div className="min-w-0 flex-1 flex items-center">
-          <UserPlusIcon className="h-10 w-10 text-white mr-4" />
-          <div>
-            <h2 className="text-2xl font-bold leading-7 text-white sm:truncate sm:text-3xl sm:tracking-tight">
-              Add New Patient
-            </h2>
-            <p className="mt-1 text-sm text-white opacity-90">
-              Enter patient details to add them to the system
-            </p>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 py-8 px-2">
+      <div className="w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-blue-100 overflow-hidden">
+        <div className="px-8 py-6 bg-gradient-to-r from-blue-700 to-blue-500">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center">
+              <UserPlusIcon className="h-8 w-8 text-white mr-3" />
+              <div>
+                <h1 className="text-3xl font-extrabold text-white">Add New Patient</h1>
+                <p className="text-base text-blue-100 mt-1">
+                  Enter patient details to add them to the system
+                </p>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <form className="mt-8 space-y-8" onSubmit={handleSubmit}>
-        {error && (
-          <div className="rounded-md bg-red-50 p-4">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <ExclamationCircleIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
+        <form className="p-8 space-y-8" onSubmit={handleSubmit}>
+          {error && (
+            <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded mb-4">
+              <div className="flex items-center">
+                <ExclamationCircleIcon className="h-5 w-5 mr-2 text-red-500" aria-hidden="true" />
+                <span className="font-medium">Error:</span>
+                <span className="ml-2">{error}</span>
               </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">{error}</h3>
-              </div>
+              
+              {duplicatePatient && (
+                <div className="mt-3 p-3 bg-white rounded border border-red-200">
+                  <h4 className="font-medium text-red-800 mb-2">Duplicate Patient Details:</h4>
+                  <ul className="text-sm space-y-1">
+                    <li><span className="font-medium">Name:</span> {duplicatePatient.fullName}</li>
+                    <li><span className="font-medium">Age:</span> {duplicatePatient.age}</li>
+                    <li><span className="font-medium">Gender:</span> {duplicatePatient.gender}</li>
+                    <li><span className="font-medium">Phone:</span> {duplicatePatient.phone}</li>
+                    {duplicatePatient.email && <li><span className="font-medium">Email:</span> {duplicatePatient.email}</li>}
+                  </ul>
+                  <div className="mt-3 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/patients/${duplicatePatient._id}`)}
+                      className="text-sm px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                    >
+                      View Patient
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Patient Information */}
-        <div className="bg-white shadow-lg sm:rounded-lg border border-blue-100">
-          <div className="px-6 py-6 sm:p-8">
-            <div className="flex items-center mb-4">
-              <div className="bg-blue-100 p-2 rounded-full mr-3">
-                <UserPlusIcon className="h-6 w-6 text-blue-600" />
-              </div>
-              <h3 className="text-xl font-medium leading-6 text-gray-900">Patient Information</h3>
-            </div>
-            
+          {/* Patient Information */}
+          <section>
+            <h2 className="text-xl font-semibold text-blue-700 mb-4 border-b border-blue-100 pb-2">
+              Patient Information
+            </h2>
             <p className="text-sm text-gray-500 mb-6">
               Please fill in the patient details. Fields marked with <span className="text-red-500">*</span> are required.
             </p>
             
             <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
               <div className="sm:col-span-3">
-                <label htmlFor="fullName" className="form-label flex items-center">
+                <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
                   Full name <span className="text-red-500 ml-1">*</span>
                   <span className="ml-1 text-gray-400 text-sm">(as per records)</span>
                 </label>
@@ -163,13 +191,13 @@ export default function AddPatient() {
                     placeholder="Enter patient's full name"
                     value={formData.fullName}
                     onChange={handleChange}
-                    className="input-field"
+                    className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
                   />
                 </div>
               </div>
 
               <div className="sm:col-span-1">
-                <label htmlFor="age" className="form-label flex items-center">
+                <label htmlFor="age" className="block text-sm font-medium text-gray-700 mb-1">
                   Age <span className="text-red-500 ml-1">*</span>
                 </label>
                 <div className="mt-1">
@@ -183,13 +211,13 @@ export default function AddPatient() {
                     placeholder="Age"
                     value={formData.age}
                     onChange={handleChange}
-                    className="input-field"
+                    className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
                   />
                 </div>
               </div>
 
               <div className="sm:col-span-2">
-                <label htmlFor="gender" className="form-label flex items-center">
+                <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-1">
                   Gender <span className="text-red-500 ml-1">*</span>
                 </label>
                 <div className="mt-1">
@@ -199,7 +227,7 @@ export default function AddPatient() {
                     required
                     value={formData.gender}
                     onChange={handleChange}
-                    className="input-field"
+                    className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
                   >
                     <option value="">Select gender</option>
                     <option value="male">Male</option>
@@ -210,7 +238,7 @@ export default function AddPatient() {
               </div>
 
               <div className="sm:col-span-3">
-                <label htmlFor="phone" className="form-label flex items-center">
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
                   Phone number <span className="text-red-500 ml-1">*</span>
                 </label>
                 <div className="mt-1 relative">
@@ -222,7 +250,7 @@ export default function AddPatient() {
                     placeholder="Enter contact number"
                     value={formData.phone}
                     onChange={handleChange}
-                    className={`input-field ${validationErrors.phone ? 'border-red-500' : formData.phone.length === 10 ? 'border-green-500' : ''}`}
+                    className={`block w-full rounded-lg border ${validationErrors.phone ? 'border-red-500' : formData.phone.length === 10 ? 'border-green-500' : 'border-blue-300'} px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition`}
                     pattern="[0-9]{10}"
                     title="Phone number must be exactly 10 digits"
                     maxLength="10"
@@ -253,7 +281,7 @@ export default function AddPatient() {
               </div>
 
               <div className="sm:col-span-3">
-                <label htmlFor="email" className="form-label">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                   Email address <span className="text-gray-400 text-sm">(optional)</span>
                 </label>
                 <div className="mt-1">
@@ -264,13 +292,13 @@ export default function AddPatient() {
                     placeholder="patient@example.com"
                     value={formData.email}
                     onChange={handleChange}
-                    className="input-field"
+                    className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
                   />
                 </div>
               </div>
 
               <div className="sm:col-span-6">
-                <label htmlFor="address" className="form-label">
+                <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
                   Address <span className="text-gray-400 text-sm">(optional)</span>
                 </label>
                 <div className="mt-1">
@@ -281,35 +309,30 @@ export default function AddPatient() {
                     placeholder="Enter patient's full address"
                     value={formData.address}
                     onChange={handleChange}
-                    className="input-field"
+                    className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
                   />
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+          </section>
 
-        {/* Submit Button */}
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg shadow-md border border-blue-100">
-          <div className="flex flex-col sm:flex-row justify-center sm:justify-end space-y-3 sm:space-y-0 sm:space-x-4">
+          {/* Actions */}
+          <div className="flex justify-center space-x-4 pt-4 border-t border-gray-200">
             <button
               type="button"
               onClick={() => navigate('/patients')}
-              className="btn-secondary flex items-center justify-center"
+              className="px-6 py-3 rounded-lg border border-gray-300 bg-white text-gray-700 font-semibold shadow hover:bg-gray-50 transition focus:outline-none focus:ring-2 focus:ring-blue-300"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
               Cancel
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className={`btn-primary flex items-center justify-center ${isLoading ? 'opacity-75 cursor-not-allowed' : 'hover:translate-y-[-2px] transition-transform'}`}
+              className="px-6 py-3 rounded-lg border border-transparent bg-gradient-to-r from-blue-600 to-blue-500 text-white font-semibold shadow hover:from-blue-700 hover:to-blue-600 transition focus:outline-none focus:ring-2 focus:ring-blue-400"
             >
               {isLoading ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
@@ -317,7 +340,7 @@ export default function AddPatient() {
                 </>
               ) : (
                 <>
-                  <UserPlusIcon className="h-5 w-5 mr-2" />
+                  <UserPlusIcon className="h-5 w-5 mr-2 inline-block" />
                   Add Patient
                 </>
               )}
@@ -326,8 +349,8 @@ export default function AddPatient() {
           <p className="text-center text-xs text-gray-500 mt-4">
             By adding a patient, you confirm that you have obtained proper consent for storing their information.
           </p>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 }

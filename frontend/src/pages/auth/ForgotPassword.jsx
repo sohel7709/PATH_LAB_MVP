@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ExclamationCircleIcon, CheckCircleIcon } from '@heroicons/react/20/solid';
-import { EnvelopeIcon, ArrowRightIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { EnvelopeIcon, ArrowRightIcon, ArrowLeftIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -62,24 +62,31 @@ export default function ForgotPassword() {
 
   return (
     <div className="flex flex-col h-full">
-      <h1 className={`text-3xl sm:text-4xl font-bold text-gray-800 mb-6 transition-all duration-700 ease-in-out ${
-        mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-      }`}>
-        Reset your password
-      </h1>
-      
-      <p className={`text-gray-600 mb-8 transition-all duration-500 delay-100 ease-in-out ${
-        mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-      }`}>
-        Enter your email address and we'll send you instructions to reset your password.
-      </p>
+      <div className="text-center mb-8">
+        <div className={`inline-flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 mb-4 transition-all duration-700 ease-in-out ${
+          mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+        }`}>
+          <ShieldCheckIcon className="h-8 w-8 text-blue-600" />
+        </div>
+        <h1 className={`text-3xl sm:text-4xl font-bold text-gray-800 mb-3 transition-all duration-700 ease-in-out ${
+          mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+        }`}>
+          Reset your password
+        </h1>
+        
+        <p className={`text-gray-600 max-w-md mx-auto transition-all duration-500 delay-100 ease-in-out ${
+          mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+        }`}>
+          Enter your email address and we'll send you instructions to reset your password.
+        </p>
+      </div>
 
       <form 
         className="space-y-6 flex-grow" 
         onSubmit={handleSubmit}
       >
         {error && (
-          <div className={`rounded-md bg-red-50 p-4 transition-all duration-500 ease-in-out ${
+          <div className={`rounded-lg bg-red-50 border border-red-200 p-4 shadow-sm transition-all duration-500 ease-in-out ${
             mounted ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
           }`}>
             <div className="flex">
@@ -94,7 +101,7 @@ export default function ForgotPassword() {
         )}
 
         {success && (
-          <div className={`rounded-md bg-green-50 p-4 transition-all duration-500 ease-in-out ${
+          <div className={`rounded-lg bg-green-50 border border-green-200 p-4 shadow-sm transition-all duration-500 ease-in-out ${
             mounted ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
           }`}>
             <div className="flex">
@@ -106,7 +113,7 @@ export default function ForgotPassword() {
                   <div>
                     <h3 className="text-sm font-medium text-green-800">Development Mode</h3>
                     <p className="mt-1 text-sm text-green-700">Password reset link generated.</p>
-                    <div className="mt-2 p-2 bg-green-100 rounded overflow-auto">
+                    <div className="mt-2 p-2 bg-green-100 rounded-lg overflow-auto">
                       <code className="text-xs text-green-800 break-all">
                         {success.split('Reset URL: ')[1]}
                       </code>
@@ -126,9 +133,12 @@ export default function ForgotPassword() {
         <div className={`transition-all duration-500 delay-200 ease-in-out ${
           mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
         }`}>
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+            Email address
+          </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <EnvelopeIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
+              <EnvelopeIcon className="h-5 w-5 text-blue-500" aria-hidden="true" />
             </div>
             <input
               id="email"
@@ -136,10 +146,10 @@ export default function ForgotPassword() {
               type="email"
               autoComplete="email"
               required
-              placeholder="Email address"
+              placeholder="Enter your email address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="pl-10 py-4 w-full rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="pl-10 py-3.5 w-full rounded-lg border border-gray-300 bg-gray-50 hover:bg-white focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition-all duration-200"
             />
           </div>
         </div>
@@ -150,7 +160,7 @@ export default function ForgotPassword() {
           <button
             type="submit"
             disabled={isLoading}
-            className={`w-full flex justify-center items-center bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 px-4 rounded-lg transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg ${
+            className={`w-full flex justify-center items-center bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium py-3.5 px-4 rounded-lg shadow-md transition-all duration-300 ${
               isLoading ? 'opacity-75 cursor-not-allowed' : ''
             }`}
           >
@@ -180,7 +190,7 @@ export default function ForgotPassword() {
               </>
             ) : (
               <>
-                SEND RESET INSTRUCTIONS
+                Send Reset Instructions
                 <ArrowRightIcon className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </>
             )}
@@ -192,7 +202,7 @@ export default function ForgotPassword() {
         }`}>
           <Link
             to="/login"
-            className="inline-flex items-center font-medium text-primary-600 hover:text-primary-500 transition-colors"
+            className="inline-flex items-center font-medium text-blue-600 hover:text-blue-500 transition-colors"
           >
             <ArrowLeftIcon className="mr-2 h-4 w-4" />
             Return to sign in

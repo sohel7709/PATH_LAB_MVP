@@ -20,14 +20,15 @@ export default function EditReport() {
     testName: '',
     category: '',
     collectionDate: '',
+    price: '', // Add price field
     status: '',
     notes: '',
     testParameters: []
   });
 
-  // Check if user is a technician
+  // Check if user is a technician (keeping for future reference)
   const { user } = useAuth();
-  const isTechnician = user?.role === 'technician';
+  const _isTechnician = user?.role === 'technician'; // Prefixed with underscore to indicate intentionally unused
 
   useEffect(() => {
     fetchReport();
@@ -58,6 +59,7 @@ export default function EditReport() {
                        (data.testInfo && data.testInfo.sampleCollectionDate ? 
                         new Date(data.testInfo.sampleCollectionDate).toISOString().split('T')[0] : 
                         new Date().toISOString().split('T')[0]),
+        price: data.price || (data.testInfo ? data.testInfo.price : 0), // Populate price
         
         // Other fields
         status: data.status || REPORT_STATUS.PENDING,
@@ -143,7 +145,8 @@ export default function EditReport() {
     return false;
   };
 
-  const addParameter = () => {
+  // Keeping this function for future reference but not using it
+  const _addParameter = () => {
     setFormData(prev => ({
       ...prev,
       testParameters: [
@@ -153,7 +156,8 @@ export default function EditReport() {
     }));
   };
 
-  const removeParameter = (index) => {
+  // Keeping this function for future reference but not using it
+  const _removeParameter = (index) => {
     setFormData(prev => ({
       ...prev,
       testParameters: prev.testParameters.filter((_, i) => i !== index)
@@ -184,6 +188,7 @@ export default function EditReport() {
         testInfo: {
           name: formData.testName,
           category: formData.category,
+          price: parseFloat(formData.price) || 0, // Include price
           sampleCollectionDate: formData.collectionDate,
           // Preserve other test info fields if they exist
           sampleType: formData.sampleType || 'blood',
@@ -210,7 +215,8 @@ export default function EditReport() {
       // Use the API utility to update the report
       await reports.update(id, reportData);
       
-      navigate(`/reports/${id}`);
+      // Navigate to print report page after successful update
+      navigate(`/reports/${id}/print`);
     } catch (err) {
       console.error('Error updating report:', err);
       setError(err.message || 'An error occurred while updating the report');
@@ -239,7 +245,7 @@ export default function EditReport() {
     return (
       <div 
         key={index} 
-        className={`grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-12 items-end ${isAbnormal ? 'bg-red-50 border-l-4 border-red-500 pl-2' : ''}`}
+        className={`grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-12 items-end ${isAbnormal ? 'bg-red-50 border-l-4 border-red-500 pl-2 rounded-r-md' : ''}`}
       >
         <div className="sm:col-span-3">
           <label className="block text-sm font-medium text-gray-700">
@@ -250,8 +256,8 @@ export default function EditReport() {
             required
             value={param.name}
             onChange={(e) => handleParameterChange(index, 'name', e.target.value)}
-            className={`input-field mt-1 ${isTechnician ? 'bg-gray-100' : ''}`}
-            disabled={isTechnician}
+            className="block w-full rounded-lg border border-blue-300 px-4 py-2 bg-gray-100 cursor-not-allowed mt-1"
+            disabled={true}
           />
         </div>
         
@@ -264,7 +270,7 @@ export default function EditReport() {
             required
             value={param.value}
             onChange={(e) => handleParameterChange(index, 'value', e.target.value)}
-            className="input-field mt-1"
+            className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition mt-1"
           />
         </div>
         
@@ -277,8 +283,8 @@ export default function EditReport() {
             required
             value={param.unit}
             onChange={(e) => handleParameterChange(index, 'unit', e.target.value)}
-            className={`input-field mt-1 ${isTechnician ? 'bg-gray-100' : ''}`}
-            disabled={isTechnician}
+            className="block w-full rounded-lg border border-blue-300 px-4 py-2 bg-gray-100 cursor-not-allowed mt-1"
+            disabled={true}
           />
         </div>
         
@@ -291,57 +297,54 @@ export default function EditReport() {
             required
             value={param.referenceRange}
             onChange={(e) => handleParameterChange(index, 'referenceRange', e.target.value)}
-            className={`input-field mt-1 ${isTechnician ? 'bg-gray-100' : ''}`}
-            disabled={isTechnician}
+            className="block w-full rounded-lg border border-blue-300 px-4 py-2 bg-gray-100 cursor-not-allowed mt-1"
+            disabled={true}
           />
         </div>
         
         <div className="sm:col-span-1">
-          {index > 0 && !isTechnician && (
-            <button
-              type="button"
-              onClick={() => removeParameter(index)}
-              className="text-red-600 hover:text-red-900"
-            >
-              Remove
-            </button>
-          )}
+          {/* Remove button disabled: Users cannot delete test parameters */}
         </div>
       </div>
     );
   };
 
   return (
-    <div>
-      <div className="md:flex md:items-center md:justify-between">
-        <div className="min-w-0 flex-1">
-          <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
-            Edit Report
-          </h2>
-        </div>
-      </div>
-
-      <form className="mt-8 space-y-8" onSubmit={handleSubmit}>
-        {error && (
-          <div className="rounded-md bg-red-50 p-4">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <ExclamationCircleIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
-              </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">{error}</h3>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 py-8 px-2">
+      <div className="w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-blue-100 overflow-hidden">
+        <div className="px-8 py-6 bg-gradient-to-r from-blue-700 to-blue-500">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center">
+              <ExclamationCircleIcon className="h-8 w-8 text-white mr-3" />
+              <div>
+                <h1 className="text-3xl font-extrabold text-white">Edit Report</h1>
+                <p className="text-base text-blue-100 mt-1">
+                  Update test results and report status
+                </p>
               </div>
             </div>
           </div>
-        )}
+        </div>
 
-        {/* Report Status */}
-        <div className="bg-white shadow sm:rounded-lg">
-          <div className="px-4 py-5 sm:p-6">
-            <h3 className="text-lg font-medium leading-6 text-gray-900">Report Status</h3>
+        <form className="p-8 space-y-8" onSubmit={handleSubmit}>
+          {error && (
+            <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded mb-4">
+              <div className="flex items-center">
+                <ExclamationCircleIcon className="h-5 w-5 mr-2 text-red-500" aria-hidden="true" />
+                <span className="font-medium">Error:</span>
+                <span className="ml-2">{error}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Report Status */}
+          <section>
+            <h2 className="text-xl font-semibold text-blue-700 mb-4 border-b border-blue-100 pb-2">
+              Report Status
+            </h2>
             <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
               <div className="sm:col-span-3">
-                <label htmlFor="status" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
                   Status
                 </label>
                 <div className="mt-1">
@@ -351,7 +354,7 @@ export default function EditReport() {
                     required
                     value={formData.status}
                     onChange={handleChange}
-                    className="input-field"
+                    className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
                   >
                     {Object.values(REPORT_STATUS).map((status) => (
                       <option key={status} value={status}>
@@ -362,16 +365,16 @@ export default function EditReport() {
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+          </section>
 
-        {/* Patient Information */}
-        <div className="bg-white shadow sm:rounded-lg">
-          <div className="px-4 py-5 sm:p-6">
-            <h3 className="text-lg font-medium leading-6 text-gray-900">Patient Information</h3>
+          {/* Patient Information */}
+          <section>
+            <h2 className="text-xl font-semibold text-blue-700 mb-4 border-b border-blue-100 pb-2">
+              Patient Information
+            </h2>
             <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
               <div className="sm:col-span-6">
-                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4 rounded-r-md">
                   <div className="flex">
                     <div className="ml-3">
                       <p className="text-sm text-yellow-700">
@@ -383,7 +386,7 @@ export default function EditReport() {
               </div>
               
               <div className="sm:col-span-3">
-                <label htmlFor="patientName" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="patientName" className="block text-sm font-medium text-gray-700 mb-1">
                   Full name
                 </label>
                 <div className="mt-1">
@@ -392,14 +395,14 @@ export default function EditReport() {
                     name="patientName"
                     id="patientName"
                     value={formData.patientName}
-                    className="input-field bg-gray-100"
+                    className="block w-full rounded-lg border border-blue-300 px-4 py-2 bg-gray-100 cursor-not-allowed"
                     disabled
                   />
                 </div>
               </div>
 
               <div className="sm:col-span-1">
-                <label htmlFor="patientAge" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="patientAge" className="block text-sm font-medium text-gray-700 mb-1">
                   Age
                 </label>
                 <div className="mt-1">
@@ -408,14 +411,14 @@ export default function EditReport() {
                     name="patientAge"
                     id="patientAge"
                     value={formData.patientAge}
-                    className="input-field bg-gray-100"
+                    className="block w-full rounded-lg border border-blue-300 px-4 py-2 bg-gray-100 cursor-not-allowed"
                     disabled
                   />
                 </div>
               </div>
 
               <div className="sm:col-span-2">
-                <label htmlFor="patientGender" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="patientGender" className="block text-sm font-medium text-gray-700 mb-1">
                   Gender
                 </label>
                 <div className="mt-1">
@@ -423,14 +426,14 @@ export default function EditReport() {
                     type="text"
                     id="patientGender"
                     value={formData.patientGender}
-                    className="input-field bg-gray-100"
+                    className="block w-full rounded-lg border border-blue-300 px-4 py-2 bg-gray-100 cursor-not-allowed"
                     disabled
                   />
                 </div>
               </div>
 
               <div className="sm:col-span-2">
-                <label htmlFor="patientPhone" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="patientPhone" className="block text-sm font-medium text-gray-700 mb-1">
                   Phone number
                 </label>
                 <div className="mt-1">
@@ -439,22 +442,22 @@ export default function EditReport() {
                     name="patientPhone"
                     id="patientPhone"
                     value={formData.patientPhone}
-                    className="input-field bg-gray-100"
+                    className="block w-full rounded-lg border border-blue-300 px-4 py-2 bg-gray-100 cursor-not-allowed"
                     disabled
                   />
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+          </section>
 
-        {/* Test Information */}
-        <div className="bg-white shadow sm:rounded-lg">
-          <div className="px-4 py-5 sm:p-6">
-            <h3 className="text-lg font-medium leading-6 text-gray-900">Test Information</h3>
+          {/* Test Information */}
+          <section>
+            <h2 className="text-xl font-semibold text-blue-700 mb-4 border-b border-blue-100 pb-2">
+              Test Information
+            </h2>
             <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
               <div className="sm:col-span-6">
-                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4 rounded-r-md">
                   <div className="flex">
                     <div className="ml-3">
                       <p className="text-sm text-yellow-700">
@@ -466,7 +469,7 @@ export default function EditReport() {
               </div>
               
               <div className="sm:col-span-3">
-                <label htmlFor="testName" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="testName" className="block text-sm font-medium text-gray-700 mb-1">
                   Test name
                 </label>
                 <div className="mt-1">
@@ -475,14 +478,30 @@ export default function EditReport() {
                     name="testName"
                     id="testName"
                     value={formData.testName}
-                    className="input-field bg-gray-100"
+                    className="block w-full rounded-lg border border-blue-300 px-4 py-2 bg-gray-100 cursor-not-allowed"
+                    disabled
+                  />
+                </div>
+              </div>
+              
+              <div className="sm:col-span-3">
+                <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
+                  Test Price
+                </label>
+                <div className="mt-1">
+                  <input
+                    type="number"
+                    name="price"
+                    id="price"
+                    value={formData.price}
+                    className="block w-full rounded-lg border border-blue-300 px-4 py-2 bg-gray-100 cursor-not-allowed"
                     disabled
                   />
                 </div>
               </div>
 
               <div className="sm:col-span-3">
-                <label htmlFor="category" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
                   Category
                 </label>
                 <div className="mt-1">
@@ -490,14 +509,14 @@ export default function EditReport() {
                     type="text"
                     id="category"
                     value={Object.entries(TEST_CATEGORIES).find(([key]) => key === formData.category)?.[1] || formData.category}
-                    className="input-field bg-gray-100"
+                    className="block w-full rounded-lg border border-blue-300 px-4 py-2 bg-gray-100 cursor-not-allowed"
                     disabled
                   />
                 </div>
               </div>
 
               <div className="sm:col-span-3">
-                <label htmlFor="collectionDate" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="collectionDate" className="block text-sm font-medium text-gray-700 mb-1">
                   Collection date
                 </label>
                 <div className="mt-1">
@@ -506,14 +525,14 @@ export default function EditReport() {
                     name="collectionDate"
                     id="collectionDate"
                     value={formData.collectionDate}
-                    className="input-field bg-gray-100"
+                    className="block w-full rounded-lg border border-blue-300 px-4 py-2 bg-gray-100 cursor-not-allowed"
                     disabled
                   />
                 </div>
               </div>
               
               <div className="sm:col-span-3">
-                <label htmlFor="referenceDoctor" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="referenceDoctor" className="block text-sm font-medium text-gray-700 mb-1">
                   Reference Doctor
                 </label>
                 <div className="mt-1">
@@ -522,41 +541,37 @@ export default function EditReport() {
                     name="referenceDoctor"
                     id="referenceDoctor"
                     value={formData.referenceDoctor || 'Not specified'}
-                    className="input-field bg-gray-100"
+                    className="block w-full rounded-lg border border-blue-300 px-4 py-2 bg-gray-100 cursor-not-allowed"
                     disabled
                   />
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+          </section>
 
-        {/* Test Parameters */}
-        <div className="bg-white shadow sm:rounded-lg">
-          <div className="px-4 py-5 sm:p-6">
+          {/* Test Parameters */}
+          <section>
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-medium leading-6 text-gray-900">Test Parameters</h3>
-              {!isTechnician && (
-                <button
-                  type="button"
-                  onClick={addParameter}
-                  className="btn-secondary"
-                >
-                  Add Parameter
-                </button>
-              )}
+              <h2 className="text-xl font-semibold text-blue-700 mb-4 border-b border-blue-100 pb-2">
+                Test Parameters
+              </h2>
+              <div className="bg-blue-50 border-l-4 border-blue-400 p-2 rounded-r-md">
+                <p className="text-sm text-blue-700">
+                  Only test values can be modified
+                </p>
+              </div>
             </div>
             
             <div className="mt-6 space-y-4">
               {formData.testParameters.map((param, index) => renderParameterRow(param, index))}
             </div>
-          </div>
-        </div>
+          </section>
 
-        {/* Notes */}
-        <div className="bg-white shadow sm:rounded-lg">
-          <div className="px-4 py-5 sm:p-6">
-            <h3 className="text-lg font-medium leading-6 text-gray-900">Additional Notes</h3>
+          {/* Notes */}
+          <section>
+            <h2 className="text-xl font-semibold text-blue-700 mb-4 border-b border-blue-100 pb-2">
+              Additional Notes
+            </h2>
             <div className="mt-6">
               <textarea
                 name="notes"
@@ -564,31 +579,31 @@ export default function EditReport() {
                 rows={4}
                 value={formData.notes}
                 onChange={handleChange}
-                className="input-field"
+                className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
                 placeholder="Add any additional notes or observations..."
               />
             </div>
-          </div>
-        </div>
+          </section>
 
-        {/* Submit Button */}
-        <div className="flex justify-end">
-          <button
-            type="button"
-            onClick={() => navigate(`/reports/${id}`)}
-            className="btn-secondary mr-3"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={isSaving}
-            className={`btn-primary ${isSaving ? 'opacity-75 cursor-not-allowed' : ''}`}
-          >
-            {isSaving ? 'Saving...' : 'Save Changes'}
-          </button>
-        </div>
-      </form>
+          {/* Submit Button */}
+          <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={() => navigate(`/reports/${id}`)}
+              className="px-6 py-3 rounded-lg border border-gray-300 bg-white text-gray-700 font-semibold shadow hover:bg-gray-50 transition focus:outline-none focus:ring-2 focus:ring-blue-300"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSaving}
+              className={`px-6 py-3 rounded-lg border border-transparent bg-gradient-to-r from-blue-600 to-blue-500 text-white font-semibold shadow hover:from-blue-700 hover:to-blue-600 transition focus:outline-none focus:ring-2 focus:ring-blue-400 ${isSaving ? 'opacity-75 cursor-not-allowed' : ''}`}
+            >
+              {isSaving ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

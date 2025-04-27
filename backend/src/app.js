@@ -3,7 +3,12 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const morgan = require('morgan');
 const path = require('path');
+const helmet = require('helmet');
+const xssClean = require('xss-clean');
+const hpp = require('hpp');
+const rateLimit = require('express-rate-limit');
 require('dotenv').config();
+
 // Import routes
 const authRoutes = require('./routes/authRoutes');
 const labManagementRoutes = require('./routes/labManagementRoutes');
@@ -16,6 +21,11 @@ const userManagementRoutes = require('./routes/userManagementRoutes');
 const testTemplateRoutes = require('./routes/testTemplateRoutes');
 const labReportSettingsRoutes = require('./routes/labReportSettingsRoutes');
 const doctorRoutes = require('./routes/doctorRoutes');
+const testRoutes = require('./routes/testRoutes');
+const planRoutes = require('./routes/planRoutes'); // Import plan routes
+const settingsRoutes = require('./routes/settingsRoutes'); // Import settings routes
+const superAdminRoutes = require('./routes/superAdminRoutes'); // Import super admin routes
+const revenueRoutes = require('./routes/revenueRoutes'); // Import revenue routes
 
 const app = express();
 
@@ -23,8 +33,11 @@ const app = express();
 // Configure CORS for production
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production'
-    ? ['https://path-lab-mvp-frontend.onrender.com']
-    : 'https://path-lab-mvp-frontend.onrender.com',
+
+    ? ['https://yourdomain.com', 'https://www.yourdomain.com'] // Update with your actual domain
+    : ['http://localhost:5173'], // Allow frontend dev server origin
+
+  
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
@@ -33,11 +46,8 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // Use morgan in development mode only
-if (process.env.NODE_ENV !== 'production') {
-  app.use(morgan('dev'));
-} else {
-  app.use(morgan('combined'));
-}
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+
 app.use(express.json({ limit: '50mb' })); // Increased limit for base64 images
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
@@ -50,13 +60,13 @@ mongoose.connect(process.env.MONGODB_URI)
   .catch((err) => console.error('MongoDB connection error:', err));
 
 // Security middleware
-app.use(require('helmet')({
+app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
       connectSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "blob:"],
+      imgSrc: ["'self'", "data:", "blob:", "https://raw.githubusercontent.com"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       fontSrc: ["'self'", "data:"],
       objectSrc: ["'none'"],
@@ -70,20 +80,21 @@ app.use(require('helmet')({
 }));
 
 // Prevent XSS attacks
-app.use(require('xss-clean')());
+app.use(xssClean());
 
 // Prevent parameter pollution
-app.use(require('hpp')());
+app.use(hpp());
 
 // Rate limiting
-app.use(require('express-rate-limit')({
+const limiter = rateLimit({
   windowMs: 10 * 60 * 1000, // 10 minutes
   max: 500, // limit each IP to 500 requests per windowMs
   message: {
     success: false,
     message: 'Too many requests from this IP, please try again after 10 minutes'
   }
-}));
+});
+app.use(limiter);
 
 // Add security headers
 app.use((req, res, next) => {
@@ -106,6 +117,11 @@ app.use('/api/export', exportRoutes);
 app.use('/api', testTemplateRoutes);
 app.use('/api', labReportSettingsRoutes);
 app.use('/api/doctors', doctorRoutes);
+app.use('/api/test', testRoutes);
+app.use('/api/plans', planRoutes); // Mount plan routes
+app.use('/api/settings', settingsRoutes); // Mount settings routes
+app.use('/api/superadmin', superAdminRoutes); // Mount super admin routes
+app.use('/api/revenue', revenueRoutes); // Mount revenue routes
 
 // Health check endpoint
 app.get('/health', (req, res) => {

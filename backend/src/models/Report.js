@@ -52,6 +52,10 @@ const reportSchema = new mongoose.Schema({
     referenceDoctor: {
       type: String,
       default: ''
+    },
+    price: {
+      type: Number,
+      required: [true, 'Please provide the test price']
     }
   },
   results: [{
