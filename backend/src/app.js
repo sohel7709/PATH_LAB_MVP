@@ -33,8 +33,11 @@ const app = express();
 // Configure CORS for production
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production'
+
     ? ['https://yourdomain.com', 'https://www.yourdomain.com'] // Update with your actual domain
     : ['http://localhost:5173'], // Allow frontend dev server origin
+
+  
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
