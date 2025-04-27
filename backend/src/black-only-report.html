@@ -2,155 +2,294 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=210mm, initial-scale=1.0">
     <title>Lab Report</title>
     <style>
-        /* Reset all styles to ensure no colors or borders */
-        * {
+        :root {
+            --primary-color: {{styling.primaryColor}};
+            --secondary-color: {{styling.secondaryColor}};
+            --font-family: {{styling.fontFamily}};
+            --font-size: {{styling.fontSize}}pt;
+        }
+        html, body {
+            width: 210mm;
+            height: 297mm;
             margin: 0;
             padding: 0;
+            background: #fff !important;
+            color: #000 !important;
+            font-family: var(--font-family, Arial, sans-serif);
+            font-size: var(--font-size, 12pt);
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+        }
+        .report-container {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            padding-top: 35mm;
+            padding-bottom: 30mm;
+            padding-left: 5mm;
+            padding-right: 5mm;
             box-sizing: border-box;
-            color: black !important;
-            background-color: white !important;
-            border-color: black !important;
-            font-family: Arial, sans-serif;
+            position: relative;
         }
-        
-        body {
+        /* Header */
+        .report-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 35mm;
             width: 100%;
-            padding: 20mm;
-            font-size: 12px;
-            line-height: 1.4;
-        }
-        
-        /* Patient info section */
-        .patient-info {
-            width: 100%;
-            margin-bottom: 10px;
-        }
-        
-        .patient-info-row {
-            width: 100%;
+            padding: 5mm;
+            box-sizing: border-box;
+            background: #fff;
+            z-index: 10;
             display: flex;
-            justify-content: space-between;
+            align-items: center;
+            justify-content: center;
         }
-        
-        .patient-info-left {
-            width: 48%;
-            text-align: left;
-        }
-        
-        .patient-info-right {
-            width: 48%;
-            text-align: left;
-        }
-        
-        /* Divider line */
-        .divider {
+        .header-image {
             width: 100%;
-            border-top: 1px solid black;
-            margin: 10px 0;
+            height: 100%;
+            object-fit: contain;
+            display: block;
         }
-        
-        /* Report title */
-        .report-title {
-            width: 100%;
+        .header-warning {
+            font-size: 10pt;
+            padding: 5mm;
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+            border-radius: 4px;
             text-align: center;
-            font-size: 16px;
-            font-weight: bold;
-            margin: 10px 0;
-            text-transform: uppercase;
         }
-        
-        /* Test results table */
-        .test-table {
+        /* Footer */
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 30mm;
             width: 100%;
-            margin-top: 10px;
+            padding: 5mm;
+            box-sizing: border-box;
+            background: #fff;
+            z-index: 10;
+            border-top: 1pt solid #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .footer img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+        .footer-warning {
+            font-size: 10pt;
+            padding: 5mm;
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #000;
+            border-radius: 4px;
+            text-align: center;
+        }
+        /* Patient Info */
+        .patient-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            column-gap: 10mm;
+            padding: 5px 0 5px 0;
+            border-bottom: 2px solid #000;
+            font-size: 11pt;
+            line-height: 1.3;
+            margin-top: 0;
+        }
+        .patient-info-left, .patient-info-right {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: flex-start;
+        }
+        .info-label {
+            font-weight: bold;
+            min-width: 110px;
+        }
+        /* Test Title */
+        .test-title {
+            text-align: center;
+            font-size: 14pt;
+            font-weight: bold;
+            margin: 15px 0 10px 0;
+            color: var(--primary-color, #000);
+        }
+        /* Test Results Table */
+        .test-data {
+            width: 100%;
             border-collapse: collapse;
+            margin: 0;
+            border: 1px solid #000;
+            table-layout: fixed;
         }
-        
-        .test-table th, .test-table td {
-            padding: 5px;
+        .test-data th, .test-data td {
+            padding: 6px 10px;
+            border: 1px solid #000;
+            font-size: 11pt;
+            vertical-align: middle;
+        }
+        .test-data th {
+            font-weight: bold;
+            color: var(--primary-color, #000);
             text-align: left;
-            border: none;
         }
-        
-        .test-table th {
-            font-weight: bold;
-        }
-        
-        /* Abnormal values */
         .abnormal {
-            font-weight: bold;
-            text-decoration: underline;
+            color: #000 !important;
+            font-weight: bold !important;
+            background-color: #fff0f0 !important;
+            text-decoration: underline !important;
         }
-        
-        /* Signature section */
-        .signature {
+        /* Signature Section */
+        .signature-section {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 20mm;
+            margin-bottom: 10mm;
             width: 100%;
-            margin-top: 50px;
-            text-align: right;
         }
-        
-        .signature-line {
-            display: inline-block;
-            width: 150px;
-            border-top: 1px solid black;
-            padding-top: 5px;
+        .signature-container {
             text-align: center;
+            width: 200px;
+        }
+        .signature-image {
+            height: 60px;
+            object-fit: contain;
+            display: block;
+            margin: 0 auto;
+        }
+        .signature-name {
+            font-weight: bold;
+            margin-top: 5px;
+            font-size: 12pt;
+        }
+        .signature-designation {
+            font-size: 12pt;
+            color: #666;
+        }
+        .signature-placeholder {
+            height: 60px;
+            border-bottom: 1px solid #000;
+        }
+        /* Hide UI elements */
+        nav, header, button, .print-controls, .print-hidden, .report-header-placeholder, .report-footer-placeholder {
+            display: none !important;
+        }
+        .hidden-section {
+            visibility: hidden;
         }
     </style>
 </head>
 <body>
-    <!-- Patient Info -->
-    <div class="patient-info">
-        <div class="patient-info-row">
+    <!-- Header Section -->
+    <div class="report-header{{#unless showHeader}} hidden-section{{/unless}}">
+        {{#if headerImage}}
+            <img src="{{headerImage}}" alt="Lab Header" class="header-image" />
+        {{else}}
+            <div class="header-warning">
+                <p style="font-weight: bold; margin-bottom: 5px;">&#9888; Header Not Available</p>
+                <p style="font-size: 0.9em;">Please configure header in lab settings</p>
+            </div>
+        {{/if}}
+    </div>
+
+    <div class="report-container">
+        <!-- Patient Info -->
+        <div class="patient-info">
             <div class="patient-info-left">
-                <p><strong>Patient Name:</strong> {{patientName}}</p>
-                <p><strong>Age/Gender:</strong> {{patientAge}} Years / {{patientGender}}</p>
-                <p><strong>Patient ID:</strong> {{patientId}}</p>
+                <div class="info-row">
+                    <span class="info-label">Patient Name:</span>
+                    <span>{{patientName}}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Age/Gender:</span>
+                    <span>{{patientAge}} Years / {{patientGender}}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Patient ID:</span>
+                    <span>{{patientId}}</span>
+                </div>
             </div>
             <div class="patient-info-right">
-                <p><strong>Sample Collection:</strong> {{sampleCollectionDate}}</p>
-                <p><strong>Sample Type:</strong> {{sampleType}}</p>
-                <p><strong>Referring Doctor:</strong> {{referringDoctor}}</p>
+                <div class="info-row">
+                    <span class="info-label">Report Date:</span>
+                    <span>{{reportDate}}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Referring Doctor:</span>
+                    <span>{{referringDoctor}}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Title -->
+        <div class="test-title">{{testName}}</div>
+
+        <!-- Test Results Table -->
+        <table class="test-data">
+            <thead>
+                <tr>
+                    <th>Test</th>
+                    <th>Result</th>
+                    <th>Unit</th>
+                    <th>Reference Range</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each testResults}}
+                <tr>
+                    <td>{{this.name}}</td>
+                    <td class="{{#if this.isAbnormal}}abnormal{{/if}}">{{this.result}}</td>
+                    <td>{{this.unit}}</td>
+                    <td>{{this.referenceRange}}</td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+
+        <!-- Signature Section -->
+        <div class="signature-section">
+            <div class="signature-container">
+                {{#if signatureImage}}
+                    <img src="{{signatureImage}}" alt="Signature" class="signature-image" />
+                {{else}}
+                    <div class="signature-placeholder"></div>
+                {{/if}}
+                <div class="signature-name">
+                    Dr. {{verifiedBy}}
+                </div>
+                <div class="signature-designation">
+                    {{designation}}
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="divider"></div>
-
-    <!-- Report Title -->
-    <div class="report-title">{{testName}}</div>
-
-    <!-- Test Results Table -->
-    <table class="test-table">
-        <thead>
-            <tr>
-                <th>Test</th>
-                <th>Result</th>
-                <th>Unit</th>
-                <th>Reference Range</th>
-            </tr>
-        </thead>
-        <tbody>
-            {{#each testResults}}
-            <tr>
-                <td>{{this.name}}</td>
-                <td {{#if this.isAbnormal}}class="abnormal"{{/if}}>{{this.result}}</td>
-                <td>{{this.unit}}</td>
-                <td>{{this.referenceRange}}</td>
-            </tr>
-            {{/each}}
-        </tbody>
-    </table>
-
-    <!-- Signature Section -->
-    <div class="signature">
-        <div class="signature-line">
-            Dr. Consultant<br>
-            Consultant Pathologist
-        </div>
+    <!-- Footer Section -->
+    <div class="footer{{#unless showFooter}} hidden-section{{/unless}}">
+        {{#if footerImage}}
+            <img src="{{footerImage}}" alt="Footer" />
+        {{else}}
+            <div class="footer-warning">
+                <p style="font-weight: bold; margin-bottom: 5px;">&#9888; Footer Not Available</p>
+                <p style="font-size: 0.9em;">Please configure footer in lab settings</p>
+            </div>
+        {{/if}}
     </div>
 </body>
 </html>

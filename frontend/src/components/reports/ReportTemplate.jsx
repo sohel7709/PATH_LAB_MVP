@@ -14,8 +14,7 @@ const ReportTemplate = ({ reportData }) => {
     patientId,
     
     // Sample data
-    sampleCollectionDate,
-    sampleType,
+    reportDate,
     referringDoctor,
     
     // Test data
@@ -409,12 +408,8 @@ const ReportTemplate = ({ reportData }) => {
             </div>
             <div className="patient-info-right" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <div className="info-row" style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                <span className="info-label" style={{ fontWeight: 'bold', minWidth: '110px' }}>Sample Collection:</span>
-                <span>{sampleCollectionDate || 'N/A'}</span>
-              </div>
-              <div className="info-row" style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                <span className="info-label" style={{ fontWeight: 'bold', minWidth: '110px' }}>Sample Type:</span>
-                <span>{sampleType || 'Blood'}</span>
+                <span className="info-label" style={{ fontWeight: 'bold', minWidth: '110px' }}>Report Date:</span>
+                <span>{reportDate || 'N/A'}</span>
               </div>
               <div className="info-row" style={{ display: 'flex', justifyContent: 'flex-start' }}>
                 <span className="info-label" style={{ fontWeight: 'bold', minWidth: '110px' }}>Referring Doctor:</span>
@@ -642,8 +637,7 @@ ReportTemplate.propTypes = {
     patientId: PropTypes.string,
     
     // Sample data
-    sampleCollectionDate: PropTypes.string,
-    sampleType: PropTypes.string,
+    reportDate: PropTypes.string,
     referringDoctor: PropTypes.string,
     
     // Test data

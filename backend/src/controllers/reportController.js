@@ -555,8 +555,7 @@ exports.generateHtmlReport = async (req, res, next) => {
       patientId: report.patientInfo?.patientId || 'N/A',
       
       // Sample data
-      sampleCollectionDate: new Date(report.testInfo?.sampleCollectionDate || Date.now()).toLocaleDateString(),
-      sampleType: report.testInfo?.sampleType || 'Blood',
+      reportDate: new Date(report.createdAt).toLocaleDateString(),
       referringDoctor: report.testInfo?.referenceDoctor || 'N/A',
       
       // Test data

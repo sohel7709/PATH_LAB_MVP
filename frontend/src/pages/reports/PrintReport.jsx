@@ -98,8 +98,7 @@ export default function PrintReport() {
       // Right column
       const rightCol = document.createElement('div');
       rightCol.innerHTML = `
-        <div style="margin-bottom: 5px;"><strong>Sample Collection:</strong> ${new Date(report.testInfo?.sampleCollectionDate || report.createdAt).toLocaleDateString()}</div>
-        <div style="margin-bottom: 5px;"><strong>Sample Type:</strong> ${report.testInfo?.sampleType || 'Blood'}</div>
+        <div style="margin-bottom: 5px;"><strong>Report Date:</strong> ${new Date(report.createdAt).toLocaleDateString()}</div>
         <div style="margin-bottom: 5px;"><strong>Referring Doctor:</strong> ${report.testInfo?.referenceDoctor || 'N/A'}</div>
       `;
       
@@ -307,174 +306,18 @@ export default function PrintReport() {
     }
   };
 
+  // Updated: Use the actual rendered report DOM for PDF generation
   const generatePDF = async () => {
     try {
       if (!reportRef.current) {
         alert('Report content is not available for downloading.');
         return;
       }
-      
-      // Create a simplified version of the report for downloading
-      const simplifiedReport = document.createElement('div');
-      simplifiedReport.style.width = '210mm';
-      // Adjust padding for pre-printed letterhead when header/footer are not shown
-      // When showHeaderFooter is false, we're printing on pre-printed letterhead
-      // so we need to leave space for the pre-printed header and footer
-      const topPadding = showHeaderFooter ? '40mm' : '45mm'; // More space for pre-printed header
-      const bottomPadding = showHeaderFooter ? '35mm' : '40mm'; // More space for pre-printed footer
-      simplifiedReport.style.padding = `${topPadding} 15mm ${bottomPadding} 15mm`;
-      simplifiedReport.style.boxSizing = 'border-box';
-      simplifiedReport.style.fontFamily = 'Arial, sans-serif';
-      simplifiedReport.style.fontSize = '11pt';
-      simplifiedReport.style.position = 'relative';
-      
-      // Add horizontal line at the top
-      const topLine = document.createElement('div');
-      topLine.style.borderTop = '2px solid black';
-      topLine.style.width = '100%';
-      topLine.style.marginBottom = '10px'; // Reduced from 20px
-      simplifiedReport.appendChild(topLine);
-      
-      // Add patient info
-      const patientInfo = document.createElement('div');
-      patientInfo.style.display = 'grid';
-      patientInfo.style.gridTemplateColumns = '1fr 1fr';
-      patientInfo.style.gap = '10mm';
-      patientInfo.style.marginBottom = '10px'; // Reduced from 20px
-      
-      // Left column
-      const leftCol = document.createElement('div');
-      leftCol.innerHTML = `
-        <div style="margin-bottom: 5px;"><strong>Patient Name:</strong> ${report.patientInfo?.name || 'N/A'}</div>
-        <div style="margin-bottom: 5px;"><strong>Age/Gender:</strong> ${report.patientInfo?.age || 'N/A'} Years / ${report.patientInfo?.gender || 'N/A'}</div>
-        <div style="margin-bottom: 5px;"><strong>Patient ID:</strong> ${report.patientInfo?.patientId || report._id?.substring(0, 8) || 'N/A'}</div>
-      `;
-      
-      // Right column
-      const rightCol = document.createElement('div');
-      rightCol.innerHTML = `
-        <div style="margin-bottom: 5px;"><strong>Sample Collection:</strong> ${new Date(report.testInfo?.sampleCollectionDate || report.createdAt).toLocaleDateString()}</div>
-        <div style="margin-bottom: 5px;"><strong>Sample Type:</strong> ${report.testInfo?.sampleType || 'Blood'}</div>
-        <div style="margin-bottom: 5px;"><strong>Referring Doctor:</strong> ${report.testInfo?.referenceDoctor || 'N/A'}</div>
-      `;
-      
-      patientInfo.appendChild(leftCol);
-      patientInfo.appendChild(rightCol);
-      simplifiedReport.appendChild(patientInfo);
-      
-      // Add bottom line after patient info
-      const bottomLine = document.createElement('div');
-      bottomLine.style.borderTop = '2px solid black';
-      bottomLine.style.width = '100%';
-      bottomLine.style.marginBottom = '10px'; // Reduced from 20px
-      simplifiedReport.appendChild(bottomLine);
-      
-      // Add test title
-      const title = document.createElement('div');
-      title.textContent = report.testInfo?.name || 'Complete Blood Count Parameters';
-      title.style.textAlign = 'center';
-      title.style.fontWeight = 'bold';
-      title.style.fontSize = '14pt';
-      title.style.marginBottom = '10px'; // Reduced from 20px
-      simplifiedReport.appendChild(title);
-      
-      // Add test results table
-      const table = document.createElement('table');
-      table.style.width = '100%';
-      table.style.borderCollapse = 'collapse';
-      table.style.marginBottom = '20px';
-      
-      // Add table header
-      const thead = document.createElement('thead');
-      const headerRow = document.createElement('tr');
-      
-      const headers = ['Test', 'Result', 'Unit', 'Reference Range'];
-      const widths = ['40%', '15%', '10%', '35%'];
-      
-      headers.forEach((header, index) => {
-        const th = document.createElement('th');
-        th.textContent = header;
-        th.style.border = '1px solid black';
-        th.style.borderStyle = 'solid';
-        th.style.borderColor = 'black';
-        th.style.borderWidth = '1px';
-        th.style.padding = '6px 10px';
-        th.style.textAlign = 'left';
-        th.style.fontWeight = 'bold';
-        th.style.width = widths[index];
-        headerRow.appendChild(th);
-      });
-      
-      thead.appendChild(headerRow);
-      table.appendChild(thead);
-      
-      // Add table body
-      const tbody = document.createElement('tbody');
-      
-      if (report.results && report.results.length > 0) {
-        report.results.forEach(param => {
-          const row = document.createElement('tr');
-          
-          // Test name cell
-          const nameCell = document.createElement('td');
-          nameCell.textContent = param.parameter || param.name;
-          nameCell.style.border = '1px solid black';
-          nameCell.style.borderStyle = 'solid';
-          nameCell.style.borderColor = 'black';
-          nameCell.style.borderWidth = '1px';
-          nameCell.style.padding = '6px 10px';
-          row.appendChild(nameCell);
-          
-          // Result cell
-          const resultCell = document.createElement('td');
-          resultCell.textContent = param.value;
-          resultCell.style.border = '1px solid black';
-          resultCell.style.borderStyle = 'solid';
-          resultCell.style.borderColor = 'black';
-          resultCell.style.borderWidth = '1px';
-          resultCell.style.padding = '6px 10px';
-          if (param.flag === 'high' || param.flag === 'low' || param.flag === 'critical') {
-            resultCell.style.fontWeight = 'bold';
-          }
-          row.appendChild(resultCell);
-          
-          // Unit cell
-          // Reference range cell
-          const rangeCell = document.createElement('td');
-          rangeCell.textContent = param.referenceRange;
-          rangeCell.style.border = '1px solid black';
-          rangeCell.style.padding = '6px 10px';
-          row.appendChild(rangeCell);
-          
-          tbody.appendChild(row);
-        });
-      } else {
-        const emptyRow = document.createElement('tr');
-        const emptyCell = document.createElement('td');
-        emptyCell.colSpan = 4;
-        emptyCell.textContent = 'No test parameters available';
-        emptyCell.style.textAlign = 'center';
-        emptyCell.style.padding = '6px';
-        emptyCell.style.border = '1px solid black';
-        emptyRow.appendChild(emptyCell);
-        tbody.appendChild(emptyRow);
-      }
-      
-      table.appendChild(tbody);
-      simplifiedReport.appendChild(table);
-      
-      // Create a temporary container for the simplified report
-      const tempContainer = document.createElement('div');
-      tempContainer.style.position = 'fixed';
-      tempContainer.style.top = '-10000px';
-      tempContainer.style.left = '-10000px';
-      tempContainer.appendChild(simplifiedReport);
-      document.body.appendChild(tempContainer);
-      
-      // Generate PDF
+
+      // Use the actual rendered report DOM (with all styles and images)
       const opt = {
         margin: 0,
-        filename: `${report.patientInfo?.name || 'Patient'}_Report.pdf`,
+        filename: `${report?.patientInfo?.name || 'Patient'}_Report.pdf`,
         image: { type: 'jpeg', quality: 1 },
         html2canvas: { 
           scale: 2,
@@ -483,12 +326,8 @@ export default function PrintReport() {
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
-      
-      // Generate and save the PDF
-      await window.html2pdf().set(opt).from(simplifiedReport).save();
-      
-      // Clean up temporary container
-      document.body.removeChild(tempContainer);
+
+      await window.html2pdf().set(opt).from(reportRef.current).save();
     } catch (error) {
       console.error('Error generating PDF:', error);
       alert('Failed to generate PDF. Please try again.');
@@ -517,8 +356,7 @@ export default function PrintReport() {
       patientId: report.patientInfo?.patientId || report._id?.substring(0, 8) || 'N/A',
       
       // Sample data
-      sampleCollectionDate: new Date(report.testInfo?.sampleCollectionDate || report.createdAt).toLocaleDateString(),
-      sampleType: report.testInfo?.sampleType || 'Blood',
+      reportDate: new Date(report.createdAt).toLocaleDateString(),
       referringDoctor: report.testInfo?.referenceDoctor || 'N/A',
       
       // Test data
