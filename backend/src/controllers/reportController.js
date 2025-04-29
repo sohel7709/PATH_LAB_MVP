@@ -209,9 +209,36 @@ exports.getReport = async (req, res, next) => {
       });
     }
 
+    // Convert Mongoose document to a plain JavaScript object
+    let reportObject = report.toObject();
+
+    // --- Populate Test Template Names ---
+    if (reportObject.results && reportObject.results.length > 0) {
+      const templateIds = [...new Set(reportObject.results.map(r => r.templateId).filter(id => id))]; // Get unique template IDs from plain object
+
+      if (templateIds.length > 0) {
+        const templates = await TestTemplate.find({ '_id': { $in: templateIds } }).select('templateName name'); // Fetch relevant templates
+        const templateMap = templates.reduce((map, t) => {
+          map[t._id.toString()] = t.templateName || t.name; // Create a map ID -> Name
+          return map;
+        }, {});
+
+        // Modify the results array within the plain object
+        reportObject.results = reportObject.results.map(result => {
+          if (result.templateId) {
+            // No need for .toObject() here as it's already a plain object
+            result.templateName = templateMap[result.templateId.toString()] || 'Unknown Test';
+          }
+          return result; // Return the potentially modified result object
+        });
+      }
+    }
+    // --- End Populate Test Template Names ---
+
+
     res.status(200).json({
       success: true,
-      data: report
+      data: reportObject // Send the modified plain object
     });
   } catch (error) {
     next(error);
@@ -524,7 +551,7 @@ exports.generateHtmlReport = async (req, res, next) => {
     const templateIds = [...new Set(report.results.map(r => r.templateId).filter(id => id))]; // Get unique template IDs
 
     if (templateIds.length > 0) {
-      const templates = await TestTemplate.find({ '_id': { $in: templateIds } }).select('templateName name');
+      const templates = await TestTemplate.find({ '_id': { $in: templateIds } }).select('templateName name'); // Only select name fields
       const templateMap = templates.reduce((map, t) => {
         map[t._id.toString()] = t.templateName || t.name;
         return map;
@@ -532,6 +559,8 @@ exports.generateHtmlReport = async (req, res, next) => {
 
       for (const templateId of templateIds) {
         const templateName = templateMap[templateId.toString()] || 'Unknown Test';
+        // const templateNotes = ''; // Removed notes logic
+
         const parameters = report.results
           .filter(r => r.templateId && r.templateId.toString() === templateId.toString())
           .map(param => ({
@@ -543,8 +572,9 @@ exports.generateHtmlReport = async (req, res, next) => {
             isHeader: param.isHeader, // Pass isHeader to template
             isSubparameter: param.isSubparameter // Pass isSubparameter to template
           }));
-        
+
         if (parameters.length > 0) {
+          // Only add templateName and parameters
           groupedResults.push({ templateName, parameters });
         }
       }
@@ -806,10 +836,10 @@ exports.generatePdfReport = async (req, res, next) => {
 
     // --- Group results by templateId (Same logic as in generateHtmlReport) ---
     const groupedResultsPdf = [];
-    const templateIdsPdf = [...new Set(report.results.map(r => r.templateId).filter(id => id))]; 
+    const templateIdsPdf = [...new Set(report.results.map(r => r.templateId).filter(id => id))];
 
     if (templateIdsPdf.length > 0) {
-      const templatesPdf = await TestTemplate.find({ '_id': { $in: templateIdsPdf } }).select('templateName name');
+      const templatesPdf = await TestTemplate.find({ '_id': { $in: templateIdsPdf } }).select('templateName name'); // Only select name fields
       const templateMapPdf = templatesPdf.reduce((map, t) => {
         map[t._id.toString()] = t.templateName || t.name;
         return map;
@@ -817,6 +847,8 @@ exports.generatePdfReport = async (req, res, next) => {
 
       for (const templateId of templateIdsPdf) {
         const templateName = templateMapPdf[templateId.toString()] || 'Unknown Test';
+        // const templateNotes = ''; // Removed notes logic
+
         const parameters = report.results
           .filter(r => r.templateId && r.templateId.toString() === templateId.toString())
           .map(param => ({
@@ -828,8 +860,9 @@ exports.generatePdfReport = async (req, res, next) => {
             isHeader: param.isHeader,
             isSubparameter: param.isSubparameter
           }));
-        
+
         if (parameters.length > 0) {
+          // Only add templateName and parameters
           groupedResultsPdf.push({ templateName, parameters });
         }
       }

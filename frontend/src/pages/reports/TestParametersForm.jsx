@@ -97,7 +97,7 @@ export default function TestParametersForm({
       let mainCategory = '';
       let mainSampleType = '';
       let mainTestNames = [];
-      let combinedNotes = [];
+      let combinedNotes = []; // Re-introduce combinedNotes logic
       for (const templateId of templateIds) {
         if (templateId === 'custom') continue;
         const response = await testTemplates.getById(templateId, userRole);
@@ -154,7 +154,7 @@ export default function TestParametersForm({
         sampleType: mainSampleType || 'Blood',
         testParameters: allParameters,
         selectedTemplateIds: templateIds,
-        testNotes: combinedNotes.join(' | ')
+        testNotes: combinedNotes.join(' | ') // Re-add combining notes
       }));
     } catch (err) {
       setError(`Failed to load template details: ${err.message || 'Unknown error'}`);

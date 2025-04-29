@@ -19,8 +19,12 @@ const ReportTemplate = ({ reportData }) => {
     referringDoctor,
 
     // Test data
-    testName,
-    testResults,
+    // testName, // We'll use templateName from groupedResults
+    // testResults, // Replaced by groupedResults
+    groupedResults, // Expect grouped results from backend/parent component
+
+    // Overall notes (if any, separate from parameter notes)
+    testNotes,
 
     // Signature data
     signatureImage,
@@ -387,32 +391,13 @@ const ReportTemplate = ({ reportData }) => {
             {/* {testName || 'COMPLETE BLOOD COUNT (CBC)'} */}
           </div>
 
-          {/* Test Results - Grouped by Template */}
-          {(() => {
-            // Group results by templateId
-            const grouped = (testResults || []).reduce((acc, param) => {
-              const key = param.templateId || 'unknown'; // Group unknown IDs together
-              if (!acc[key]) {
-                // Attempt to find template name (might need better data source)
-                // For now, use section name or placeholder if templateId exists
-                const sectionName = param.section && param.section !== 'Default' ? param.section : (testName || 'Test Results'); // Placeholder logic
-                acc[key] = { 
-                  templateName: key !== 'unknown' ? `Test Group (ID: ${key})` : sectionName, // Placeholder name
-                  parameters: [] 
-                };
-              }
-              acc[key].parameters.push(param);
-              return acc;
-            }, {});
-
-            // Convert grouped object to array
-            const groupedResultsArray = Object.values(grouped);
-
-            return groupedResultsArray.map((group, groupIndex) => (
+          {/* Test Results - Iterate over groupedResults from props */}
+          {(groupedResults && groupedResults.length > 0) ? (
+            groupedResults.map((group, groupIndex) => (
               <div key={groupIndex} className="test-group" style={{ marginBottom: '15px', pageBreakInside: 'avoid' }}>
-                {/* Template Name Header */}
+                {/* Template Name Header - Ensure it uses group.templateName */}
                 <h3 style={{ textAlign: 'center', fontWeight: 'bold', margin: '10px 0', fontSize: '13pt' }}>
-                  {group.templateName}
+                  {group.templateName} {/* Directly use the templateName from the group object */}
                 </h3>
                 {/* Parameters Table for this Template */}
                 <table className="test-data" style={{
@@ -459,12 +444,13 @@ const ReportTemplate = ({ reportData }) => {
                   width: '35%'
                 }}>Reference Range</th>
               </tr>
-            </thead>
-            <tbody>
-              {group.parameters && group.parameters.length > 0 ? (
-                group.parameters.map((param, index) => {
-                  if (param.isHeader) {
-                    return (
+                </thead>
+                <tbody>
+                  {group.parameters && group.parameters.length > 0 ? (
+                    group.parameters.map((param, index) => {
+                      // Check if the parameter itself is marked as a header
+                      if (param.isHeader) {
+                        return (
                       <tr key={`${groupIndex}-header-${index}`}>
                         <td colSpan="4" style={{
                           fontWeight: 'bold',
@@ -474,21 +460,26 @@ const ReportTemplate = ({ reportData }) => {
                           fontSize: '11pt',
                           verticalAlign: 'middle'
                         }}>
-                          {param.name}
+                          {param.name || param.parameter} {/* Use name or fallback to parameter */}
                         </td>
                       </tr>
                     );
                   } else {
-                    const abnormal = isOutsideRange(param.result, param.referenceRange) || param.isAbnormal;
-                    const isSub = param.isSubparameter; // Use isSubparameter from param
+                    // Determine if the result is abnormal based on flags or range check
+                    const abnormal = param.flag === 'high' || param.flag === 'low' || param.flag === 'critical' || isOutsideRange(param.value, param.referenceRange);
+                    const isSub = param.isSubparameter; // Check if it's a subparameter for indentation
+
                     return (
                       <tr key={`${groupIndex}-param-${index}`}>
+                        {/* Parameter Name */}
                         <td style={{
-                          padding: isSub ? '6px 10px 6px 25px' : '6px 10px', // Apply indent for subparameters
+                          padding: isSub ? '6px 10px 6px 25px' : '6px 10px', // Indent subparameters
                           border: '1px solid black',
                           fontSize: '11pt',
                           verticalAlign: 'middle'
-                        }}>{param.name}</td>
+                        }}>{param.parameter || param.name}</td> {/* Use parameter or fallback to name */}
+
+                        {/* Result Value */}
                         <td style={{
                           padding: '6px 10px',
                           border: '1px solid black',
@@ -498,14 +489,19 @@ const ReportTemplate = ({ reportData }) => {
                           fontSize: '11pt',
                           verticalAlign: 'middle'
                         }}>
-                          {param.result && param.result !== '-' ? param.result : ''}
+                          {/* Display value, handle potential null/undefined */}
+                          {param.value !== null && param.value !== undefined ? param.value : ''}
                         </td>
+
+                        {/* Unit */}
                         <td style={{
                           padding: '6px 10px',
                           border: '1px solid black',
                           fontSize: '11pt',
                           verticalAlign: 'middle'
                         }}>{param.unit || ''}</td>
+
+                        {/* Reference Range */}
                         <td style={{
                           padding: '6px 10px',
                           border: '1px solid black',
@@ -513,7 +509,7 @@ const ReportTemplate = ({ reportData }) => {
                           verticalAlign: 'middle'
                         }}>
                           {param.referenceRange || ''}
-                          {/* Display inline notes if they exist on the parameter */}
+                          {/* Display parameter-specific notes if they exist */}
                           {param.notes && (
                             <span style={{ display: 'block', fontSize: '10pt', fontStyle: 'italic', marginTop: '2px' }}>
                               {param.notes}
@@ -525,45 +521,32 @@ const ReportTemplate = ({ reportData }) => {
                   }
                 })
               ) : (
+                // Display if a group has no parameters
                 <tr>
                   <td colSpan="4" style={{ textAlign: 'center', padding: '6px', border: '1px solid black' }}>
-                    No parameters for this group
+                    No parameters found for this section.
                   </td>
                 </tr>
               )}
             </tbody>
-              </table>
-              </div>
-            ));
-          })()}
-
-          {/* Overall Notes Section */}
-          {reportData.testNotes && (
+          </table>
+          {/* Render overall notes AFTER the first group's table */}
+          {groupIndex === 0 && testNotes && (
             <div className="mt-4" style={{ marginTop: '10px', fontSize: '11pt', pageBreakInside: 'avoid', borderTop: '1px solid #ccc', paddingTop: '10px' }}>
               <h4 style={{ fontWeight: 'bold', marginBottom: '4px' }}>Notes:</h4>
-              {reportData.testNotes && (
-                <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{reportData.testNotes}</p>
-              )}
-              {reportData.parameterNotes && (
-                <p style={{ whiteSpace: 'pre-wrap', margin: reportData.testNotes ? '8px 0 0 0' : 0 }}>
-                  {reportData.parameterNotes}
-                </p>
-              )}
-              
-              {/* Special handling for test results with notes */}
-              {reportData.testResults && reportData.testResults.some(result => result.notes) && (
-                <div style={{ marginTop: '8px' }}>
-                  {reportData.testResults
-                    .filter(result => result.notes && !result.isHeader)
-                    .map((result, idx) => (
-                      <p key={idx} style={{ whiteSpace: 'pre-wrap', margin: '4px 0' }}>
-                        <strong>{result.name}:</strong> {result.notes}
-                      </p>
-                    ))}
-                </div>
-              )}
+              <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{testNotes}</p>
             </div>
           )}
+        </div>
+      ))
+    ) : (
+      // Display if no groupedResults are provided at all
+      <div style={{ textAlign: 'center', padding: '10px', border: '1px solid #ccc', marginTop: '10px' }}>
+        No test results available to display.
+      </div>
+    )}
+
+          {/* REMOVED: Overall Notes Section moved to render after the first group */}
 
           {showSignature && (
             <div className="signature-section" style={{
@@ -664,16 +647,25 @@ ReportTemplate.propTypes = {
     referringDoctor: PropTypes.string,
 
     // Test data
-    testName: PropTypes.string,
-    testResults: PropTypes.arrayOf(
+    // testName: PropTypes.string, // Removed, using templateName from group
+    groupedResults: PropTypes.arrayOf( // Expecting groupedResults
       PropTypes.shape({
-        name: PropTypes.string.isRequired,
-        result: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-        unit: PropTypes.string,
-        referenceRange: PropTypes.string,
-        isAbnormal: PropTypes.bool
+        templateName: PropTypes.string,
+        parameters: PropTypes.arrayOf(
+          PropTypes.shape({
+            parameter: PropTypes.string, // Changed from name
+            value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]), // Changed from result
+            unit: PropTypes.string,
+            referenceRange: PropTypes.string,
+            flag: PropTypes.string, // Added flag for abnormality check
+            isHeader: PropTypes.bool, // Added isHeader
+            isSubparameter: PropTypes.bool, // Added isSubparameter
+            notes: PropTypes.string // Added parameter-specific notes
+          })
+        )
       })
     ),
+    testNotes: PropTypes.string, // Overall notes
 
     // Signature data
     signatureImage: PropTypes.string,

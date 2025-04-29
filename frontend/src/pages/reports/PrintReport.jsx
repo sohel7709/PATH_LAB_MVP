@@ -1,49 +1,39 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ExclamationCircleIcon, PrinterIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
-import { reports, labReportSettings } from '../../utils/api';
-import ReportTemplate from '../../components/reports/ReportTemplate';
+// Renamed imports to avoid potential conflicts and indicate usage
+import { reports as apiReports, labReportSettings as apiLabSettings } from '../../utils/api'; 
 
 export default function PrintReport() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [report, setReport] = useState(null);
-  const [labSettings, setLabSettings] = useState(null);
+  const [labSettings, setLabSettings] = useState(null); // Keep labSettings if needed for buildPrintHtmlStructure
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  const [isPrinting] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false); // Renamed setter for clarity if needed later
   const [isDownloading, setIsDownloading] = useState(false);
-  const [showHeaderFooter, setShowHeaderFooter] = useState(false);
-  const [showSignature, setShowSignature] = useState(false);
-  const reportRef = useRef(null);
+  const reportRef = useRef(null); // Ref for the container div
+  const [reportHtml, setReportHtml] = useState(''); // State to hold generated HTML for preview
 
-  useEffect(() => {
-    fetchReportData();
-  }, [id]);
-
-  console.log('Lab settings:', labSettings);
-  console.log('Error:', error);
-  console.log('Is loading:', isLoading);
-  console.log('Is printing:', isPrinting);
-  console.log('Is downloading:', isDownloading);
-  console.log('Show header footer:', showHeaderFooter);
-
+  // Define fetchReportData function
   const fetchReportData = async () => {
     try {
       setIsLoading(true);
+      setError(''); // Clear previous errors
       
       // Fetch the report data
-      const reportResponse = await reports.getById(id);
+      const reportResponse = await apiReports.getById(id); // Use renamed import
       const reportData = reportResponse.data || reportResponse;
       
       // Fetch the lab settings
       const labId = reportData.lab;
-      const settingsResponse = await labReportSettings.getSettings(labId);
+      const settingsResponse = await apiLabSettings.getSettings(labId); // Use renamed import
       const settingsData = settingsResponse.data || settingsResponse;
       
       setReport(reportData);
-      setLabSettings(settingsData);
-      setError('');
+      setLabSettings(settingsData); // Keep setting labSettings
+      
     } catch (err) {
       console.error('Error fetching report data:', err);
       setError(err.message || 'Failed to load report');
@@ -52,250 +42,299 @@ export default function PrintReport() {
     }
   };
 
-  const handlePrint = async () => {
+  // Fetch data on component mount
+  useEffect(() => {
+    fetchReportData();
+  }, [id]);
+
+  // Function to check if a value is outside the reference range
+  const isOutsideRange = (value, referenceRange) => {
+    if (!value || !referenceRange) return false;
+    const cleanValue = value.toString().replace(/,/g, '');
+    const cleanRange = referenceRange.toString().replace(/,/g, '');
+    const numValue = parseFloat(cleanValue);
+    if (isNaN(numValue)) return false;
     try {
-      if (!reportRef.current) {
-        alert('Report content is not available for printing.');
+      if (cleanRange.includes('-') || cleanRange.includes('–')) {
+        const separator = cleanRange.includes('-') ? '-' : '–';
+        const [min, max] = cleanRange.split(separator).map(v => parseFloat(v.trim()));
+        if (!isNaN(min) && !isNaN(max)) return numValue < min || numValue > max;
+      } else if (cleanRange.startsWith('<') || cleanRange.startsWith('<')) { // Combined check for <
+        const maxString = cleanRange.startsWith('<') ? cleanRange.substring(4) : cleanRange.substring(1);
+        const max = parseFloat(maxString.trim());
+        return !isNaN(max) && numValue >= max;
+      } else if (cleanRange.startsWith('≤')) {
+        const max = parseFloat(cleanRange.substring(1).trim());
+        return !isNaN(max) && numValue > max;
+      } else if (cleanRange.startsWith('>') || cleanRange.startsWith('>')) { // Combined check for >
+        const minString = cleanRange.startsWith('>') ? cleanRange.substring(4) : cleanRange.substring(1);
+        const min = parseFloat(minString.trim());
+        return !isNaN(min) && numValue <= min;
+      } else if (cleanRange.startsWith('≥')) {
+        const min = parseFloat(cleanRange.substring(1).trim());
+        return !isNaN(min) && numValue < min;
+      } else if (cleanRange.toLowerCase().includes('less than')) {
+        const max = parseFloat(cleanRange.toLowerCase().replace('less than', '').trim());
+        return !isNaN(max) && numValue >= max;
+      } else if (cleanRange.toLowerCase().includes('greater than')) {
+        const min = parseFloat(cleanRange.toLowerCase().replace('greater than', '').trim());
+        return !isNaN(min) && numValue <= min;
+      }
+    } catch (error) { console.warn('Invalid reference range:', referenceRange, error); }
+    return false;
+  };
+
+  // Prepare data structure needed by the build function
+  const prepareReportData = () => {
+    if (!report) {
+      console.log("Report data missing, cannot prepare.");
+      return null; 
+    }
+    
+    const grouped = (report.results || []).reduce((acc, param) => {
+      const key = param.templateId || 'unknown'; 
+      if (!acc[key]) {
+        const defaultName = report.testInfo?.name || 'Test Results'; 
+        acc[key] = {
+          templateName: param.templateName || (key !== 'unknown' ? `Test Group (ID: ${key})` : defaultName), 
+          parameters: []
+        };
+      }
+      acc[key].parameters.push({
+        parameter: param.parameter || param.name, 
+        value: param.value,                       
+        unit: param.unit,
+        referenceRange: param.referenceRange,
+        isSubparameter: param.isSubparameter,
+        notes: param.notes, 
+        flag: param.flag 
+      });
+      return acc;
+    }, {});
+
+    const finalGroupedResults = Object.values(grouped);
+    
+    return {
+        groupedResults: finalGroupedResults,
+        testNotes: report.testNotes || '' 
+    };
+  }; 
+
+  // Helper function to build the HTML structure
+  const buildPrintHtmlStructure = (currentReport, groupedResults, testNotes) => {
+    if (!currentReport) return null;
+
+    const printContainer = document.createElement('div');
+    printContainer.style.width = '210mm';
+    printContainer.style.minHeight = '297mm'; 
+    printContainer.style.padding = '60mm 15mm 30mm 15mm'; 
+    printContainer.style.boxSizing = 'border-box';
+    printContainer.style.fontFamily = 'Arial, sans-serif';
+    printContainer.style.backgroundColor = 'white';
+    printContainer.style.position = 'relative'; 
+    printContainer.style.borderTop = '2px solid black'; 
+
+    // Patient Info (Flex layout with center space for QR)
+    const patientInfoDiv = document.createElement('div');
+    patientInfoDiv.style.display = 'flex';
+    patientInfoDiv.style.justifyContent = 'space-between'; 
+    patientInfoDiv.style.alignItems = 'flex-start'; 
+    patientInfoDiv.style.fontSize = '11pt';
+    patientInfoDiv.style.marginBottom = '15px';
+    patientInfoDiv.style.padding = '10px 0'; 
+    patientInfoDiv.style.borderTop = '2px solid black'; 
+    patientInfoDiv.style.borderBottom = '2px solid black'; 
+
+    const leftPatientCol = document.createElement('div');
+    leftPatientCol.innerHTML = `
+      <div style="margin-bottom: 4px;"><strong>Patient Name:</strong> ${currentReport.patientInfo?.name || 'N/A'}</div>
+      <div style="margin-bottom: 4px;"><strong>Age/Gender:</strong> ${currentReport.patientInfo?.age || 'N/A'} / ${currentReport.patientInfo?.gender || 'N/A'}</div>
+      <div><strong>Patient ID:</strong> ${currentReport.patientInfo?.patientId || 'N/A'}</div>
+    `;
+
+    const centerPatientCol = document.createElement('div');
+    centerPatientCol.style.width = '50px'; 
+    centerPatientCol.style.height = '50px'; 
+    centerPatientCol.style.flexShrink = '0'; 
+
+    const rightPatientCol = document.createElement('div');
+    rightPatientCol.style.textAlign = 'right'; 
+    rightPatientCol.innerHTML = `
+      <div style="margin-bottom: 4px;"><strong>Report Date:</strong> ${new Date(currentReport.createdAt).toLocaleDateString()}</div>
+      <div><strong>Ref. Doctor:</strong> ${currentReport.testInfo?.referenceDoctor || 'N/A'}</div>
+    `;
+
+    patientInfoDiv.appendChild(leftPatientCol);
+    patientInfoDiv.appendChild(centerPatientCol); 
+    patientInfoDiv.appendChild(rightPatientCol);
+    printContainer.appendChild(patientInfoDiv);
+
+    // Test Results Section (Using Table)
+    if (groupedResults && groupedResults.length > 0) {
+      groupedResults.forEach((group, groupIndex) => {
+        const groupHeading = document.createElement('div');
+        groupHeading.textContent = group.templateName;
+        groupHeading.style.fontSize = '14pt';
+        groupHeading.style.fontWeight = 'bold';
+        groupHeading.style.textAlign = 'center';
+        groupHeading.style.marginTop = '15px';
+        groupHeading.style.marginBottom = '10px';
+        printContainer.appendChild(groupHeading);
+
+        const table = document.createElement('table');
+        table.style.width = '100%';
+        table.style.borderCollapse = 'collapse';
+        table.style.marginBottom = '15px'; 
+        table.style.border = '1px solid black'; 
+
+        const thead = document.createElement('thead');
+        const headerRow = document.createElement('tr');
+        const headers = ['Parameter', 'Result', 'Unit', 'Reference Range'];
+        const widths = ['40%', '20%', '10%', '30%']; 
+        const alignments = ['left', 'center', 'center', 'left']; 
+
+        headers.forEach((header, index) => {
+          const th = document.createElement('th');
+          th.textContent = header;
+          th.style.border = '1px solid black'; 
+          th.style.padding = '6px 8px';
+          th.style.textAlign = alignments[index]; 
+          th.style.fontWeight = 'bold';
+          th.style.fontSize = '11pt';
+          th.style.width = widths[index];
+          th.style.verticalAlign = 'middle'; 
+          headerRow.appendChild(th);
+        });
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+
+        const tbody = document.createElement('tbody');
+        if (group.parameters && group.parameters.length > 0) {
+          group.parameters.forEach(param => {
+            const isAbnormal = param.flag === 'high' || param.flag === 'low' || param.flag === 'critical' || isOutsideRange(param.value, param.referenceRange);
+            const row = document.createElement('tr');
+
+            const nameCell = document.createElement('td');
+            nameCell.textContent = param.parameter || param.name;
+            nameCell.style.border = '1px solid black';
+            nameCell.style.padding = '6px 8px';
+            nameCell.style.fontSize = '11pt';
+            nameCell.style.textAlign = 'left'; 
+            nameCell.style.verticalAlign = 'top';
+            row.appendChild(nameCell);
+
+            const resultCell = document.createElement('td');
+            resultCell.textContent = param.value !== null && param.value !== undefined ? param.value : '';
+            resultCell.style.border = '1px solid black';
+            resultCell.style.padding = '6px 8px';
+            resultCell.style.textAlign = 'center'; 
+            resultCell.style.fontWeight = isAbnormal ? 'bold' : 'normal';
+            resultCell.style.fontSize = '11pt';
+            resultCell.style.verticalAlign = 'top';
+            row.appendChild(resultCell);
+
+            const unitCell = document.createElement('td');
+            unitCell.textContent = param.unit || '';
+            unitCell.style.border = '1px solid black';
+            unitCell.style.padding = '6px 8px';
+            unitCell.style.textAlign = 'center'; 
+            unitCell.style.fontSize = '11pt';
+            unitCell.style.verticalAlign = 'top';
+            row.appendChild(unitCell);
+
+            const rangeCell = document.createElement('td');
+            rangeCell.style.border = '1px solid black';
+            rangeCell.style.padding = '6px 8px';
+            rangeCell.style.textAlign = 'left'; 
+            rangeCell.style.fontSize = '10pt';
+            rangeCell.style.verticalAlign = 'top';
+
+            const rangeText = document.createTextNode(param.referenceRange || '');
+            rangeCell.appendChild(rangeText);
+
+            if (param.notes) {
+               const noteSpan = document.createElement('span');
+               noteSpan.textContent = ` (${param.notes})`;
+               noteSpan.style.fontStyle = 'italic';
+               noteSpan.style.marginLeft = '5px';
+               noteSpan.style.display = 'block'; 
+               rangeCell.appendChild(noteSpan);
+            }
+            row.appendChild(rangeCell);
+
+            tbody.appendChild(row);
+          });
+        } else {
+           const emptyRow = document.createElement('tr');
+           const emptyCell = document.createElement('td');
+           emptyCell.colSpan = 4;
+           emptyCell.textContent = 'No parameters in this group.';
+           emptyCell.style.textAlign = 'center';
+           emptyCell.style.padding = '6px 8px';
+           emptyCell.style.border = '1px solid black';
+           emptyRow.appendChild(emptyCell);
+           tbody.appendChild(emptyRow);
+        }
+        table.appendChild(tbody);
+        printContainer.appendChild(table);
+
+         if (groupIndex === 0 && testNotes) {
+           const notesDiv = document.createElement('div'); 
+           notesDiv.style.marginTop = '15px';
+           notesDiv.style.fontSize = '10pt';
+           notesDiv.style.fontStyle = 'italic';
+           notesDiv.innerHTML = `<strong>Notes:</strong> ${testNotes}`; 
+           printContainer.appendChild(notesDiv);
+         }
+      });
+    } else {
+      const noResults = document.createElement('div');
+      noResults.textContent = 'No test results available.';
+      noResults.style.textAlign = 'center';
+      noResults.style.marginTop = '20px';
+      printContainer.appendChild(noResults);
+    }
+
+    // REMOVED: Signature Section
+
+    return printContainer; 
+  };
+
+  // Effect to update the on-screen preview when report data changes
+  useEffect(() => {
+    if (report && labSettings) { // Ensure report and labSettings are loaded
+      const preparedData = prepareReportData();
+      if (preparedData) {
+        const htmlElement = buildPrintHtmlStructure(report, preparedData.groupedResults, preparedData.testNotes);
+        if (htmlElement) {
+          setReportHtml(htmlElement.outerHTML); // Store the HTML string for preview
+        }
+      }
+    }
+  }, [report, labSettings]); // Re-run when report or labSettings change
+
+
+  const handlePrint = async () => {
+    // Use setIsPrinting if you want to disable the button during the process
+    setIsPrinting(true); // Example usage
+    try {
+      if (!report) {
+        alert('Report data is not loaded yet.');
+        return;
+      }
+      const preparedData = prepareReportData();
+      if (!preparedData) {
+        alert('Failed to prepare report data for printing.');
         return;
       }
       
-      // Create a simplified version of the report for printing
-      const simplifiedReport = document.createElement('div');
-      simplifiedReport.style.width = '210mm';
-      // Adjust padding for pre-printed letterhead when header/footer are not shown
-      // When showHeaderFooter is false, we're printing on pre-printed letterhead
-      // so we need to leave space for the pre-printed header and footer
-      const topPadding = showHeaderFooter ? '40mm' : '45mm'; // More space for pre-printed header
-      const bottomPadding = showHeaderFooter ? '35mm' : '40mm'; // More space for pre-printed footer
-      simplifiedReport.style.padding = `${topPadding} 15mm ${bottomPadding} 15mm`;
-      simplifiedReport.style.boxSizing = 'border-box';
-      simplifiedReport.style.fontFamily = 'Arial, sans-serif';
-      simplifiedReport.style.fontSize = '11pt';
-      simplifiedReport.style.position = 'relative';
-      
-      // Add horizontal line at the top
-      const topLine = document.createElement('div');
-      topLine.style.borderTop = '2px solid black';
-      topLine.style.width = '100%';
-      topLine.style.marginBottom = '10px'; // Reduced from 20px
-      simplifiedReport.appendChild(topLine);
-      
-      // Add patient info
-      const patientInfo = document.createElement('div');
-      patientInfo.style.display = 'grid';
-      patientInfo.style.gridTemplateColumns = '1fr 1fr';
-      patientInfo.style.gap = '10mm';
-      patientInfo.style.marginBottom = '10px'; // Reduced from 20px
-      
-      // Left column
-      const leftCol = document.createElement('div');
-      leftCol.innerHTML = `
-        <div style="margin-bottom: 5px;"><strong>Patient Name:</strong> ${report.patientInfo?.name || 'N/A'}</div>
-        <div style="margin-bottom: 5px;"><strong>Age/Gender:</strong> ${report.patientInfo?.age || 'N/A'} Years / ${report.patientInfo?.gender || 'N/A'}</div>
-        <div style="margin-bottom: 5px;"><strong>Patient ID:</strong> ${report.patientInfo?.patientId || report._id?.substring(0, 8) || 'N/A'}</div>
-      `;
-      
-      // Right column
-      const rightCol = document.createElement('div');
-      rightCol.innerHTML = `
-        <div style="margin-bottom: 5px;"><strong>Report Date:</strong> ${new Date(report.createdAt).toLocaleDateString()}</div>
-        <div style="margin-bottom: 5px;"><strong>Referring Doctor:</strong> ${report.testInfo?.referenceDoctor || 'N/A'}</div>
-      `;
-      
-      patientInfo.appendChild(leftCol);
-      patientInfo.appendChild(rightCol);
-      simplifiedReport.appendChild(patientInfo);
-      
-      // Add bottom line after patient info
-      const bottomLine = document.createElement('div');
-      bottomLine.style.borderTop = '2px solid black';
-      bottomLine.style.width = '100%';
-      bottomLine.style.marginBottom = '10px'; // Reduced from 20px
-      simplifiedReport.appendChild(bottomLine);
-      
-      // Add test title
-      const title = document.createElement('div');
-      title.textContent = report.testInfo?.name || 'Complete Blood Count Parameters';
-      title.style.textAlign = 'center';
-      title.style.fontWeight = 'bold';
-      title.style.fontSize = '14pt';
-      title.style.marginBottom = '10px'; // Reduced from 20px
-      simplifiedReport.appendChild(title);
-      
-      // Add test results table
-      const table = document.createElement('table');
-      table.style.width = '100%';
-      table.style.borderCollapse = 'collapse';
-      table.style.marginBottom = '20px';
-      
-      // Add table header
-      const thead = document.createElement('thead');
-      const headerRow = document.createElement('tr');
-      
-      const headers = ['Test', 'Result', 'Unit', 'Reference Range'];
-      const widths = ['40%', '15%', '10%', '35%'];
-      
-      headers.forEach((header, index) => {
-        const th = document.createElement('th');
-        th.textContent = header;
-        th.style.border = '1px solid black';
-        th.style.borderStyle = 'solid';
-        th.style.borderColor = 'black';
-        th.style.borderWidth = '1px';
-        th.style.padding = '6px 10px';
-        th.style.textAlign = 'left';
-        th.style.fontWeight = 'bold';
-        th.style.width = widths[index];
-        headerRow.appendChild(th);
-      });
-      
-      thead.appendChild(headerRow);
-      table.appendChild(thead);
-      
-      // Add table body
-      const tbody = document.createElement('tbody');
-      
-      if (report.results && report.results.length > 0) {
-        report.results.forEach(param => {
-          const row = document.createElement('tr');
-          
-          // Test name cell
-          const nameCell = document.createElement('td');
-          nameCell.textContent = param.parameter || param.name;
-          nameCell.style.border = '1px solid black';
-          nameCell.style.borderStyle = 'solid';
-          nameCell.style.borderColor = 'black';
-          nameCell.style.borderWidth = '1px';
-          nameCell.style.padding = '6px 10px';
-          row.appendChild(nameCell);
-          
-          // Result cell
-          const resultCell = document.createElement('td');
-          resultCell.textContent = param.value;
-          // Bold abnormal values in downloaded PDF
-          if (param.flag === 'high' || param.flag === 'low' || param.flag === 'critical') {
-            resultCell.style.fontWeight = 'bold';
-          }
-          resultCell.style.border = '1px solid black';
-          resultCell.style.borderStyle = 'solid';
-          resultCell.style.borderColor = 'black';
-          resultCell.style.borderWidth = '1px';
-          resultCell.style.padding = '6px 10px';
-          row.appendChild(resultCell);
-          
-          // Unit cell
-          const unitCell = document.createElement('td');
-          unitCell.textContent = param.unit;
-          unitCell.style.border = '1px solid black';
-          unitCell.style.borderStyle = 'solid';
-          unitCell.style.borderColor = 'black';
-          unitCell.style.borderWidth = '1px';
-          unitCell.style.padding = '6px 10px';
-          row.appendChild(unitCell);
-          
-          // Reference range cell
-          const rangeCell = document.createElement('td');
-          rangeCell.textContent = param.referenceRange;
-          rangeCell.style.border = '1px solid black';
-          rangeCell.style.borderStyle = 'solid';
-          rangeCell.style.borderColor = 'black';
-          rangeCell.style.borderWidth = '1px';
-          rangeCell.style.padding = '6px 10px';
-          row.appendChild(rangeCell);
-          
-          tbody.appendChild(row);
-        });
-      } else {
-        const emptyRow = document.createElement('tr');
-        const emptyCell = document.createElement('td');
-        emptyCell.colSpan = 4;
-        emptyCell.textContent = 'No test parameters available';
-        emptyCell.style.textAlign = 'center';
-        emptyCell.style.padding = '6px';
-        emptyCell.style.border = '1px solid black';
-        emptyRow.appendChild(emptyCell);
-        tbody.appendChild(emptyRow);
+      const printElement = buildPrintHtmlStructure(report, preparedData.groupedResults, preparedData.testNotes);
+      if (!printElement) {
+         alert('Failed to build HTML structure for printing.');
+         return;
       }
-      
-      table.appendChild(tbody);
-      simplifiedReport.appendChild(table);
 
-      // Add Notes Section if available
-      if (report.testNotes) {
-        const notesDiv = document.createElement('div');
-        notesDiv.style.marginTop = '10px';
-        notesDiv.style.fontSize = '11pt';
-        notesDiv.style.pageBreakInside = 'avoid';
-
-        const notesHeader = document.createElement('h4');
-        notesHeader.textContent = 'Notes:';
-        notesHeader.style.fontWeight = 'bold';
-        notesHeader.style.marginBottom = '4px';
-        notesDiv.appendChild(notesHeader);
-
-        const notesContent = document.createElement('p');
-        notesContent.textContent = report.testNotes;
-        notesContent.style.whiteSpace = 'pre-wrap';
-        notesContent.style.margin = '0';
-        notesDiv.appendChild(notesContent);
-
-        simplifiedReport.appendChild(notesDiv);
-      }
-      
-      // Also check for notes in individual test parameters (especially for CRP test)
-      if (report.results && report.results.length > 0) {
-        // First, collect all parameter notes
-        const parameterNotesArray = [];
-        
-        report.results.forEach(param => {
-          // Check for notes in the parameter object
-          if (param.notes) {
-            parameterNotesArray.push(`${param.parameter || param.name}: ${param.notes}`);
-          }
-          
-          // Also check for notes in the referenceRange field for CRP tests
-          // This is a fallback for older data format
-          if ((param.parameter === "SERUM FOR C - REACTIVE PROTEINS" || 
-               param.name === "SERUM FOR C - REACTIVE PROTEINS") && 
-              param.referenceRange && 
-              param.referenceRange.includes("Turbilatex")) {
-            
-            // Extract the method note if not already included in notes
-            if (!param.notes || !param.notes.includes("Turbilatex")) {
-              const methodNote = "( By Turbilatex )";
-              parameterNotesArray.push(`${param.parameter || param.name}: ${methodNote}`);
-            }
-          }
-        });
-        
-        const parameterNotes = parameterNotesArray.join('\n');
-          
-        if (parameterNotes) {
-          const paramNotesDiv = document.createElement('div');
-          paramNotesDiv.style.marginTop = '10px';
-          paramNotesDiv.style.fontSize = '11pt';
-          paramNotesDiv.style.pageBreakInside = 'avoid';
-          
-          // Only add header if there wasn't already a notes section
-          if (!report.testNotes) {
-            const notesHeader = document.createElement('h4');
-            notesHeader.textContent = 'Notes:';
-            notesHeader.style.fontWeight = 'bold';
-            notesHeader.style.marginBottom = '4px';
-            paramNotesDiv.appendChild(notesHeader);
-          }
-          
-          const notesContent = document.createElement('p');
-          notesContent.textContent = parameterNotes;
-          notesContent.style.whiteSpace = 'pre-wrap';
-          notesContent.style.margin = '0';
-          paramNotesDiv.appendChild(notesContent);
-          
-          simplifiedReport.appendChild(paramNotesDiv);
-        }
-      }
-      
-      // Dynamically load html2pdf if not loaded
+      // --- PDF Generation (using the generated element) ---
       if (typeof window.html2pdf === 'undefined') {
         await new Promise((resolve, reject) => {
           const script = document.createElement('script');
@@ -306,234 +345,132 @@ export default function PrintReport() {
           document.body.appendChild(script);
         });
       }
-      
-      // Create a temporary container for the simplified report
+
       const tempContainer = document.createElement('div');
       tempContainer.style.position = 'fixed';
-      tempContainer.style.top = '-10000px';
+      tempContainer.style.top = '-10000px'; 
       tempContainer.style.left = '-10000px';
-      tempContainer.appendChild(simplifiedReport);
+      tempContainer.appendChild(printElement); 
       document.body.appendChild(tempContainer);
-      
-      // Generate PDF
+
       const opt = {
-        margin: 0,
-        filename: `${report.patientInfo?.name || 'Patient'}_Report.pdf`,
-        image: { type: 'jpeg', quality: 1 },
-        html2canvas: { 
-          scale: 2,
+        margin: 0, 
+        filename: `${report.patientInfo?.name || 'Patient'}_Report_${report._id}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: {
+          scale: 2, 
           useCORS: true,
-          letterRendering: true
+          letterRendering: true,
+          logging: false,
+           onclone: (clonedDoc) => {
+             const clonedPrintContainer = clonedDoc.querySelector('div'); 
+             if (clonedPrintContainer) {
+               clonedPrintContainer.style.height = '297mm';
+             }
+           }
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
-      
-      // Generate PDF and open in new window for printing
-      const pdfBlob = await window.html2pdf().set(opt).from(simplifiedReport).outputPdf('blob');
-      
-      // Clean up temporary container
-      document.body.removeChild(tempContainer);
-      
-      // Open the PDF in a new window for printing
+
+      const pdfBlob = await window.html2pdf().set(opt).from(printElement).outputPdf('blob');
+
+      document.body.removeChild(tempContainer); 
+
       const pdfUrl = URL.createObjectURL(pdfBlob);
       const printWindow = window.open(pdfUrl);
-      
+
       if (printWindow) {
         printWindow.addEventListener('load', async () => {
           printWindow.print();
-          try {
-            await reports.update(id, { status: 'completed' });
-          } catch (err) {
-            console.error('Failed to update report status to completed:', err);
-          }
+          // try { await apiReports.update(id, { status: 'completed' }); } // Use renamed import
+          // catch (err) { console.error('Failed to update report status:', err); }
         });
       } else {
         alert('Please allow popups for this website to enable printing.');
       }
     } catch (error) {
-      console.error('Error printing report:', error);
-      alert('Failed to print report. Please try again.');
+      console.error('Error generating or printing report:', error);
+      alert(`Failed to generate or print report: ${error.message}`);
+    } finally {
+       setIsPrinting(false); // Reset printing state
     }
   };
-  
+
   const handleDownload = async () => {
     setIsDownloading(true);
     try {
-      // Check if html2pdf is available
-      if (typeof window.html2pdf === 'undefined') {
-        // If html2pdf is not loaded, dynamically load it
-        const script = document.createElement('script');
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
-        script.async = true;
-        script.onload = () => {
-          generatePDF();
-        };
-        document.body.appendChild(script);
-      } else {
-        generatePDF();
-      }
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      alert('Failed to generate PDF. Please try again.');
-      setIsDownloading(false);
-    }
-  };
-
-  // Updated: Use the actual rendered report DOM for PDF generation
-  const generatePDF = async () => {
-    try {
-      if (!reportRef.current) {
-        alert('Report content is not available for downloading.');
+       if (!report) {
+        alert('Report data is not loaded yet.');
+        setIsDownloading(false);
         return;
       }
+      const preparedData = prepareReportData();
+      if (!preparedData) {
+        alert('Failed to prepare report data for download.');
+        setIsDownloading(false);
+        return;
+      }
+      
+      const downloadElement = buildPrintHtmlStructure(report, preparedData.groupedResults, preparedData.testNotes);
+       if (!downloadElement) {
+         alert('Failed to build HTML structure for download.');
+         setIsDownloading(false);
+         return;
+      }
 
-      // Use the actual rendered report DOM (with all styles and images)
+      // Check if html2pdf is available
+      if (typeof window.html2pdf === 'undefined') {
+        await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+            script.async = true;
+            script.onload = resolve;
+            script.onerror = () => reject(new Error('Failed to load html2pdf library'));
+            document.body.appendChild(script);
+        });
+      } 
+      
+      // Use the generated HTML element for PDF generation
       const opt = {
-        margin: 0,
-        filename: `${report?.patientInfo?.name || 'Patient'}_Report.pdf`,
-        image: { type: 'jpeg', quality: 1 },
-        html2canvas: { 
-          scale: 2,
+        margin: 0, 
+        filename: `${report.patientInfo?.name || 'Patient'}_Report_${report._id}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: {
+          scale: 2, 
           useCORS: true,
           letterRendering: true,
-          logging: false, // Disable logging
-          onclone: (clonedDoc) => {
-            // Make sure all notes are visible in the cloned document
-            const notesElements = clonedDoc.querySelectorAll('.mt-4');
-            notesElements.forEach(el => {
-              el.style.display = 'block';
-              el.style.visibility = 'visible';
-            });
-          }
+          logging: false,
+           onclone: (clonedDoc) => {
+             const clonedPrintContainer = clonedDoc.querySelector('div'); 
+             if (clonedPrintContainer) {
+               clonedPrintContainer.style.height = '297mm';
+             }
+           }
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
 
-      await window.html2pdf().set(opt).from(reportRef.current).save();
+      // Need to temporarily append to DOM for html2pdf to work correctly with complex styles
+      const tempContainer = document.createElement('div');
+      tempContainer.style.position = 'fixed';
+      tempContainer.style.top = '-10000px'; 
+      tempContainer.style.left = '-10000px';
+      tempContainer.appendChild(downloadElement); 
+      document.body.appendChild(tempContainer);
+
+      await window.html2pdf().set(opt).from(downloadElement).save();
+
+      document.body.removeChild(tempContainer); // Clean up
+
     } catch (error) {
-      console.error('Error generating PDF:', error);
-      alert('Failed to generate PDF. Please try again.');
+      console.error('Error generating PDF for download:', error);
+      alert('Failed to generate PDF for download. Please try again.');
     } finally {
       setIsDownloading(false);
     }
   };
 
-  // Prepare the data for the ReportTemplate component
-  const prepareReportData = () => {
-    if (!report || !labSettings) return null;
-
-    // Transform results to handle headers and subparameters
-    const transformedResults = [];
-    let currentHeader = null;
-
-    if (report.results && report.results.length > 0) {
-      report.results.forEach(param => {
-        if (param.isHeader) {
-          // Add header as a special entry
-          currentHeader = {
-            name: param.parameter || param.name,
-            isHeader: true
-          };
-          transformedResults.push(currentHeader);
-        } else if (param.isSubparameter && currentHeader) {
-          // Add subparameter with reference to current header
-          transformedResults.push({
-            name: param.parameter || param.name,
-            result: param.value,
-            unit: param.unit,
-            referenceRange: param.referenceRange,
-            notes: param.notes, // Include parameter notes
-            isAbnormal: param.flag === 'high' || param.flag === 'low' || param.flag === 'critical',
-            isSubparameter: true
-          });
-        } else {
-          // Normal parameter resets current header
-          currentHeader = null;
-          transformedResults.push({
-            name: param.parameter || param.name,
-            result: param.value,
-            unit: param.unit,
-            referenceRange: param.referenceRange,
-            notes: param.notes, // Include parameter notes
-            isAbnormal: param.flag === 'high' || param.flag === 'low' || param.flag === 'critical'
-          });
-        }
-      });
-    }
-
-    return {
-      // Header data
-      headerImage: labSettings.header?.headerImage || '',
-      labName: labSettings.header?.labName || 'Pathology Laboratory',
-      doctorName: labSettings.header?.doctorName || 'Dr. Consultant',
-      address: labSettings.header?.address || '',
-      phone: labSettings.header?.phone || '',
-      showHeader: showHeaderFooter,
-
-      // Patient data
-      patientName: report.patientInfo?.name || 'N/A',
-      patientAge: report.patientInfo?.age || 'N/A',
-      patientGender: report.patientInfo?.gender || 'N/A',
-      patientId: report.patientInfo?.patientId || report._id?.substring(0, 8) || 'N/A',
-
-      // Sample data
-      reportDate: new Date(report.createdAt).toLocaleDateString(),
-      referringDoctor: report.testInfo?.referenceDoctor || 'N/A',
-
-      // Test data
-      testName: report.testInfo?.name || 'COMPLETE BLOOD COUNT (CBC)',
-      testResults: transformedResults,
-      testNotes: report.testNotes || '', // Add test notes here
-      parameterNotes: (() => {
-        if (!report.results || report.results.length === 0) return '';
-        
-        // Collect all parameter notes
-        const parameterNotesArray = [];
-        
-        report.results.forEach(param => {
-          // Check for notes in the parameter object
-          if (param.notes) {
-            parameterNotesArray.push(`${param.parameter || param.name}: ${param.notes}`);
-          }
-          
-          // Also check for notes in the referenceRange field for CRP tests
-          // This is a fallback for older data format
-          if ((param.parameter === "SERUM FOR C - REACTIVE PROTEINS" || 
-               param.name === "SERUM FOR C - REACTIVE PROTEINS") && 
-              param.referenceRange && 
-              param.referenceRange.includes("Turbilatex")) {
-            
-            // Extract the method note if not already included in notes
-            if (!param.notes || !param.notes.includes("Turbilatex")) {
-              const methodNote = "( By Turbilatex )";
-              parameterNotesArray.push(`${param.parameter || param.name}: ${methodNote}`);
-            }
-          }
-        });
-        
-        return parameterNotesArray.join('\n');
-      })(),
-
-      // Signature data
-      signatureImage: showSignature ? (labSettings.footer?.signature || '') : '',
-      verifiedBy: showSignature ? (labSettings.footer?.verifiedBy || 'Consultant') : '',
-      designation: showSignature ? (labSettings.footer?.designation || 'Pathologist') : '',
-
-      // Footer data
-      footerImage: labSettings.footer?.footerImage || '',
-      showFooter: showHeaderFooter,
-      showSignature: showSignature,
-
-      // Styling
-      styling: labSettings.styling || {
-        primaryColor: '#007bff',
-        secondaryColor: '#6c757d',
-        fontFamily: 'Arial, sans-serif',
-        fontSize: 12
-      }
-    };
-  };
-
+  // Render loading state
   if (isLoading) {
     return (
       <div className="animate-pulse">
@@ -547,6 +484,7 @@ export default function PrintReport() {
     );
   }
 
+  // Render error state
   if (error) {
     return (
       <div className="rounded-md bg-red-50 p-4">
@@ -562,12 +500,12 @@ export default function PrintReport() {
     );
   }
 
-  const reportData = prepareReportData();
-  
-  if (!reportData) {
-    return <div>Failed to prepare report data</div>;
+  // Render message if report state is still null after loading
+  if (!report) {
+     return <div>Loading report data...</div>;
   }
 
+  // Main component return statement
   return (
     <div>
       {/* Header - Hidden when printing */}
@@ -610,150 +548,29 @@ export default function PrintReport() {
       <div className="mt-4 bg-white p-4 rounded-lg shadow-sm print:hidden">
         <h3 className="text-lg font-medium text-gray-900 mb-3">Report Options</h3>
         <div className="flex flex-wrap gap-6">
-          <div className="flex items-center">
-            <input
-              id="showHeaderFooter"
-              name="showHeaderFooter"
-              type="checkbox"
-              checked={showHeaderFooter}
-              onChange={(e) => setShowHeaderFooter(e.target.checked)}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            />
-            <label htmlFor="showHeaderFooter" className="ml-2 block text-sm text-gray-900">
-              Show Header and Footer (uncheck for pre-printed letterhead)
-            </label>
-          </div>
-          <div className="flex items-center">
-            <input
-              id="showSignature"
-              name="showSignature"
-              type="checkbox"
-              checked={showSignature}
-              onChange={(e) => setShowSignature(e.target.checked)}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            />
-            <label htmlFor="showSignature" className="ml-2 block text-sm text-gray-900">
-              Show Signature
-            </label>
-          </div>
-          <div className="text-sm text-gray-500 italic">
-            Note: Header and footer will only be shown if they are configured in lab settings
-          </div>
+           {/* Removed Show Header/Footer/Signature options as layout is now fixed */}
+           <div className="text-sm text-gray-500 italic">
+             Print preview below uses the fixed report layout.
+           </div>
         </div>
       </div>
 
-      {/* Printable Report */}
-      <div 
-        ref={reportRef}
-        className="mt-8 bg-white shadow-sm print:shadow-none print:mt-0 print-report-container"
-        style={{
-          width: '210mm', // A4 width
-          height: '297mm', // A4 height
-          margin: '0 auto',
-          pageBreakInside: 'avoid',
-          boxSizing: 'border-box',
-          padding: '0',
-          position: 'relative',
-          overflow: 'hidden'
+      {/* Printable Report Preview Area */}
+      <div
+        ref={reportRef} // Keep ref on the outer container if needed elsewhere
+        className="mt-8 bg-white shadow-sm print:shadow-none print:mt-0" 
+        // Apply A4 dimensions and centering for preview
+        style={{ 
+          width: '210mm', 
+          minHeight: '297mm', // Use minHeight for preview
+          margin: '0 auto', 
+          overflow: 'hidden' // Hide potential overflow in preview
         }}
+        // Render the generated HTML string for preview
+        dangerouslySetInnerHTML={{ __html: reportHtml }} 
       >
-        <style>
-          {`
-            @media print {
-              .print-report-container {
-                width: 100% !important;
-                max-width: 100% !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                border: none !important;
-                box-shadow: none !important;
-                page-break-after: avoid !important;
-                page-break-before: avoid !important;
-              }
-              
-              @page {
-                size: A4 portrait;
-                margin: 0 !important;
-                padding: 0 !important;
-              }
-              
-              html, body {
-                margin: 0 !important;
-                padding: 0 !important;
-                height: auto !important;
-                overflow: visible !important;
-              }
-              
-              body {
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-                color-adjust: exact !important;
-                font-size: 12pt !important;
-              }
-              
-              /* Ensure header image uses full width */
-              .header-image {
-                width: 100% !important;
-                max-width: 100% !important;
-                height: auto !important;
-                object-fit: contain !important;
-              }
-              
-              /* Ensure header and footer containers use full width */
-              .report-header, .footer {
-                width: 100% !important;
-                text-align: center !important;
-                display: block !important;
-                position: static !important;
-                height: auto !important;
-                z-index: auto !important;
-              }
-              
-              /* Hide placeholders when printing */
-              .header-warning, .footer-warning {
-                display: none !important;
-              }
-              
-              /* Force single page */
-              * {
-                page-break-inside: avoid !important;
-              }
-              
-              /* Ensure content fits on one page */
-              .report-content {
-                position: static !important;
-                top: auto !important;
-                bottom: auto !important;
-                left: auto !important;
-                right: auto !important;
-                padding: 10mm !important; /* Inner padding for content */
-                overflow: visible !important;
-              }
-              
-              /* Add top margin before patient details for pre-printed letterhead */
-              .patient-info {
-                margin-top: 25mm !important;
-              }
-              
-              /* Remove fixed positioning for header, footer, and doctor sign */
-              .doctor-sign {
-                position: static !important;
-                bottom: auto !important;
-                left: auto !important;
-                right: auto !important;
-                height: auto !important;
-                text-align: center !important;
-                z-index: auto !important;
-                border-top: none !important;
-                padding-top: 0 !important;
-                font-size: 12pt !important;
-                font-weight: bold !important;
-              }
-            }
-          `}
-        </style>
-        <ReportTemplate reportData={reportData} />
+        {/* Removed inline style tag and ReportTemplate component */}
       </div>
     </div>
-  );
-}
+  ); // End of main return statement
+} // End of PrintReport component

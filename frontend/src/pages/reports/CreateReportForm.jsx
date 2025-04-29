@@ -280,7 +280,8 @@ export default function CreateReportForm() {
           isHeader: param.isHeader || false,
           isSubparameter: param.isSubparameter || false,
           section: param.section || 'Default',
-          flag: getAbnormalFlag(param.value, param.referenceRange, formData.patientGender)
+          flag: getAbnormalFlag(param.value, param.referenceRange, formData.patientGender),
+          templateId: param.templateId // <<< Add templateId here >>>
         })),
         testNotes: formData.testNotes || '',
         showCRPTest: formData.showCRPTest || false,
