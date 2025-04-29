@@ -70,11 +70,25 @@ const reportSchema = new mongoose.Schema({
     unit: String,
     referenceRange: String,
     interpretation: String,
+    notes: String, // Field for parameter-specific notes
+    isHeader: Boolean, // Whether this is a header row
+    isSubparameter: Boolean, // Whether this is a subparameter
+    section: String, // Section this parameter belongs to (e.g., "CRP test")
     flag: {
       type: String,
       enum: ['normal', 'low', 'high', 'critical']
+    },
+    templateId: { // Added field to link parameter back to its original template
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'TestTemplate' 
+      // Not strictly required, but useful for grouping in PDF/preview
     }
   }],
+  testNotes: String, // Field for overall test notes (Consider changing to array of objects with templateId if notes need grouping)
+  showCRPTest: { // Flag to control visibility of CRP test section
+    type: Boolean,
+    default: true
+  },
   status: {
     type: String,
     enum: ['pending', 'in-progress', 'completed', 'verified', 'delivered'],

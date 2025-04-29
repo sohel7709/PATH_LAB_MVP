@@ -4,6 +4,7 @@ const User = require('../models/User');
 const LabReportSettings = require('../models/LabReportSettings');
 const Patient = require('../models/Patient');
 const Doctor = require('../models/Doctor');
+const TestTemplate = require('../models/TestTemplate'); // Import TestTemplate model
 const whatsappService = require('../utils/whatsappService');
 const fs = require('fs');
 const path = require('path');
@@ -517,6 +518,53 @@ exports.generateHtmlReport = async (req, res, next) => {
         testResults.push(result);
       });
     }
+
+    // --- Group results by templateId ---
+    const groupedResults = [];
+    const templateIds = [...new Set(report.results.map(r => r.templateId).filter(id => id))]; // Get unique template IDs
+
+    if (templateIds.length > 0) {
+      const templates = await TestTemplate.find({ '_id': { $in: templateIds } }).select('templateName name');
+      const templateMap = templates.reduce((map, t) => {
+        map[t._id.toString()] = t.templateName || t.name;
+        return map;
+      }, {});
+
+      for (const templateId of templateIds) {
+        const templateName = templateMap[templateId.toString()] || 'Unknown Test';
+        const parameters = report.results
+          .filter(r => r.templateId && r.templateId.toString() === templateId.toString())
+          .map(param => ({
+            name: param.parameter,
+            result: param.value,
+            unit: param.unit,
+            referenceRange: param.referenceRange,
+            isAbnormal: param.flag === 'high' || param.flag === 'low' || param.flag === 'critical',
+            isHeader: param.isHeader, // Pass isHeader to template
+            isSubparameter: param.isSubparameter // Pass isSubparameter to template
+          }));
+        
+        if (parameters.length > 0) {
+          groupedResults.push({ templateName, parameters });
+        }
+      }
+    } else {
+       // Fallback for reports created before templateId was added or custom reports
+       // Treat all results as one group (using the report's main test name)
+       const parameters = report.results.map(param => ({
+          name: param.parameter,
+          result: param.value,
+          unit: param.unit,
+          referenceRange: param.referenceRange,
+          isAbnormal: param.flag === 'high' || param.flag === 'low' || param.flag === 'critical',
+          isHeader: param.isHeader,
+          isSubparameter: param.isSubparameter
+       }));
+       if (parameters.length > 0) {
+         groupedResults.push({ templateName: report.testInfo?.name || 'Test Results', parameters });
+       }
+    }
+    // --- End grouping logic ---
     
     // Get the server's base URL for image paths
     const baseUrl = `${req.protocol}://${req.get('host')}`;
@@ -558,9 +606,11 @@ exports.generateHtmlReport = async (req, res, next) => {
       reportDate: new Date(report.createdAt).toLocaleDateString(),
       referringDoctor: report.testInfo?.referenceDoctor || 'N/A',
       
-      // Test data
-      testName: report.testInfo?.name || 'COMPLETE BLOOD COUNT (CBC)',
-      testResults: testResults,
+      // Test data - Now using groupedResults
+      // testName: report.testInfo?.name || 'COMPLETE BLOOD COUNT (CBC)', // Keep original testName for overall context if needed
+      // testResults: testResults, // Replaced by groupedResults
+      groupedResults: groupedResults, // Pass grouped results to template
+      testNotes: report.testNotes, // Pass overall notes
       
       // Footer data - only include if settings exist and showFooter is true
       showFooter: showFooter && hasFooterSettings,
@@ -753,6 +803,52 @@ exports.generatePdfReport = async (req, res, next) => {
         testResults.push(result);
       });
     }
+
+    // --- Group results by templateId (Same logic as in generateHtmlReport) ---
+    const groupedResultsPdf = [];
+    const templateIdsPdf = [...new Set(report.results.map(r => r.templateId).filter(id => id))]; 
+
+    if (templateIdsPdf.length > 0) {
+      const templatesPdf = await TestTemplate.find({ '_id': { $in: templateIdsPdf } }).select('templateName name');
+      const templateMapPdf = templatesPdf.reduce((map, t) => {
+        map[t._id.toString()] = t.templateName || t.name;
+        return map;
+      }, {});
+
+      for (const templateId of templateIdsPdf) {
+        const templateName = templateMapPdf[templateId.toString()] || 'Unknown Test';
+        const parameters = report.results
+          .filter(r => r.templateId && r.templateId.toString() === templateId.toString())
+          .map(param => ({
+            name: param.parameter,
+            result: param.value,
+            unit: param.unit,
+            referenceRange: param.referenceRange,
+            isAbnormal: param.flag === 'high' || param.flag === 'low' || param.flag === 'critical',
+            isHeader: param.isHeader,
+            isSubparameter: param.isSubparameter
+          }));
+        
+        if (parameters.length > 0) {
+          groupedResultsPdf.push({ templateName, parameters });
+        }
+      }
+    } else {
+       // Fallback
+       const parameters = report.results.map(param => ({
+          name: param.parameter,
+          result: param.value,
+          unit: param.unit,
+          referenceRange: param.referenceRange,
+          isAbnormal: param.flag === 'high' || param.flag === 'low' || param.flag === 'critical',
+          isHeader: param.isHeader,
+          isSubparameter: param.isSubparameter
+       }));
+       if (parameters.length > 0) {
+         groupedResultsPdf.push({ templateName: report.testInfo?.name || 'Test Results', parameters });
+       }
+    }
+    // --- End grouping logic ---
     
     // Get the server's base URL for image paths
     const baseUrl = `${req.protocol}://${req.get('host')}`;
@@ -785,10 +881,12 @@ exports.generatePdfReport = async (req, res, next) => {
       sampleType: report.testInfo?.sampleType || 'Blood',
       referringDoctor: report.testInfo?.referenceDoctor || 'N/A',
       
-      // Test data
-      testName: report.testInfo?.name || 'COMPLETE BLOOD COUNT (CBC)',
-      testResults: testResults,
-      
+      // Test data - Now using groupedResultsPdf
+      // testName: report.testInfo?.name || 'COMPLETE BLOOD COUNT (CBC)', 
+      // testResults: testResults, // Replaced by groupedResultsPdf
+      groupedResults: groupedResultsPdf, // Pass grouped results to template
+      testNotes: report.testNotes, // Pass overall notes
+
       // Footer data - only include if settings exist and showFooter is true
       showFooter: showFooter && hasFooterSettings,
       signatureImage: (showFooter && hasFooterSettings && labReportSettings.footer.signature) ? 

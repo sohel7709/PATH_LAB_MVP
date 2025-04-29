@@ -176,18 +176,11 @@ export default function PrintReport() {
           if (param.flag === 'high' || param.flag === 'low' || param.flag === 'critical') {
             resultCell.style.fontWeight = 'bold';
           }
-      // Bold abnormal results
-      if (param.flag === 'high' || param.flag === 'low' || param.flag === 'critical') {
-        resultCell.style.fontWeight = 'bold';
-      }
           resultCell.style.border = '1px solid black';
           resultCell.style.borderStyle = 'solid';
           resultCell.style.borderColor = 'black';
           resultCell.style.borderWidth = '1px';
           resultCell.style.padding = '6px 10px';
-          if (param.flag === 'high' || param.flag === 'low' || param.flag === 'critical') {
-            resultCell.style.fontWeight = 'bold';
-          }
           row.appendChild(resultCell);
           
           // Unit cell
@@ -226,6 +219,81 @@ export default function PrintReport() {
       
       table.appendChild(tbody);
       simplifiedReport.appendChild(table);
+
+      // Add Notes Section if available
+      if (report.testNotes) {
+        const notesDiv = document.createElement('div');
+        notesDiv.style.marginTop = '10px';
+        notesDiv.style.fontSize = '11pt';
+        notesDiv.style.pageBreakInside = 'avoid';
+
+        const notesHeader = document.createElement('h4');
+        notesHeader.textContent = 'Notes:';
+        notesHeader.style.fontWeight = 'bold';
+        notesHeader.style.marginBottom = '4px';
+        notesDiv.appendChild(notesHeader);
+
+        const notesContent = document.createElement('p');
+        notesContent.textContent = report.testNotes;
+        notesContent.style.whiteSpace = 'pre-wrap';
+        notesContent.style.margin = '0';
+        notesDiv.appendChild(notesContent);
+
+        simplifiedReport.appendChild(notesDiv);
+      }
+      
+      // Also check for notes in individual test parameters (especially for CRP test)
+      if (report.results && report.results.length > 0) {
+        // First, collect all parameter notes
+        const parameterNotesArray = [];
+        
+        report.results.forEach(param => {
+          // Check for notes in the parameter object
+          if (param.notes) {
+            parameterNotesArray.push(`${param.parameter || param.name}: ${param.notes}`);
+          }
+          
+          // Also check for notes in the referenceRange field for CRP tests
+          // This is a fallback for older data format
+          if ((param.parameter === "SERUM FOR C - REACTIVE PROTEINS" || 
+               param.name === "SERUM FOR C - REACTIVE PROTEINS") && 
+              param.referenceRange && 
+              param.referenceRange.includes("Turbilatex")) {
+            
+            // Extract the method note if not already included in notes
+            if (!param.notes || !param.notes.includes("Turbilatex")) {
+              const methodNote = "( By Turbilatex )";
+              parameterNotesArray.push(`${param.parameter || param.name}: ${methodNote}`);
+            }
+          }
+        });
+        
+        const parameterNotes = parameterNotesArray.join('\n');
+          
+        if (parameterNotes) {
+          const paramNotesDiv = document.createElement('div');
+          paramNotesDiv.style.marginTop = '10px';
+          paramNotesDiv.style.fontSize = '11pt';
+          paramNotesDiv.style.pageBreakInside = 'avoid';
+          
+          // Only add header if there wasn't already a notes section
+          if (!report.testNotes) {
+            const notesHeader = document.createElement('h4');
+            notesHeader.textContent = 'Notes:';
+            notesHeader.style.fontWeight = 'bold';
+            notesHeader.style.marginBottom = '4px';
+            paramNotesDiv.appendChild(notesHeader);
+          }
+          
+          const notesContent = document.createElement('p');
+          notesContent.textContent = parameterNotes;
+          notesContent.style.whiteSpace = 'pre-wrap';
+          notesContent.style.margin = '0';
+          paramNotesDiv.appendChild(notesContent);
+          
+          simplifiedReport.appendChild(paramNotesDiv);
+        }
+      }
       
       // Dynamically load html2pdf if not loaded
       if (typeof window.html2pdf === 'undefined') {
@@ -327,7 +395,16 @@ export default function PrintReport() {
         html2canvas: { 
           scale: 2,
           useCORS: true,
-          letterRendering: true
+          letterRendering: true,
+          logging: false, // Disable logging
+          onclone: (clonedDoc) => {
+            // Make sure all notes are visible in the cloned document
+            const notesElements = clonedDoc.querySelectorAll('.mt-4');
+            notesElements.forEach(el => {
+              el.style.display = 'block';
+              el.style.visibility = 'visible';
+            });
+          }
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
@@ -365,6 +442,7 @@ export default function PrintReport() {
             result: param.value,
             unit: param.unit,
             referenceRange: param.referenceRange,
+            notes: param.notes, // Include parameter notes
             isAbnormal: param.flag === 'high' || param.flag === 'low' || param.flag === 'critical',
             isSubparameter: true
           });
@@ -376,6 +454,7 @@ export default function PrintReport() {
             result: param.value,
             unit: param.unit,
             referenceRange: param.referenceRange,
+            notes: param.notes, // Include parameter notes
             isAbnormal: param.flag === 'high' || param.flag === 'low' || param.flag === 'critical'
           });
         }
@@ -404,6 +483,36 @@ export default function PrintReport() {
       // Test data
       testName: report.testInfo?.name || 'COMPLETE BLOOD COUNT (CBC)',
       testResults: transformedResults,
+      testNotes: report.testNotes || '', // Add test notes here
+      parameterNotes: (() => {
+        if (!report.results || report.results.length === 0) return '';
+        
+        // Collect all parameter notes
+        const parameterNotesArray = [];
+        
+        report.results.forEach(param => {
+          // Check for notes in the parameter object
+          if (param.notes) {
+            parameterNotesArray.push(`${param.parameter || param.name}: ${param.notes}`);
+          }
+          
+          // Also check for notes in the referenceRange field for CRP tests
+          // This is a fallback for older data format
+          if ((param.parameter === "SERUM FOR C - REACTIVE PROTEINS" || 
+               param.name === "SERUM FOR C - REACTIVE PROTEINS") && 
+              param.referenceRange && 
+              param.referenceRange.includes("Turbilatex")) {
+            
+            // Extract the method note if not already included in notes
+            if (!param.notes || !param.notes.includes("Turbilatex")) {
+              const methodNote = "( By Turbilatex )";
+              parameterNotesArray.push(`${param.parameter || param.name}: ${methodNote}`);
+            }
+          }
+        });
+        
+        return parameterNotesArray.join('\n');
+      })(),
 
       // Signature data
       signatureImage: showSignature ? (labSettings.footer?.signature || '') : '',

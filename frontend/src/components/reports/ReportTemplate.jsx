@@ -383,12 +383,40 @@ const ReportTemplate = ({ reportData }) => {
             margin: '15px 0 10px 0',
             color: styling.primaryColor
           }}>
-            {testName || 'COMPLETE BLOOD COUNT (CBC)'}
+            {/* Test Name - Keep original combined name for context? Or remove? */}
+            {/* {testName || 'COMPLETE BLOOD COUNT (CBC)'} */}
           </div>
 
-          {/* Test Results Table */}
-          <table className="test-data" style={{
-            width: 'calc(100% - 2px)',
+          {/* Test Results - Grouped by Template */}
+          {(() => {
+            // Group results by templateId
+            const grouped = (testResults || []).reduce((acc, param) => {
+              const key = param.templateId || 'unknown'; // Group unknown IDs together
+              if (!acc[key]) {
+                // Attempt to find template name (might need better data source)
+                // For now, use section name or placeholder if templateId exists
+                const sectionName = param.section && param.section !== 'Default' ? param.section : (testName || 'Test Results'); // Placeholder logic
+                acc[key] = { 
+                  templateName: key !== 'unknown' ? `Test Group (ID: ${key})` : sectionName, // Placeholder name
+                  parameters: [] 
+                };
+              }
+              acc[key].parameters.push(param);
+              return acc;
+            }, {});
+
+            // Convert grouped object to array
+            const groupedResultsArray = Object.values(grouped);
+
+            return groupedResultsArray.map((group, groupIndex) => (
+              <div key={groupIndex} className="test-group" style={{ marginBottom: '15px', pageBreakInside: 'avoid' }}>
+                {/* Template Name Header */}
+                <h3 style={{ textAlign: 'center', fontWeight: 'bold', margin: '10px 0', fontSize: '13pt' }}>
+                  {group.templateName}
+                </h3>
+                {/* Parameters Table for this Template */}
+                <table className="test-data" style={{
+                  width: 'calc(100% - 2px)', // Adjusted width slightly
             borderCollapse: 'collapse',
             margin: '0',
             border: '1px solid black',
@@ -433,11 +461,11 @@ const ReportTemplate = ({ reportData }) => {
               </tr>
             </thead>
             <tbody>
-              {testResults && testResults.length > 0 ? (
-                testResults.map((param, index) => {
+              {group.parameters && group.parameters.length > 0 ? (
+                group.parameters.map((param, index) => {
                   if (param.isHeader) {
                     return (
-                      <tr key={index}>
+                      <tr key={`${groupIndex}-header-${index}`}>
                         <td colSpan="4" style={{
                           fontWeight: 'bold',
                           padding: '8px 10px',
@@ -452,11 +480,11 @@ const ReportTemplate = ({ reportData }) => {
                     );
                   } else {
                     const abnormal = isOutsideRange(param.result, param.referenceRange) || param.isAbnormal;
-                    const isSub = param.isSubparameter;
+                    const isSub = param.isSubparameter; // Use isSubparameter from param
                     return (
-                      <tr key={index}>
+                      <tr key={`${groupIndex}-param-${index}`}>
                         <td style={{
-                          padding: isSub ? '6px 10px 6px 25px' : '6px 10px',
+                          padding: isSub ? '6px 10px 6px 25px' : '6px 10px', // Apply indent for subparameters
                           border: '1px solid black',
                           fontSize: '11pt',
                           verticalAlign: 'middle'
@@ -483,7 +511,15 @@ const ReportTemplate = ({ reportData }) => {
                           border: '1px solid black',
                           fontSize: '11pt',
                           verticalAlign: 'middle'
-                        }}>{param.referenceRange || ''}</td>
+                        }}>
+                          {param.referenceRange || ''}
+                          {/* Display inline notes if they exist on the parameter */}
+                          {param.notes && (
+                            <span style={{ display: 'block', fontSize: '10pt', fontStyle: 'italic', marginTop: '2px' }}>
+                              {param.notes}
+                            </span>
+                          )}
+                        </td>
                       </tr>
                     );
                   }
@@ -491,12 +527,43 @@ const ReportTemplate = ({ reportData }) => {
               ) : (
                 <tr>
                   <td colSpan="4" style={{ textAlign: 'center', padding: '6px', border: '1px solid black' }}>
-                    No test parameters available
+                    No parameters for this group
                   </td>
                 </tr>
               )}
             </tbody>
-          </table>
+              </table>
+              </div>
+            ));
+          })()}
+
+          {/* Overall Notes Section */}
+          {reportData.testNotes && (
+            <div className="mt-4" style={{ marginTop: '10px', fontSize: '11pt', pageBreakInside: 'avoid', borderTop: '1px solid #ccc', paddingTop: '10px' }}>
+              <h4 style={{ fontWeight: 'bold', marginBottom: '4px' }}>Notes:</h4>
+              {reportData.testNotes && (
+                <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{reportData.testNotes}</p>
+              )}
+              {reportData.parameterNotes && (
+                <p style={{ whiteSpace: 'pre-wrap', margin: reportData.testNotes ? '8px 0 0 0' : 0 }}>
+                  {reportData.parameterNotes}
+                </p>
+              )}
+              
+              {/* Special handling for test results with notes */}
+              {reportData.testResults && reportData.testResults.some(result => result.notes) && (
+                <div style={{ marginTop: '8px' }}>
+                  {reportData.testResults
+                    .filter(result => result.notes && !result.isHeader)
+                    .map((result, idx) => (
+                      <p key={idx} style={{ whiteSpace: 'pre-wrap', margin: '4px 0' }}>
+                        <strong>{result.name}:</strong> {result.notes}
+                      </p>
+                    ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {showSignature && (
             <div className="signature-section" style={{

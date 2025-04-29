@@ -276,15 +276,22 @@ export default function CreateReportForm() {
           value: param.value || 'N/A',
           unit: param.unit || '',
           referenceRange: param.referenceRange || '',
+          notes: param.notes || '',
+          isHeader: param.isHeader || false,
+          isSubparameter: param.isSubparameter || false,
+          section: param.section || 'Default',
           flag: getAbnormalFlag(param.value, param.referenceRange, formData.patientGender)
         })),
+        testNotes: formData.testNotes || '',
+        showCRPTest: formData.showCRPTest || false,
         status: REPORT_STATUS.IN_PROGRESS,
         lab: user?.lab,
         technician: user?.id,
         reportMeta: {
           generatedAt: new Date(),
           version: 1
-        }
+        },
+        selectedTemplateIds: formData.selectedTemplateIds || []
       };
 
       console.log('Formatted report data:', JSON.stringify(reportData, null, 2));

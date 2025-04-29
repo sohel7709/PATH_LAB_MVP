@@ -237,30 +237,49 @@
             </div>
         </div>
 
-        <!-- Test Title -->
-        <div class="test-title">{{testName}}</div>
+        <!-- Test Results - Grouped by Template -->
+        {{#each groupedResults}}
+        <div class="test-group" style="margin-bottom: 15px; page-break-inside: avoid;">
+            <!-- Template Name Header -->
+            <h3 style="text-align: center; font-weight: bold; margin: 10px 0; font-size: 13pt;">{{this.templateName}}</h3>
 
-        <!-- Test Results Table -->
-        <table class="test-data">
-            <thead>
-                <tr>
-                    <th>Test</th>
-                    <th>Result</th>
-                    <th>Unit</th>
-                    <th>Reference Range</th>
-                </tr>
-            </thead>
-            <tbody>
-                {{#each testResults}}
-                <tr>
-                    <td>{{this.name}}</td>
-                    <td class="{{#if this.isAbnormal}}abnormal{{/if}}">{{this.result}}</td>
-                    <td>{{this.unit}}</td>
-                    <td>{{this.referenceRange}}</td>
-                </tr>
-                {{/each}}
-            </tbody>
-        </table>
+            <!-- Parameters Table for this Template -->
+            <table class="test-data">
+                <thead>
+                    <tr>
+                        <th style="width: 45%;">Test</th>
+                        <th style="width: 20%;">Result</th>
+                        <th style="width: 15%;">Unit</th>
+                        <th style="width: 20%;">Reference Range</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each this.parameters}}
+                    {{#if this.isHeader}}
+                    <tr style="background-color: #f0f0f0;">
+                        <td colspan="4" style="font-weight: bold; padding-left: 5px;">{{this.name}}</td>
+                    </tr>
+                    {{else}}
+                    <tr>
+                        <td style="{{#if this.isSubparameter}}padding-left: 20px;{{/if}}">{{this.name}}</td>
+                        <td class="{{#if this.isAbnormal}}abnormal{{/if}}">{{this.result}}</td>
+                        <td>{{this.unit}}</td>
+                        <td>{{this.referenceRange}}</td>
+                    </tr>
+                    {{/if}}
+                    {{/each}}
+                </tbody>
+            </table>
+        </div>
+        {{/each}}
+
+        <!-- Overall Test Notes -->
+        {{#if testNotes}}
+        <div class="test-notes" style="margin-top: 15px; border-top: 1px solid #ccc; padding-top: 10px;">
+            <h4 style="font-weight: bold; margin-bottom: 5px;">Notes:</h4>
+            <p style="white-space: pre-wrap;">{{testNotes}}</p>
+        </div>
+        {{/if}}
 
         <!-- Signature Section -->
         <div class="signature-section">
