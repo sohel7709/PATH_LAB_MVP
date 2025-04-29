@@ -15,7 +15,7 @@ export const USER_ROLES = {
 // Report Status
 export const REPORT_STATUS = {
   PENDING: 'pending',
-  IN_PROGRESS: 'in_progress',
+  IN_PROGRESS: 'in-progress',
   COMPLETED: 'completed',
   VERIFIED: 'verified',
   DELIVERED: 'delivered',

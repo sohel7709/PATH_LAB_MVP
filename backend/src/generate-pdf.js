@@ -47,7 +47,7 @@ async function generatePDF() {
       format: 'A4',
       printBackground: true,
       margin: {
-        top: '0',
+        top: '40mm', // Reserve space for pre-printed letterhead
         right: '0',
         bottom: '0',
         left: '0'

@@ -1,6 +1,13 @@
 const express = require('express');
+const cors = require('cors');
 const router = express.Router();
 const { protect, verifyToken } = require('../middleware/auth');
+
+const corsOptions = {
+  origin: '*',
+  methods: ['POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
 
 const {
   register,

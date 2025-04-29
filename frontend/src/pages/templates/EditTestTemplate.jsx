@@ -12,11 +12,19 @@ const EditTestTemplate = () => {
   const [error, setError] = useState(null);
 
   const [formData, setFormData] = useState({
-    name: '',
-    sampleType: '',
+    templateName: '',
+    shortName: '',
     category: '',
     description: '',
-    fields: []
+    sections: [
+      {
+        sectionTitle: '',
+        displayFormat: 'table',
+        parameters: [
+          { name: '', unit: '', normalRange: '', isSubparameter: false, notes: '' }
+        ]
+      }
+    ]
   });
 
   // Generate categories from TEST_CATEGORIES constant
@@ -61,13 +69,21 @@ const EditTestTemplate = () => {
           }
 
           setFormData({
-            name: template.name || '',
-            sampleType: template.sampleType || '',
+            templateName: template.templateName || '',
+            shortName: template.shortName || '',
             category: template.category || '',
             description: template.description || '',
-            fields: template.fields && template.fields.length > 0
-              ? template.fields
-              : [{ parameter: '', unit: '', reference_range: '' }]
+            sections: Array.isArray(template.sections) && template.sections.length > 0
+              ? template.sections
+              : [
+                  {
+                    sectionTitle: '',
+                    displayFormat: 'table',
+                    parameters: [
+                      { name: '', unit: '', normalRange: '', isSubparameter: false, notes: '' }
+                    ]
+                  }
+                ]
           });
         } else {
           setError('Failed to fetch template details');

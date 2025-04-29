@@ -151,7 +151,7 @@ const EditDoctor = () => {
                     type="tel"
                     name="phone"
                     id="phone"
-                    required
+                    // required // Removed required attribute
                     value={formData.phone}
                     onChange={handleChange}
                     className="block w-full rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
@@ -168,7 +168,7 @@ const EditDoctor = () => {
                     type="email"
                     name="email"
                     id="email"
-                    required
+                    // required // Removed required attribute
                     value={formData.email}
                     onChange={handleChange}
                     className="block w-full rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"

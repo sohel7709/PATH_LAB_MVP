@@ -71,7 +71,7 @@ function classNames(...classes) {
 
 export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true); // Collapsed by default
   const [labName, setLabName] = useState('PathLab');
   const location = useLocation();
   const navigate = useNavigate();
@@ -115,9 +115,10 @@ export default function DashboardLayout() {
   };
 
   // Toggle sidebar collapse state
-  const toggleSidebar = () => {
-    setIsCollapsed(!isCollapsed);
-  };
+  // No longer needed for hover-based collapse/expand
+  // const toggleSidebar = () => {
+  //   setIsCollapsed(!isCollapsed);
+  // };
 
   const handleLogout = () => {
     // Use the logout function from AuthContext
@@ -205,9 +206,12 @@ export default function DashboardLayout() {
       {/* Static sidebar for desktop */}
       <div 
         className={classNames(
-          "hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:flex-col transition-all duration-300 ease-in-out",
+          "hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:flex-col transition-[width] duration-1000 ease-in-out",
           isCollapsed ? "lg:w-20" : "lg:w-72"
         )}
+        style={{ transitionProperty: 'width' }}
+        onMouseEnter={() => setIsCollapsed(false)}
+        onMouseLeave={() => setIsCollapsed(true)}
       >
         <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-blue-800 px-6 pb-4">
           <div className="flex h-16 shrink-0 items-center justify-between">
@@ -222,17 +226,7 @@ export default function DashboardLayout() {
                 </span>
               )}
             </div>
-            <button 
-              onClick={toggleSidebar}
-              className="text-white hover:text-blue-200 transition-colors duration-200"
-              aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            >
-              {isCollapsed ? (
-                <ChevronDoubleRightIcon className="h-5 w-5" />
-              ) : (
-                <ChevronDoubleLeftIcon className="h-5 w-5" />
-              )}
-            </button>
+            {/* Remove manual toggle button for hover-based sidebar */}
           </div>
           <nav className="flex flex-1 flex-col">
             <ul role="list" className="flex flex-1 flex-col gap-y-7">

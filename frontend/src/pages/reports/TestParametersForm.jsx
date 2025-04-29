@@ -1,19 +1,30 @@
 import { useState, useEffect } from 'react';
-import { ExclamationCircleIcon } from '@heroicons/react/24/outline';
 import { testTemplates } from '../../utils/api';
-import { TEST_CATEGORIES, REPORT_STATUS } from '../../utils/constants';
+import { TEST_CATEGORIES } from '../../utils/constants';
+import TestTemplateSelector from './TestTemplateSelector';
+import TestInfoFields from './TestInfoFields';
+import TestParametersTable from './TestParametersTable';
+import TestNotesSection from './TestNotesSection';
+import { getRowBackgroundColor } from './TestParametersUtils';
 
-export default function TestParametersForm({ 
+export default function TestParametersForm({
   formData, 
   setFormData, 
   patientGender,
+  patientAge,
   setError
 }) {
+  // DEBUG: Log test parameters to check isHeader property
+  if (formData && Array.isArray(formData.testParameters)) {
+    console.log("Test Parameters:", formData.testParameters);
+  }
+  
   // Force re-render on mount to ensure proper layout
   useEffect(() => {
     // This empty effect will trigger a re-render after initial mount
     // which helps ensure styles are properly applied
   }, []);
+  
   // Using _isLoading to avoid ESLint warning since it's used in setIsLoading
   const [_isLoading, setIsLoading] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState("");
@@ -21,6 +32,16 @@ export default function TestParametersForm({
   // Using _templateDetails to avoid ESLint warning since it's used in setTemplateDetails
   const [_templateDetails, setTemplateDetails] = useState(null);
   const [hasSections, setHasSections] = useState(false);
+  // State to control CRP test visibility
+  const [showCRPTest, setShowCRPTest] = useState(false);
+  
+  // Update formData with showCRPTest state when it changes
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      showCRPTest
+    }));
+  }, [showCRPTest, setFormData]);
 
   // Fetch available test templates
   const fetchTemplates = async () => {
@@ -140,33 +161,39 @@ export default function TestParametersForm({
         let parameters = [];
   
         if (hasTemplateSections) {
-          // Flatten sections into parameters for the form
-          Object.entries(template.sections).forEach(([sectionName, sectionParams]) => {
-            sectionParams.forEach(param => {
+          // Flatten sections into parameters for the form (new structure)
+          template.sections.forEach(section => {
+            const sectionTitle = section.sectionTitle || 'Default';
+            (section.parameters || []).forEach(param => {
               parameters.push({
-                name: param.parameter,
-                value: '',
+                name: param.name,
+                value: '', // Default value is empty
                 unit: param.unit || '',
-                referenceRange: param.reference_range || '',
-                section: sectionName
+                referenceRange: param.normalRange || '',
+                section: sectionTitle,
+                // Force isHeader true for Differential Count
+                isHeader: param.isHeader || param.name === "Differential Count",
+                isSubparameter: param.isSubparameter || false // Add isSubparameter flag
               });
             });
           });
         } else if (template.fields && template.fields.length > 0) {
-          // Use fields directly
+          // Use fields directly (legacy support - assuming no headers/subparams here)
           parameters = template.fields.map(field => ({
             name: field.parameter,
             value: '',
             unit: field.unit || '',
-            referenceRange: field.reference_range || ''
+            referenceRange: field.reference_range || '',
+            isHeader: false,
+            isSubparameter: false
           }));
         }
-  
+
         setFormData(prev => ({
           ...prev,
-          testName: template.name,
+          testName: template.templateName || template.name,
           category: template.category,
-          sampleType: template.sampleType,
+          sampleType: template.sampleType || 'Blood',
           testParameters: parameters
         }));
       }
@@ -231,107 +258,6 @@ export default function TestParametersForm({
     }));
   };
 
-  // Check if value is within normal range
-  const isValueNormal = (value, referenceRange) => {
-    if (!value || !referenceRange) return true;
-    
-    // Debug logging
-    console.log(`Checking value: ${value} against range: ${referenceRange}`);
-    
-    // Convert value to number (remove commas if present)
-    const numValue = parseFloat(value.toString().replace(/,/g, ''));
-    if (isNaN(numValue)) return true; // If value is not a number, consider it normal
-    
-    console.log(`Parsed value: ${numValue}`);
-    
-    // Handle gender-specific ranges like "M: 13.5–18.0; F: 11.5–16.4"
-    const genderMatch = referenceRange.match(/M:\s*(\d+\.?\d*)[–-](\d+\.?\d*);\s*F:\s*(\d+\.?\d*)[–-](\d+\.?\d*)/);
-    if (genderMatch) {
-      const maleMin = parseFloat(genderMatch[1]);
-      const maleMax = parseFloat(genderMatch[2]);
-      const femaleMin = parseFloat(genderMatch[3]);
-      const femaleMax = parseFloat(genderMatch[4]);
-      
-      console.log(`Gender match - Male range: ${maleMin}-${maleMax}, Female range: ${femaleMin}-${femaleMax}`);
-      
-      // Use the appropriate range based on patient gender
-      if (patientGender === 'male' && !isNaN(maleMin) && !isNaN(maleMax)) {
-        return numValue >= maleMin && numValue <= maleMax;
-      } else if (patientGender === 'female' && !isNaN(femaleMin) && !isNaN(femaleMax)) {
-        return numValue >= femaleMin && numValue <= femaleMax;
-      } else {
-        // If gender is not specified or is 'other', use the wider range
-        const minValue = Math.min(maleMin, femaleMin);
-        const maxValue = Math.max(maleMax, femaleMax);
-        
-        if (!isNaN(minValue) && !isNaN(maxValue)) {
-          return numValue >= minValue && numValue <= maxValue;
-        }
-      }
-    }
-    
-    // Clean the reference range by removing commas
-    const cleanRange = referenceRange.replace(/,/g, '');
-    console.log(`Cleaned range: ${cleanRange}`);
-    
-    // Handle numeric ranges like "10-20" or "10–20" (with en dash) or "10 - 20" (with spaces)
-    const numericMatch = cleanRange.match(/(\d+\.?\d*)\s*[–-]\s*(\d+\.?\d*)/);
-    if (numericMatch) {
-      const min = parseFloat(numericMatch[1]);
-      const max = parseFloat(numericMatch[2]);
-      
-      console.log(`Numeric match - Range: ${min}-${max}, Value: ${numValue}`);
-      
-      if (!isNaN(min) && !isNaN(max)) {
-        const result = numValue >= min && numValue <= max;
-        console.log(`Is value normal? ${result}`);
-        return result;
-      }
-    }
-    
-    // Handle "Up to X" format
-    const upToMatch = cleanRange.match(/Up\s+to\s+(\d+\.?\d*)/i);
-    if (upToMatch) {
-      const max = parseFloat(upToMatch[1]);
-      
-      if (!isNaN(max)) {
-        return numValue <= max;
-      }
-    }
-    
-    // Handle ranges with < or > symbols like "<5" or ">10"
-    const lessThanMatch = cleanRange.match(/\s*<\s*(\d+\.?\d*)/);
-    if (lessThanMatch) {
-      const max = parseFloat(lessThanMatch[1]);
-      
-      if (!isNaN(max)) {
-        return numValue < max;
-      }
-    }
-    
-    const greaterThanMatch = cleanRange.match(/\s*>\s*(\d+\.?\d*)/);
-    if (greaterThanMatch) {
-      const min = parseFloat(greaterThanMatch[1]);
-      
-      if (!isNaN(min)) {
-        return numValue > min;
-      }
-    }
-    
-    // Debug log for unmatched reference ranges
-    console.log('Unmatched reference range format:', referenceRange);
-    return true;
-  };
-  
-  // Get row background color based on value
-  const getRowBackgroundColor = (value, referenceRange) => {
-    if (!value || !referenceRange) return '';
-    
-    return isValueNormal(value, referenceRange) 
-      ? '' 
-      : 'bg-red-200 text-red-800 font-medium';
-  };
-
   // Fetch templates when component mounts
   useEffect(() => {
     fetchTemplates();
@@ -349,381 +275,39 @@ export default function TestParametersForm({
   return (
     <>
       {/* Test Template Selection */}
-      <section className="mb-8">
-        <h2 className="text-xl font-semibold text-blue-700 mb-4 border-b border-blue-100 pb-2">
-          Test Template
-        </h2>
-        <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-          <div className="sm:col-span-6">
-            <label htmlFor="templateSelect" className="block text-sm font-medium text-gray-700 mb-1">
-              Select Test Template
-            </label>
-            <div className="mt-1">
-              <select
-                id="templateSelect"
-                name="templateSelect"
-                className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
-                onChange={handleTemplateSelect}
-                value={selectedTemplate}
-              >
-                <option value="">Select a template</option>
-                <option value="custom">Custom Test</option>
-                {availableTemplates.map(template => (
-                  <option key={template._id} value={template._id}>
-                    {template.name} - {template.category}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
-      </section>
+      <TestTemplateSelector 
+        selectedTemplate={selectedTemplate}
+        availableTemplates={availableTemplates}
+        handleTemplateSelect={handleTemplateSelect}
+      />
 
       {/* Test Information */}
-      <section className="mb-8">
-        <h2 className="text-xl font-semibold text-blue-700 mb-4 border-b border-blue-100 pb-2">
-          Test Information
-        </h2>
-        <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-          <div className="sm:col-span-3">
-            <label htmlFor="testName" className="block text-sm font-medium text-gray-700 mb-1">
-              Test Name
-            </label>
-            <div className="mt-1">
-              <input
-                type="text"
-                name="testName"
-                id="testName"
-                required
-                value={formData.testName}
-                onChange={handleChange}
-                className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
-              />
-            </div>
-          </div>
-          
-          <div className="sm:col-span-3">
-            <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
-              Test Price
-            </label>
-            <div className="mt-1">
-              <input
-                type="number"
-                name="price"
-                id="price"
-                required
-                min="0"
-                step="0.01" // Allow decimal prices
-                value={formData.price}
-                onChange={handleChange}
-                className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
-                placeholder="Enter test price"
-              />
-            </div>
-          </div>
-
-          <div className="sm:col-span-3">
-            <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
-              Category
-            </label>
-            <div className="mt-1">
-              <select
-                id="category"
-                name="category"
-                required
-                value={formData.category}
-                onChange={handleChange}
-                className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
-              >
-                <option value="">Select category</option>
-                {Object.entries(TEST_CATEGORIES).map(([key, value]) => (
-                  <option key={key} value={value}>
-                    {key.charAt(0) + key.slice(1).toLowerCase().replace('_', ' ')}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="sm:col-span-3">
-            <label htmlFor="sampleType" className="block text-sm font-medium text-gray-700 mb-1">
-              Sample Type
-            </label>
-            <div className="mt-1">
-              <input
-                type="text"
-                name="sampleType"
-                id="sampleType"
-                required
-                value={formData.sampleType}
-                onChange={handleChange}
-                className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
-              />
-            </div>
-          </div>
-
-          <div className="sm:col-span-3">
-            <label htmlFor="collectionDate" className="block text-sm font-medium text-gray-700 mb-1">
-              Collection Date
-            </label>
-            <div className="mt-1">
-              <input
-                type="date"
-                name="collectionDate"
-                id="collectionDate"
-                required
-                value={formData.collectionDate}
-                onChange={handleChange}
-                className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
-              />
-            </div>
-          </div>
-
-          <div className="sm:col-span-3">
-            <label htmlFor="reportDate" className="block text-sm font-medium text-gray-700 mb-1">
-              Report Date
-            </label>
-            <div className="mt-1">
-              <input
-                type="date"
-                name="reportDate"
-                id="reportDate"
-                required
-                value={formData.reportDate}
-                onChange={handleChange}
-                className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
-              />
-            </div>
-          </div>
-
-          <div className="sm:col-span-3">
-            <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
-              Status
-            </label>
-            <div className="mt-1">
-              <select
-                id="status"
-                name="status"
-                required
-                value={formData.status}
-                onChange={handleChange}
-                className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
-              >
-                {Object.entries(REPORT_STATUS).map(([key, value]) => (
-                  <option key={key} value={value}>
-                    {value}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
-      </section>
+      <TestInfoFields 
+        formData={formData}
+        handleChange={handleChange}
+      />
 
       {/* Test Parameters */}
-      <section className="mb-8">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-blue-700 border-b border-blue-100 pb-2 flex-grow">
-            Test Parameters
-          </h2>
-          {selectedTemplate === 'custom' && (
-            <button
-              type="button"
-              onClick={addParameter}
-              className="ml-4 px-4 py-2 rounded-lg border border-transparent bg-gradient-to-r from-blue-600 to-blue-500 text-white font-medium shadow hover:from-blue-700 hover:to-blue-600 transition focus:outline-none focus:ring-2 focus:ring-blue-400"
-            >
-              Add Parameter
-            </button>
-          )}
-        </div>
-          
-        {formData.testParameters.length === 0 ? (
-          <div className="mt-4 text-sm text-gray-500 bg-blue-50 p-4 rounded-lg border border-blue-100">
-            {selectedTemplate ? 'No parameters defined for this template.' : 'Please select a test template to see parameters.'}
-          </div>
-        ) : (
-          <div className="mt-4 bg-white rounded-lg border border-blue-100 overflow-hidden shadow-sm">
-            {hasSections ? (
-              // Group parameters by section
-              Object.entries(
-                formData.testParameters.reduce((acc, param) => {
-                  const section = param.section || 'Default';
-                  if (!acc[section]) acc[section] = [];
-                  acc[section].push(param);
-                  return acc;
-                }, {})
-              ).map(([section, parameters], sectionIndex) => (
-                <div key={sectionIndex} className="mb-6">
-                  <h4 className="text-md font-medium text-blue-600 bg-blue-50 px-4 py-2 border-b border-blue-100">{section}</h4>
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-blue-100">
-                      <thead className="bg-blue-50">
-                        <tr>
-                          <th scope="col" className="py-3 pl-4 pr-3 text-left text-sm font-semibold text-gray-700 sm:pl-6">Parameter</th>
-                          <th scope="col" className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Value</th>
-                          <th scope="col" className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Unit</th>
-                          <th scope="col" className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Reference Range</th>
-                          {selectedTemplate === 'custom' && (
-                            <th scope="col" className="relative py-3 pl-3 pr-4 sm:pr-6">
-                              <span className="sr-only">Actions</span>
-                            </th>
-                          )}
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-blue-50">
-                        {parameters.map((param, paramIndex) => {
-                          const globalIndex = formData.testParameters.findIndex(p => 
-                            p.name === param.name && p.section === param.section
-                          );
-                          return (
-                            <tr 
-                              key={paramIndex} 
-                              className={getRowBackgroundColor(param.value, param.referenceRange)}
-                            >
-                              <td className="py-3 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
-                                {param.name}
-                              </td>
-                              <td className="px-3 py-3 text-sm">
-                                <input
-                                  type="text"
-                                  value={param.value}
-                                  onChange={(e) => handleParameterChange(globalIndex, 'value', e.target.value)}
-                                  className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
-                                />
-                              </td>
-                              <td className="px-3 py-3 text-sm text-gray-500">
-                                {param.unit}
-                              </td>
-                              <td className="px-3 py-3 text-sm text-gray-500">
-                                {param.referenceRange}
-                              </td>
-                              {selectedTemplate === 'custom' && (
-                                <td className="relative py-3 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                                  <button
-                                    type="button"
-                                    onClick={() => removeParameter(globalIndex)}
-                                    className="text-red-600 hover:text-red-900"
-                                  >
-                                    Remove
-                                  </button>
-                                </td>
-                              )}
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              ))
-            ) : (
-              // Flat list of parameters
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-blue-100">
-                  <thead className="bg-blue-50">
-                    <tr>
-                      <th scope="col" className="py-3 pl-4 pr-3 text-left text-sm font-semibold text-gray-700 sm:pl-6">Parameter</th>
-                      <th scope="col" className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Value</th>
-                      <th scope="col" className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Unit</th>
-                      <th scope="col" className="px-3 py-3 text-left text-sm font-semibold text-gray-700">Reference Range</th>
-                      {selectedTemplate === 'custom' && (
-                        <th scope="col" className="relative py-3 pl-3 pr-4 sm:pr-6">
-                          <span className="sr-only">Actions</span>
-                        </th>
-                      )}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-blue-50">
-                    {formData.testParameters.map((param, index) => (
-                      <tr 
-                        key={index}
-                        className={getRowBackgroundColor(param.value, param.referenceRange)}
-                      >
-                        <td className="py-3 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
-                          {selectedTemplate === 'custom' ? (
-                            <input
-                              type="text"
-                              value={param.name}
-                              onChange={(e) => handleParameterChange(index, 'name', e.target.value)}
-                              placeholder="Parameter name"
-                              className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
-                            />
-                          ) : (
-                            param.name
-                          )}
-                        </td>
-                        <td className="px-3 py-3 text-sm">
-                          <input
-                            type="text"
-                            value={param.value}
-                            onChange={(e) => handleParameterChange(index, 'value', e.target.value)}
-                            className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
-                          />
-                        </td>
-                        <td className="px-3 py-3 text-sm text-gray-500">
-                          {selectedTemplate === 'custom' ? (
-                            <input
-                              type="text"
-                              value={param.unit}
-                              onChange={(e) => handleParameterChange(index, 'unit', e.target.value)}
-                              placeholder="Unit"
-                              className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
-                            />
-                          ) : (
-                            param.unit
-                          )}
-                        </td>
-                        <td className="px-3 py-3 text-sm text-gray-500">
-                          {selectedTemplate === 'custom' ? (
-                            <input
-                              type="text"
-                              value={param.referenceRange}
-                              onChange={(e) => handleParameterChange(index, 'referenceRange', e.target.value)}
-                              placeholder="e.g. 10-20"
-                              className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
-                            />
-                          ) : (
-                            param.referenceRange
-                          )}
-                        </td>
-                        {selectedTemplate === 'custom' && (
-                          <td className="relative py-3 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                            <button
-                              type="button"
-                              onClick={() => removeParameter(index)}
-                              className="text-red-600 hover:text-red-900"
-                            >
-                              Remove
-                            </button>
-                          </td>
-                        )}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
-      </section>
+      <TestParametersTable
+        formData={formData}
+        setFormData={setFormData}
+        selectedTemplate={selectedTemplate}
+        hasSections={hasSections}
+        showCRPTest={showCRPTest}
+        setShowCRPTest={setShowCRPTest}
+        patientGender={patientGender}
+        patientAge={patientAge}
+        getRowBackgroundColor={getRowBackgroundColor}
+        handleParameterChange={handleParameterChange}
+        addParameter={addParameter}
+        removeParameter={removeParameter}
+      />
 
       {/* Notes */}
-      <section className="mb-8">
-        <h2 className="text-xl font-semibold text-blue-700 mb-4 border-b border-blue-100 pb-2">
-          Additional Notes
-        </h2>
-        <div className="mt-4">
-          <textarea
-            id="notes"
-            name="notes"
-            rows={3}
-            value={formData.notes}
-            onChange={handleChange}
-            className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
-            placeholder="Add any additional notes or observations here..."
-          />
-        </div>
-      </section>
+      <TestNotesSection 
+        notes={formData.notes}
+        handleChange={handleChange}
+      />
     </>
   );
 }

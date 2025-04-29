@@ -231,7 +231,7 @@ const TestTemplateList = () => {
                         </div>
                         <div className="ml-4">
                           <Link to={`/templates/${template._id}`} className="hover:text-blue-600 font-medium">
-                            {template.name}
+                            {template.templateName}
                           </Link>
                         </div>
                       </div>
@@ -242,10 +242,13 @@ const TestTemplateList = () => {
                       </span>
                     </td>
                     <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                      {template.sampleType}
+                      {/* sampleType removed in new structure */}
                     </td>
                     <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                      {template.fields?.length || 0} parameters
+                      {/* Count total parameters across all sections */}
+                      {Array.isArray(template.sections)
+                        ? template.sections.reduce((acc, section) => acc + (section.parameters?.length || 0), 0)
+                        : 0} parameters
                     </td>
                     <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                       {template.createdBy?.name || 'System'}

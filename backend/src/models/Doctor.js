@@ -11,12 +11,12 @@ const doctorSchema = new mongoose.Schema({
   },
   phone: {
     type: String,
-    required: true,
+     required: true, // Made optional
   },
   email: {
     type: String,
-    required: true,
-    unique: true,
+    // required: true, // Made optional
+    // unique: true, // Removed unique constraint as email is optional
   },
   lab: {
     type: mongoose.Schema.Types.ObjectId,

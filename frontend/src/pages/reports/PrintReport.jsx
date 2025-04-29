@@ -271,8 +271,13 @@ export default function PrintReport() {
       const printWindow = window.open(pdfUrl);
       
       if (printWindow) {
-        printWindow.addEventListener('load', () => {
+        printWindow.addEventListener('load', async () => {
           printWindow.print();
+          try {
+            await reports.update(id, { status: 'completed' });
+          } catch (err) {
+            console.error('Failed to update report status to completed:', err);
+          }
         });
       } else {
         alert('Please allow popups for this website to enable printing.');
@@ -339,7 +344,44 @@ export default function PrintReport() {
   // Prepare the data for the ReportTemplate component
   const prepareReportData = () => {
     if (!report || !labSettings) return null;
-    
+
+    // Transform results to handle headers and subparameters
+    const transformedResults = [];
+    let currentHeader = null;
+
+    if (report.results && report.results.length > 0) {
+      report.results.forEach(param => {
+        if (param.isHeader) {
+          // Add header as a special entry
+          currentHeader = {
+            name: param.parameter || param.name,
+            isHeader: true
+          };
+          transformedResults.push(currentHeader);
+        } else if (param.isSubparameter && currentHeader) {
+          // Add subparameter with reference to current header
+          transformedResults.push({
+            name: param.parameter || param.name,
+            result: param.value,
+            unit: param.unit,
+            referenceRange: param.referenceRange,
+            isAbnormal: param.flag === 'high' || param.flag === 'low' || param.flag === 'critical',
+            isSubparameter: true
+          });
+        } else {
+          // Normal parameter resets current header
+          currentHeader = null;
+          transformedResults.push({
+            name: param.parameter || param.name,
+            result: param.value,
+            unit: param.unit,
+            referenceRange: param.referenceRange,
+            isAbnormal: param.flag === 'high' || param.flag === 'low' || param.flag === 'critical'
+          });
+        }
+      });
+    }
+
     return {
       // Header data
       headerImage: labSettings.header?.headerImage || '',
@@ -348,37 +390,31 @@ export default function PrintReport() {
       address: labSettings.header?.address || '',
       phone: labSettings.header?.phone || '',
       showHeader: showHeaderFooter,
-      
+
       // Patient data
       patientName: report.patientInfo?.name || 'N/A',
       patientAge: report.patientInfo?.age || 'N/A',
       patientGender: report.patientInfo?.gender || 'N/A',
       patientId: report.patientInfo?.patientId || report._id?.substring(0, 8) || 'N/A',
-      
+
       // Sample data
       reportDate: new Date(report.createdAt).toLocaleDateString(),
       referringDoctor: report.testInfo?.referenceDoctor || 'N/A',
-      
+
       // Test data
       testName: report.testInfo?.name || 'COMPLETE BLOOD COUNT (CBC)',
-      testResults: report.results?.map(param => ({
-        name: param.parameter || param.name,
-        result: param.value,
-        unit: param.unit,
-        referenceRange: param.referenceRange,
-        isAbnormal: param.flag === 'high' || param.flag === 'low' || param.flag === 'critical'
-      })) || [],
-      
+      testResults: transformedResults,
+
       // Signature data
       signatureImage: showSignature ? (labSettings.footer?.signature || '') : '',
       verifiedBy: showSignature ? (labSettings.footer?.verifiedBy || 'Consultant') : '',
       designation: showSignature ? (labSettings.footer?.designation || 'Pathologist') : '',
-      
+
       // Footer data
       footerImage: labSettings.footer?.footerImage || '',
       showFooter: showHeaderFooter,
       showSignature: showSignature,
-      
+
       // Styling
       styling: labSettings.styling || {
         primaryColor: '#007bff',

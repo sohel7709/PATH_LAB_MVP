@@ -48,7 +48,13 @@ exports.createPatient = asyncHandler(async (req, res) => {
 
   try {
     // Check for duplicate patient
-    const { fullName, phone, age, gender, email } = req.body;
+    let { fullName, phone, age, gender, email } = req.body; // Use let for fullName
+
+    // Format fullName: Capitalize the first letter
+    if (fullName && typeof fullName === 'string' && fullName.length > 0) {
+      fullName = fullName.charAt(0).toUpperCase() + fullName.slice(1);
+      req.body.fullName = fullName; // Update req.body as well for the create call
+    }
     
     // Build query to check for duplicate
     const duplicateQuery = {
@@ -109,7 +115,8 @@ exports.getPatients = asyncHandler(async (req, res) => {
   }
 
   try {
-    const patients = await Patient.find(query);
+    // Sort by creation date in descending order to show recent patients first
+    const patients = await Patient.find(query).sort({ createdAt: -1 }); 
     res.json(patients);
   } catch (err) {
     console.error('Error fetching patients:', err);
