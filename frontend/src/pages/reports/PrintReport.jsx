@@ -26,7 +26,9 @@ export default function PrintReport() {
 
       // Fetch the report data
       const reportResponse = await apiReports.getById(id);
+      console.log("PrintReport - Raw API response:", reportResponse); // DEBUG LOG 1
       const reportData = reportResponse.data || reportResponse;
+      console.log("PrintReport - Extracted reportData:", JSON.stringify(reportData, null, 2)); // DEBUG LOG 2
 
       // Fetch the lab settings - STILL NEEDED for useReportGenerator implicitly via report object
       // const labId = reportData.lab; // Assuming reportData contains lab ID
@@ -156,12 +158,12 @@ export default function PrintReport() {
         className="mt-8 bg-white shadow-sm print:shadow-none print:mt-0" 
         // Apply A4 dimensions and centering for preview
         style={{ 
-          width: '210mm', 
-          minHeight: '297mm', // Use minHeight for preview
-          margin: '0 auto', 
-          overflow: 'hidden' // Hide potential overflow in preview
-        }}
-        // Render the generated HTML string for preview
+           width: '210mm', 
+           minHeight: '297mm', // Use minHeight for preview
+           margin: '0 auto' 
+           // overflow: 'hidden' // REMOVED: This can interfere with fixed positioning inside
+         }}
+         // Render the generated HTML string for preview
         dangerouslySetInnerHTML={{ __html: reportHtml }} 
       >
         {/* Removed inline style tag and ReportTemplate component */}

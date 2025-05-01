@@ -66,9 +66,14 @@ export const isValueNormal = (paramName, value, referenceRange, patientGender, p
     }
   }
 
-  // Handle gender-specific ranges like "M: 13.5–18.0; F: 11.5–16.4"
-  const genderMatch = trimmedRange.match(/M:\s*(\d+\.?\d*)[–-](\d+\.?\d*);\s*F:\s*(\d+\.?\d*)[–-](\d+\.?\d*)/);
+  // Handle gender-specific ranges like "M - 13.5 - 18.0\nF - 11.5 - 16.4" or "M -00 -08mm , F- 00-20 mm"
+  // Regex breakdown:
+  // M\s*-\s*(\d+\.?\d*)\s*-\s*(\d+\.?\d*) - Captures Male min and max
+  // .*\n? - Matches any characters (like units) and optional newline
+  // F\s*-\s*(\d+\.?\d*)\s*-\s*(\d+\.?\d*) - Captures Female min and max
+  const genderMatch = trimmedRange.match(/M\s*-\s*(\d+\.?\d*)\s*-\s*(\d+\.?\d*).*\n?F\s*-\s*(\d+\.?\d*)\s*-\s*(\d+\.?\d*)/i);
   if (genderMatch) {
+    // Groups are 1-based index
     const maleMin = parseFloat(genderMatch[1]);
     const maleMax = parseFloat(genderMatch[2]);
     const femaleMin = parseFloat(genderMatch[3]);
@@ -90,6 +95,15 @@ export const isValueNormal = (paramName, value, referenceRange, patientGender, p
         return numValue >= minValue && numValue <= maxValue;
       }
     }
+  }
+
+  // Specific check for CRP: "N -less than 6 mg/lt" means abnormal if >= 6
+  if (paramName === "SERUM FOR C - REACTIVE PROTEINS" && trimmedRange.toLowerCase().includes("less than 6")) {
+      const max = 6;
+      console.log(`Specific CRP check - Max: ${max}, Value: ${numValue}`);
+      const result = numValue < max; // Normal if strictly less than 6
+      console.log(`Is value normal? ${result}`);
+      return result;
   }
   
   // Clean the reference range by removing commas
@@ -139,6 +153,18 @@ export const isValueNormal = (paramName, value, referenceRange, patientGender, p
     if (!isNaN(min)) {
       return numValue > min;
     }
+  }
+
+  // Handle generic "less than X" text format (should be after specific checks)
+  const lessThanTextMatch = cleanRange.match(/less\s+than\s+(\d+\.?\d*)/i);
+  if (lessThanTextMatch) {
+      const max = parseFloat(lessThanTextMatch[1]);
+      if (!isNaN(max)) {
+          console.log(`Generic Less Than Text match - Max: ${max}, Value: ${numValue}`);
+          const result = numValue < max;
+          console.log(`Is value normal? ${result}`);
+          return result;
+      }
   }
   
   // Debug log for unmatched reference ranges

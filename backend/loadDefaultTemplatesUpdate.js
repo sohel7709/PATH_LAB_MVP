@@ -51,11 +51,15 @@ const loadDefaultTemplatesUpdate = async () => {
         console.log(`Added new template: ${template.templateName} (${template.shortName})`);
       } else {
         // Update existing template with new data
+        // Prepare update data, excluding createdBy
+        const updateData = { ...template };
+        delete updateData.createdBy; // Ensure we don't try to update createdBy
+
         await TestTemplate.updateOne(
           { shortName: template.shortName },
           {
             $set: {
-              ...template,
+              ...updateData,
               isDefault: true,
               updatedAt: new Date()
             }

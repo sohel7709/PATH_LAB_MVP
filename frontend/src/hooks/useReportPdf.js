@@ -22,7 +22,7 @@ export const useReportPdf = (report, reportHtml) => {
 
   // Common PDF generation options
   const getPdfOptions = (filename) => ({
-    margin: 0, // Set PDF margins to 0; spacing is controlled by HTML padding
+    margin: [50, 0, 40, 0], // Adjusted bottom margin: [Top 50mm, Right 0, Bottom 40mm, Left 0]
     filename: filename || 'Report.pdf',
     image: { type: 'jpeg', quality: 0.98 },
     html2canvas: {
@@ -69,8 +69,9 @@ export const useReportPdf = (report, reportHtml) => {
 
       // Temporarily append to DOM for html2pdf
       const tempContainer = document.createElement('div');
-      tempContainer.style.position = 'fixed';
-      tempContainer.style.top = '-10000px';
+      // Use fixed positioning off-screen as before
+      tempContainer.style.position = 'fixed'; 
+      tempContainer.style.top = '-10000px'; 
       tempContainer.style.left = '-10000px';
       tempContainer.appendChild(printElement);
       document.body.appendChild(tempContainer);
@@ -124,12 +125,13 @@ export const useReportPdf = (report, reportHtml) => {
 
       // Temporarily append to DOM for html2pdf
       const tempContainer = document.createElement('div');
+      // Use fixed positioning off-screen as before
       tempContainer.style.position = 'fixed';
       tempContainer.style.top = '-10000px';
       tempContainer.style.left = '-10000px';
       tempContainer.appendChild(downloadElement);
       document.body.appendChild(tempContainer);
-
+      
       const filename = `${report.patientInfo?.name || 'Patient'}_Report_${report._id}.pdf`;
       const opt = getPdfOptions(filename);
 

@@ -81,13 +81,18 @@ const reportSchema = new mongoose.Schema({
     templateId: { // Added field to link parameter back to its original template
       type: mongoose.Schema.Types.ObjectId,
       ref: 'TestTemplate' 
-      // Not strictly required, but useful for grouping in PDF/preview
-    }
-  }],
-  testNotes: String, // Field for overall test notes (Consider changing to array of objects with templateId if notes need grouping)
+       // Not strictly required, but useful for grouping in PDF/preview
+     }
+   }],
+  templateNotes: { // Store notes specific to each template used
+    type: Map,
+    of: String,
+    default: {} 
+   },
+  testNotes: String, // Field for general/manual notes added by user
   showCRPTest: { // Flag to control visibility of CRP test section
     type: Boolean,
-    default: true
+    default: true // This might be obsolete if CRP is just another template
   },
   status: {
     type: String,
@@ -170,8 +175,27 @@ const reportSchema = new mongoose.Schema({
   }
 }, {
   timestamps: true,
-  toJSON: { virtuals: true },
-  toObject: { virtuals: true }
+  toJSON: { 
+    virtuals: true,
+    // Ensure Maps are converted to Objects when converting to JSON/Object
+    transform: function (doc, ret) {
+      // Mongoose likely already converts Map to object here, just ensure it exists
+      ret.templateNotes = ret.templateNotes || {};
+      // You can add other transformations here if needed
+      // delete ret._id; // Example: remove _id
+      // delete ret.__v; // Example: remove __v
+      return ret;
+    }
+  },
+  toObject: { 
+    virtuals: true,
+    // Ensure Maps are converted to Objects when converting to JSON/Object
+    transform: function (doc, ret) {
+      // Mongoose likely already converts Map to object here, just ensure it exists
+      ret.templateNotes = ret.templateNotes || {};
+      return ret;
+    }
+  }
 });
 
 // Indexes for faster queries

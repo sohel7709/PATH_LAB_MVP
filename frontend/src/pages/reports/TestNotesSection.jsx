@@ -1,10 +1,10 @@
 import React from "react";
 
-export default function TestNotesSection({ notes, handleChange }) {
+export default function TestNotesSection({ notes, handleChange, label = "Additional Notes" }) { // Add label prop with default
   return (
     <section className="mb-8">
       <h2 className="text-xl font-semibold text-blue-700 mb-4 border-b border-blue-100 pb-2">
-        Additional Notes
+        {label} {/* Use the label prop for the title */}
       </h2>
       <div className="mt-4">
         <textarea

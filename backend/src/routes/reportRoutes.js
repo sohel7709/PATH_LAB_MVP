@@ -6,13 +6,17 @@ const {
   getReports,
   getReport,
   updateReport,
-  deleteReport,
+  deleteReport
+} = require('../controllers/reportCrudController'); // Import CRUD functions
+const {
   verifyReport,
-  addComment,
+  addComment
+} = require('../controllers/reportActionsController'); // Import action functions
+const {
   generateHtmlReport,
   generatePdfReport,
   testTemplate
-} = require('../controllers/reportController');
+} = require('../controllers/reportGenerationController'); // Import generation functions
 
 // All routes require authentication
 router.use(protect);

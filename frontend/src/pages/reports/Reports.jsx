@@ -27,6 +27,8 @@ export default function Reports() {
 
   useEffect(() => {
     fetchReports();
+    // Scroll to top when component mounts
+    window.scrollTo(0, 0); 
   }, []);
 
   const fetchReports = async (isRefresh = false) => {
@@ -36,8 +38,9 @@ export default function Reports() {
       } else {
         setIsLoading(true);
       }
-      console.log('Fetching reports from API...');
-      const response = await reports.getAll(); // Fetch all reports
+      console.log('Fetching reports from API with high limit...');
+      // Pass a large limit to fetch all reports, bypassing default pagination
+      const response = await reports.getAll({ limit: 10000 }); 
       console.log('Reports response received:', response);
       
       // Handle different response formats

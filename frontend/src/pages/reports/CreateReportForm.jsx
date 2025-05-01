@@ -56,7 +56,7 @@ export default function CreateReportForm() {
       }
     };
     
-    initializeData();
+    initializeData(); 
   }, [location]);
 
   // Fetch doctors list
@@ -280,11 +280,12 @@ export default function CreateReportForm() {
           isHeader: param.isHeader || false,
           isSubparameter: param.isSubparameter || false,
           section: param.section || 'Default',
-          flag: getAbnormalFlag(param.value, param.referenceRange, formData.patientGender),
-          templateId: param.templateId // <<< Add templateId here >>>
+          // flag: getAbnormalFlag(param.value, param.referenceRange, formData.patientGender), // <<< REMOVE frontend flag calculation
+          templateId: param.templateId
         })),
-        testNotes: formData.testNotes || '',
-        showCRPTest: formData.showCRPTest || false,
+        templateNotes: formData.templateNotes || {}, // Send the template notes object
+        testNotes: formData.testNotes || '', // Send the general notes separately
+        // showCRPTest: formData.showCRPTest || false, // This seems unused now
         status: REPORT_STATUS.IN_PROGRESS,
         lab: user?.lab,
         technician: user?.id,
@@ -315,12 +316,13 @@ export default function CreateReportForm() {
     }
   };
 
-  // Get abnormal flag for a value and reference range
+  // REMOVED frontend getAbnormalFlag function as backend will handle it
+  /*
   const getAbnormalFlag = (value, referenceRange, gender) => {
-    if (!value || !referenceRange) return 'normal';
-
-    // Convert value to number (remove commas if present)
-    const numValue = parseFloat(value.toString().replace(/,/g, ''));
+    // ... existing frontend logic ...
+  };
+  */
+  /* // Removing stray code left from previous incorrect diff application
     if (isNaN(numValue)) return 'normal';
 
     // Handle gender-specific ranges like "M: 13.5–18.0; F: 11.5–16.4"
@@ -390,6 +392,7 @@ export default function CreateReportForm() {
 
     return 'normal'; // Default to normal if we can't determine
   };
+  */
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 py-8 px-4 sm:px-6 lg:px-8">

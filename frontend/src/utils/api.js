@@ -147,7 +147,9 @@ export const reports = {
     const queryParams = new URLSearchParams();
     if (filters?.lab) queryParams.append('lab', filters.lab);
     if (filters?.status) queryParams.append('status', filters.status);
-    
+    if (filters?.limit) queryParams.append('limit', filters.limit); // Add limit parameter
+    if (filters?.page) queryParams.append('page', filters.page);   // Add page parameter
+
     const queryString = queryParams.toString();
     const url = queryString 
       ? `${API_BASE_URL}/reports?${queryString}` 

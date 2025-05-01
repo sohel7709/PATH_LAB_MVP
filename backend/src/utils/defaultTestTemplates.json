@@ -80,13 +80,6 @@
           { "name": "RDW-CV", "unit": "%", "normalRange": "11.5 - 17.5" },
           { "name": "PLATELETS COUNT", "unit": "/cumm", "normalRange": "1,50,000 - 4,50,000" }
         ]
-      },
-      {
-        "sectionTitle": "CRP test",
-        "displayFormat": "key-value",
-        "parameters": [
-          { "name": "SERUM FOR C - REACTIVE PROTEINS", "unit": "mg/lt", "normalRange": "N -less than 6 mg/lt", "notes": "( By Turbilatex)" }
-        ]
       }
     ]
   },
@@ -168,7 +161,7 @@
       {
         "sectionTitle": "METHOD: ST - 200 aQua",
         "displayFormat": "key-value",
-        "notes": "ELECTROLYTE ANALYSER Na/K/ICA\n(SENSA CORE HEALTH CARE & DIAGNOSTICS PRODUCTS)",
+        "notes": "( METHOD : ST - 200 aQua )\n( ELECTROLYTE ANALYSER Na/K/ICA )\n( SENSA CORE HEALTH CARE & DIAGNOSTICS PRODUCTS )",
         "parameters": []
       },
       {
@@ -176,7 +169,6 @@
         "parameters": [
           { "name": "SERUM SODIUM", "unit": "mmol/L", "normalRange": "135 - 145" },
           { "name": "SERUM POTASSIUM", "unit": "mmol/L", "normalRange": "3.5 - 5.1" },
-          { "name": "SERUM CHLORIDE", "unit": "mmol/L", "normalRange": "98 - 107" },
           { "name": "SERUM CALCIUM", "unit": "mg%", "normalRange": "8.5 - 10.5" }
         ]
       }
@@ -298,9 +290,9 @@
         "displayFormat": "key-value",
         "notes": "(by tri dot, Biomed Industries & co. ltd. lot.no HTD 022212)\n(Note: This is Screening Test, to be confirmed by westorn blot & pcr Analysis.)",
         "parameters": [
-          { "name": "HIV I", "unit": "", "normalRange": "NON REACTIVE" },
-          { "name": "HIV II", "unit": "", "normalRange": "NON REACTIVE" },
-          { "name": "RESULT", "unit": "", "normalRange": "NEGATIVE" }
+          { "name": "HIV I", "unit": "", "normalRange": "NON REACTIVE", "inputType": "dropdown", "options": ["NON REACTIVE", "REACTIVE"] },
+          { "name": "HIV II", "unit": "", "normalRange": "NON REACTIVE", "inputType": "dropdown", "options": ["NON REACTIVE", "REACTIVE"] },
+          { "name": "RESULT", "unit": "", "normalRange": "NEGATIVE", "inputType": "dropdown", "options": ["NEGATIVE", "POSITIVE"] }
         ]
       }
     ]
