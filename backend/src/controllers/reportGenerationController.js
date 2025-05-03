@@ -44,9 +44,37 @@ const prepareReportTemplateData = async (report, lab, labReportSettings, req, sh
             unit: param.unit,
             referenceRange: param.referenceRange,
             isAbnormal: param.flag === 'high' || param.flag === 'low' || param.flag === 'critical',
-            isHeader: param.isHeader, // Pass isHeader to template
+            // Use isHeader directly from the data model if present, otherwise default to false
+            isHeader: param.isHeader || false,
             isSubparameter: param.isSubparameter // Pass isSubparameter to template
           }));
+
+        // --- START: Insert Differential Count Header ---
+        // Check if this group contains 'Neutrophils' (case-insensitive)
+        const neutrophilIndex = parameters.findIndex(p => p.name.toLowerCase() === 'neutrophils');
+
+        if (neutrophilIndex !== -1) {
+          // Check if the header isn't already present (to avoid duplicates if DB data is fixed later)
+          const headerAlreadyExists = parameters.some(p => p.name === 'Differential Count' && p.isHeader);
+          if (!headerAlreadyExists) {
+            // Insert the header object before Neutrophils
+            parameters.splice(neutrophilIndex, 0, {
+              name: 'Differential Count',
+              isHeader: true,
+              result: '', // Headers don't have results/units/ranges
+              unit: '',
+              referenceRange: '',
+              isAbnormal: false,
+              isSubparameter: false
+            });
+            console.log(`Inserted 'Differential Count' header at index ${neutrophilIndex}`);
+          } else {
+             console.log("'Differential Count' header already exists, skipping dynamic insertion.");
+          }
+        }
+        // --- END: Insert Differential Count Header ---
+
+        console.log('Prepared parameters for template (after potential header insertion):', parameters.map(p => ({ name: p.name, isHeader: p.isHeader }))); // Debug log
 
         if (parameters.length > 0) {
           // --- Get template-specific notes (handle Map or Object) ---
@@ -119,8 +147,21 @@ const prepareReportTemplateData = async (report, lab, labReportSettings, req, sh
       patientId: report.patientInfo?.patientId || 'N/A',
 
       // Sample data
-      reportDate: new Date(report.createdAt).toLocaleDateString(), // Used in HTML
-      sampleCollectionDate: new Date(report.testInfo?.sampleCollectionDate || Date.now()).toLocaleDateString(), // Used in PDF
+      // Manually format date as DD/MM/YYYY
+      reportDate: (() => {
+        const d = new Date(report.createdAt);
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+        const year = d.getFullYear();
+        return `${day}/${month}/${year}`;
+      })(),
+      sampleCollectionDate: (() => {
+        const d = new Date(report.testInfo?.sampleCollectionDate || Date.now());
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+        const year = d.getFullYear();
+        return `${day}/${month}/${year}`;
+      })(),
       sampleType: report.testInfo?.sampleType || 'Blood', // Used in PDF
       referringDoctor: report.testInfo?.referenceDoctor || 'N/A',
 
