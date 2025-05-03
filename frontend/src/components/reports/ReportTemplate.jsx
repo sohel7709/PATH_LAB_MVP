@@ -6,31 +6,36 @@ const ReportTemplate = ({ reportData }) => {
     // Header data
     headerImage,
     showHeader = true,
-    
+
     // Patient data
     patientName,
     patientAge,
     patientGender,
     patientId,
-    
+
     // Sample data
-    reportDate,
+    sampleCollectionDate,
+    sampleType,
     referringDoctor,
-    
+
     // Test data
-    testName,
-    testResults,
-    
+    // testName, // We'll use templateName from groupedResults
+    // testResults, // Replaced by groupedResults
+    groupedResults, // Expect grouped results from backend/parent component
+
+    // Overall notes (if any, separate from parameter notes)
+    testNotes,
+
     // Signature data
     signatureImage,
     verifiedBy,
     designation,
-    
+
     // Footer data
     footerImage,
     showFooter = true,
     showSignature = true,
-    
+
     // Styling
     styling = {
       primaryColor: '#000000', // Changed to black for better printing
@@ -43,11 +48,11 @@ const ReportTemplate = ({ reportData }) => {
   // Function to check if a value is outside the reference range
   const isOutsideRange = (value, referenceRange) => {
     if (!value || !referenceRange) return false;
-    
+
     // Clean the value and reference range by removing commas
     const cleanValue = value.toString().replace(/,/g, '');
     const cleanRange = referenceRange.toString().replace(/,/g, '');
-    
+
     const numValue = parseFloat(cleanValue);
     if (isNaN(numValue)) return false;
 
@@ -56,28 +61,26 @@ const ReportTemplate = ({ reportData }) => {
       if (cleanRange.includes('-') || cleanRange.includes('–')) {
         const separator = cleanRange.includes('-') ? '-' : '–';
         const [min, max] = cleanRange.split(separator).map(v => parseFloat(v.trim()));
-        
-        // Check if min and max are valid numbers
         if (!isNaN(min) && !isNaN(max)) {
           return numValue < min || numValue > max;
         }
         return false;
-      } 
+      }
       // Handle less than format: "<10"
-      else if (cleanRange.startsWith('<')) { // Use < for HTML entity
+      else if (cleanRange.startsWith('<')) {
         const max = parseFloat(cleanRange.substring(1).trim());
         return !isNaN(max) && numValue >= max;
-      } 
+      }
       // Handle less than or equal format: "≤10"
       else if (cleanRange.startsWith('≤')) {
         const max = parseFloat(cleanRange.substring(1).trim());
         return !isNaN(max) && numValue > max;
-      } 
+      }
       // Handle greater than format: ">20"
-      else if (cleanRange.startsWith('>')) { // Use > for HTML entity
+      else if (cleanRange.startsWith('>')) {
         const min = parseFloat(cleanRange.substring(1).trim());
         return !isNaN(min) && numValue <= min;
-      } 
+      }
       // Handle greater than or equal format: "≥5"
       else if (cleanRange.startsWith('≥')) {
         const min = parseFloat(cleanRange.substring(1).trim());
@@ -104,10 +107,8 @@ const ReportTemplate = ({ reportData }) => {
     @media print {
       @page {
         size: A4 portrait;
-        margin: 0 !important; /* Margins handled by padding */
-        padding: 0 !important;
+        margin: 10mm !important;
       }
-      
       html, body {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
@@ -115,158 +116,122 @@ const ReportTemplate = ({ reportData }) => {
         margin: 0 !important;
         padding: 0 !important;
         width: 100% !important;
-        height: 100% !important; /* Needed for fixed positioning context */
         background-color: white !important;
-        font-size: 12pt !important; /* Set base print font size */
+        font-size: 12pt !important;
         font-family: ${styling.fontFamily || 'Arial, sans-serif'} !important;
-        overflow: hidden !important;
-        position: relative !important;
       }
-      
       .report-container {
-        margin: 0 !important; 
-        padding-top: 35mm !important; /* Space for fixed header */
-        padding-bottom: 30mm !important; /* Space for fixed footer */
-        padding-left: 5mm !important; 
-        padding-right: 5mm !important;
-        width: 210mm !important; /* A4 width */
-        height: 297mm !important; /* A4 height */
+        width: 100% !important;
+        margin: 0 !important;
+        padding-top: 35mm !important;
+        padding-bottom: 30mm !important;
         box-sizing: border-box !important;
         box-shadow: none !important;
-        overflow: hidden !important;
-        page-break-after: avoid !important;
-        page-break-before: avoid !important;
-        position: absolute !important;
-        top: 0 !important;
-        left: 0 !important;
+        min-height: calc(297mm - 20mm);
       }
-
-      /* Fixed Header */
       .report-header {
         position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        height: 35mm !important; /* Fixed header height */
-        padding: 5mm !important; /* Internal padding */
+        top: 10mm !important;
+        left: 10mm !important;
+        right: 10mm !important;
+        height: 35mm !important;
+        padding: 5mm !important;
         box-sizing: border-box !important;
-        width: 100% !important;
-        overflow: hidden !important;
-        page-break-after: avoid !important;
-        background-color: white !important; /* Ensure background */
+        background-color: white !important;
         z-index: 10 !important;
+        page-break-inside: avoid !important;
+        overflow: hidden !important;
       }
       .header-image {
         width: 100% !important;
         height: 100% !important;
-        object-fit: contain !important; 
-        display: block !important; 
-        margin: 0 !important; 
-        padding: 0 !important; 
-        vertical-align: top !important; 
+        object-fit: contain !important;
+        display: block !important;
+        margin: 0 auto !important;
+        vertical-align: top !important;
       }
-       .header-warning {
-         font-size: 10pt !important;
-         padding: 5mm !important;
-       }
-
-
-      /* Fixed Footer */
+      .header-warning {
+        font-size: 10pt !important;
+        padding: 5mm !important;
+        text-align: center !important;
+      }
       .footer {
         position: fixed !important;
-        bottom: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        height: 30mm !important; /* Fixed footer height */
-        padding: 5mm !important; /* Internal padding */
+        bottom: 10mm !important;
+        left: 10mm !important;
+        right: 10mm !important;
+        height: 30mm !important;
+        padding: 5mm !important;
         box-sizing: border-box !important;
-        width: 100% !important;
-        overflow: hidden !important;
-        page-break-before: avoid !important;
-        background-color: white !important; /* Ensure background */
+        background-color: white !important;
         z-index: 10 !important;
-        border-top: 1pt solid ${styling.primaryColor || '#007bff'} !important;
+        border-top: 1pt solid black !important;
+        page-break-inside: avoid !important;
+        overflow: hidden !important;
       }
-       .footer img {
-         width: 100% !important;
-         height: 100% !important;
-         object-fit: contain !important;
-         display: block !important;
-         margin: 0 !important;
-         padding: 0 !important;
-         vertical-align: bottom !important;
-       }
-       .footer-warning {
-         font-size: 10pt !important;
-         padding: 5mm !important;
-       }
-
-      /* Content Area Adjustments */
-      .patient-info {
-        margin: 0 0 2mm 0 !important; /* Minimal bottom margin */
-        padding: 0 !important; 
+      .footer img {
         width: 100% !important;
-        border-bottom: 1pt solid ${styling.primaryColor || '#007bff'} !important;
-        font-size: 12pt !important; /* Standard font size */
-        line-height: 1.3 !important; 
+        height: 100% !important;
+        object-fit: contain !important;
+        display: block !important;
+        margin: 0 auto !important;
+        vertical-align: bottom !important;
+      }
+      .footer-warning {
+        font-size: 10pt !important;
+        padding: 5mm !important;
+        text-align: center !important;
+      }
+      .report-content {
+        padding: 0 !important;
+        margin: 0 !important;
+        page-break-inside: auto !important;
+      }
+      .patient-info {
+        margin: 0 0 3mm 0 !important;
+        padding: 3mm 0 !important;
+        width: 100% !important;
+        border-bottom: 1pt solid black !important;
+        font-size: 12pt !important;
+        line-height: 1.4 !important;
+        page-break-inside: avoid !important;
       }
       .patient-info .info-row {
-         margin-bottom: 1mm !important; 
+        margin-bottom: 2mm !important;
       }
       .patient-info .info-label {
-         font-weight: bold !important;
-         margin-right: 5px !important;
-      }
-      
-      .test-title {
-        margin: 2mm 0 !important; 
-        padding: 0 !important; 
-        text-align: center !important;
-        font-size: 14pt !important; /* Larger title */
         font-weight: bold !important;
+        margin-right: 6px !important;
+        min-width: 100px !important;
+        display: inline-block !important;
       }
-      
+      .test-title {
+        margin: 5mm 0 3mm 0 !important;
+        padding: 0 !important;
+        text-align: center !important;
+        font-size: 14pt !important;
+        font-weight: bold !important;
+        page-break-after: avoid !important;
+      }
       .test-data {
         margin: 0 !important;
         width: 100% !important;
         border-collapse: collapse !important;
-        font-size: 12pt !important; /* Standard font size */
-        table-layout: fixed !important; /* Fixed table layout for better width control */
+        font-size: 12pt !important;
+        table-layout: fixed !important;
+        page-break-inside: auto !important;
+      }
+      .test-data th, .test-data td {
+        padding: 3mm !important;
+        vertical-align: middle !important;
+        font-size: 12pt !important;
         border: 1px solid black !important;
       }
-      
-      .test-data td {
-        padding: 3mm !important; /* Increased padding */
-        border: 1px solid black !important;
-        vertical-align: middle !important; /* Center content vertically */
-        font-size: 12pt !important; /* Ensure consistent font size */
-       }
-       
-       .test-data th {
-         padding: 3mm !important; /* Increased padding */
-         border: 2px solid black !important;
-         vertical-align: middle !important; /* Center content vertically */
-         font-size: 12pt !important; /* Ensure consistent font size */
-         color: ${styling.primaryColor || '#007bff'} !important;
-         font-weight: bold !important;
-         text-align: left !important;
-       }
-       
-       /* Ensure table borders are visible */
-       .test-data, .test-data th, .test-data td {
-         border-style: solid !important;
-         border-color: black !important;
-         border-width: 1px !important;
-       }
-       
-       .test-data th {
-         border-width: 1px !important;
-       }
-       
-       .test-data td {
-         border-width: 1px !important;
-       }
-
+      .test-data th {
+        color: black !important;
+        font-weight: bold !important;
+        text-align: left !important;
+      }
       td[style*="fontWeight: bold"] {
         color: black !important;
         font-weight: bold !important;
@@ -275,106 +240,100 @@ const ReportTemplate = ({ reportData }) => {
         print-color-adjust: exact !important;
         color-adjust: exact !important;
       }
-      
       .signature-section {
-        margin: 5mm 0 0 0 !important; /* Only top margin */
-        padding: 0 !important; 
+        margin: 6mm 0 0 0 !important;
+        padding: 0 !important;
         display: flex !important;
         justify-content: flex-end !important;
         width: 100% !important;
         page-break-inside: avoid !important;
+        page-break-before: auto !important;
       }
-      
       .signature-container {
-        width: 50mm !important; 
+        width: 55mm !important;
         text-align: center !important;
       }
       .signature-container img {
-         height: 15mm !important; 
-         margin-bottom: 1mm !important;
+        height: 18mm !important;
+        margin-bottom: 1mm !important;
+        object-fit: contain;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
       }
-       .signature-container .signature-name {
-         font-size: 12pt !important; 
-         margin-top: 1mm !important;
-         line-height: 1.2 !important;
-       }
-       .signature-container .signature-designation {
-         font-size: 12pt !important; 
-         line-height: 1.2 !important;
-       }
-       .signature-container div[style*="border-bottom"] { /* Placeholder line */
-          height: 15mm !important; 
-          margin-bottom: 1mm !important;
-       }
-
-      /* Hide UI elements */
+      .signature-container .signature-name {
+        font-size: 12pt !important;
+        margin-top: 1mm !important;
+        line-height: 1.3 !important;
+      }
+      .signature-container .signature-designation {
+        font-size: 12pt !important;
+        line-height: 1.3 !important;
+      }
+      .signature-container div[style*="border-bottom"] {
+        height: 18mm !important;
+        margin-bottom: 1mm !important;
+      }
       nav, header, button, .print-controls, .print-hidden, .report-header-placeholder, .report-footer-placeholder {
         display: none !important;
       }
+      tr {
+        page-break-inside: avoid !important;
+      }
+      table {
+        page-break-inside: auto !important;
+        page-break-after: auto !important;
+      }
+      thead { display: table-header-group !important; }
+      tfoot { display: table-footer-group !important; }
     }
   `;
 
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: printStyles }} />
-      {/* Use screen styles for non-print view */}
-      <div className="report-container" style={{ 
-        fontFamily: styling.fontFamily, 
-        fontSize: `12pt`,
+      <div className="report-container" style={{
+        fontFamily: styling.fontFamily,
+        fontSize: '12pt',
         width: '210mm',
         margin: '0 auto'
       }}>
         {/* Header Section */}
-        <div className="report-header" style={{ 
-          width: '100%', 
-          display: 'block', /* Always reserve space even when not showing content */
-          position: 'relative',
-          height: '35mm', /* Fixed header height */
-          overflow: 'hidden',
-          visibility: showHeader ? 'visible' : 'hidden' /* Hide content but keep space */
-        }}>
-          {headerImage ? (
-            <img 
-              src={headerImage} 
-              alt="Lab Header" 
+        <div className="report-header">
+          {showHeader && headerImage ? (
+            <img
+              src={headerImage}
+              alt="Lab Header"
               className="header-image"
-              style={{ 
-                width: '100%', 
+              style={{
+                width: '100%',
                 height: '100%',
                 objectFit: 'contain',
                 display: 'block',
-                margin: '0 auto' 
+                margin: '0 auto'
               }}
             />
           ) : (
-            // Show warning message if header data is not available
-            <div className="header-warning" style={{ 
-              padding: '15px', 
-              backgroundColor: '#fff3cd', 
-              color: '#856404',
-              border: '1px solid #ffeeba',
-              borderRadius: '4px',
-              textAlign: 'center',
-              margin: '10px 0'
-            }}>
-              <p style={{ fontWeight: 'bold', marginBottom: '5px' }}>⚠️ Header Not Available</p>
-              <p style={{ fontSize: '0.9em' }}>Please configure header in lab settings</p>
-            </div>
+            showHeader && !headerImage && (
+              <div className="header-warning" style={{
+                padding: '15px',
+                backgroundColor: '#fff3cd',
+                color: '#856404',
+                border: '1px solid #ffeeba',
+                borderRadius: '4px',
+                textAlign: 'center',
+                margin: '10px 0'
+              }}>
+                <p style={{ fontWeight: 'bold', marginBottom: '5px' }}>⚠️ Header Not Available</p>
+                <p style={{ fontSize: '0.9em' }}>Please configure header in lab settings</p>
+              </div>
+            )
           )}
+          {!showHeader && null}
         </div>
 
-        {/* Content area with patient info and test results */}
-        <div className="report-content" style={{
-          position: 'relative',
-          top: showHeader ? '35mm' : '0',
-          paddingTop: '5mm',
-          paddingBottom: showFooter ? '30mm' : '5mm',
-          paddingLeft: '5mm',
-          paddingRight: '5mm',
-          overflow: 'hidden',
-          border: 'none' /* Ensure no border on the content container */
-        }}>
-          {/* Horizontal line above patient info */}
+        {/* Content area */}
+        <div className="report-content" style={{ border: 'none' }}>
           <div style={{
             borderTop: '2px solid black',
             marginBottom: '8px',
@@ -385,12 +344,8 @@ const ReportTemplate = ({ reportData }) => {
           <div className="patient-info" style={{
             marginTop: '0',
             display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            columnGap: '10mm',
-            padding: '5px 0 5px 0',
-            borderBottom: '2px solid black',
-            fontSize: '11pt',
-            lineHeight: '1.3'
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            columnGap: '20px',
           }}>
             <div className="patient-info-left" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <div className="info-row" style={{ display: 'flex', justifyContent: 'flex-start' }}>
@@ -406,11 +361,17 @@ const ReportTemplate = ({ reportData }) => {
                 <span>{patientId || 'N/A'}</span>
               </div>
             </div>
-            <div className="patient-info-right" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div className="patient-info-center" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <div className="info-row" style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                <span className="info-label" style={{ fontWeight: 'bold', minWidth: '110px' }}>Report Date:</span>
-                <span>{reportDate || 'N/A'}</span>
+                <span className="info-label" style={{ fontWeight: 'bold', minWidth: '110px' }}>Sample Collection:</span>
+                <span>{sampleCollectionDate || 'N/A'}</span>
               </div>
+              <div className="info-row" style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                <span className="info-label" style={{ fontWeight: 'bold', minWidth: '110px' }}>Sample Type:</span>
+                <span>{sampleType || 'Blood'}</span>
+              </div>
+            </div>
+            <div className="patient-info-right" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <div className="info-row" style={{ display: 'flex', justifyContent: 'flex-start' }}>
                 <span className="info-label" style={{ fontWeight: 'bold', minWidth: '110px' }}>Referring Doctor:</span>
                 <span>{referringDoctor || 'N/A'}</span>
@@ -421,21 +382,30 @@ const ReportTemplate = ({ reportData }) => {
           {/* Test Title */}
           <div className="test-title" style={{
             textAlign: 'center',
-            fontSize: '14pt', 
+            fontSize: '14pt',
             fontWeight: 'bold',
-            margin: '15px 0 10px 0', // Adjusted margin
+            margin: '15px 0 10px 0',
             color: styling.primaryColor
           }}>
-            {testName || 'COMPLETE BLOOD COUNT (CBC)'}
+            {/* Test Name - Keep original combined name for context? Or remove? */}
+            {/* {testName || 'COMPLETE BLOOD COUNT (CBC)'} */}
           </div>
 
-          {/* Test Results Table */}
-          <table className="test-data" style={{
-            width: '100%',
+          {/* Test Results - Iterate over groupedResults from props */}
+          {(groupedResults && groupedResults.length > 0) ? (
+            groupedResults.map((group, groupIndex) => (
+              <div key={groupIndex} className="test-group" style={{ marginBottom: '15px', pageBreakInside: 'avoid' }}>
+                {/* Template Name Header - Ensure it uses group.templateName */}
+                <h3 style={{ textAlign: 'center', fontWeight: 'bold', margin: '10px 0', fontSize: '13pt' }}>
+                  {group.templateName} {/* Directly use the templateName from the group object */}
+                </h3>
+                {/* Parameters Table for this Template */}
+                <table className="test-data" style={{
+                  width: 'calc(100% - 2px)', // Adjusted width slightly
             borderCollapse: 'collapse',
             margin: '0',
             border: '1px solid black',
-            tableLayout: 'fixed' // Ensure fixed layout for consistent layout
+            tableLayout: 'fixed'
           }}>
             <thead>
               <tr>
@@ -444,7 +414,6 @@ const ReportTemplate = ({ reportData }) => {
                   textAlign: 'left',
                   padding: '6px 10px',
                   border: '1px solid black',
-                  borderCollapse: 'collapse',
                   color: styling.primaryColor,
                   fontSize: '11pt',
                   verticalAlign: 'middle',
@@ -455,10 +424,6 @@ const ReportTemplate = ({ reportData }) => {
                   textAlign: 'left',
                   padding: '6px 10px',
                   border: '1px solid black',
-                  borderCollapse: 'collapse',
-                  color: styling.primaryColor,
-                  fontSize: '11pt',
-                  verticalAlign: 'middle',
                   width: '15%'
                 }}>Result</th>
                 <th style={{
@@ -466,10 +431,6 @@ const ReportTemplate = ({ reportData }) => {
                   textAlign: 'left',
                   padding: '6px 10px',
                   border: '1px solid black',
-                  borderCollapse: 'collapse',
-                  color: styling.primaryColor,
-                  fontSize: '11pt',
-                  verticalAlign: 'middle',
                   width: '10%'
                 }}>Unit</th>
                 <th style={{
@@ -477,82 +438,135 @@ const ReportTemplate = ({ reportData }) => {
                   textAlign: 'left',
                   padding: '6px 10px',
                   border: '1px solid black',
-                  borderCollapse: 'collapse',
                   color: styling.primaryColor,
                   fontSize: '11pt',
                   verticalAlign: 'middle',
                   width: '35%'
                 }}>Reference Range</th>
               </tr>
-            </thead>
-            <tbody>
-              {testResults && testResults.length > 0 ? (
-                testResults.map((param, index) => {
-                  const abnormal = isOutsideRange(param.result, param.referenceRange) || param.isAbnormal;
-                  return (
-                    <tr key={index}>
-                      <td style={{ 
-                        padding: '6px 10px', 
-                        border: '1px solid black',
-                        fontSize: '11pt',
-                        verticalAlign: 'middle'
-                      }}>{param.name}</td>
-                      <td style={{ 
-                        padding: '6px 10px', 
-                        border: '1px solid black',
-                        color: abnormal ? 'black' : 'inherit',
-                        fontWeight: abnormal ? 'bold' : 'normal',
-                        backgroundColor: abnormal ? '#fff0f0' : 'transparent',
-                        fontSize: '11pt',
-                        verticalAlign: 'middle'
-                      }}>
-                        {param.result === '-' ? '' : param.result}
-                      </td>
-                      <td style={{ 
-                        padding: '6px 10px', 
-                        border: '1px solid black',
-                        fontSize: '11pt',
-                        verticalAlign: 'middle'
-                      }}>{param.unit}</td>
-                      <td style={{ 
-                        padding: '6px 10px', 
-                        border: '1px solid black',
-                        fontSize: '11pt',
-                        verticalAlign: 'middle'
-                      }}>{param.referenceRange}</td>
-                    </tr>
-                  );
+                </thead>
+                <tbody>
+                  {group.parameters && group.parameters.length > 0 ? (
+                    group.parameters.map((param, index) => {
+                      // Check if the parameter itself is marked as a header
+                      if (param.isHeader) {
+                        return (
+                      <tr key={`${groupIndex}-header-${index}`}>
+                        <td colSpan="4" style={{
+                          fontWeight: 'bold',
+                          padding: '8px 10px',
+                          border: '1px solid black',
+                          backgroundColor: '#f0f0f0',
+                          fontSize: '11pt',
+                          verticalAlign: 'middle'
+                        }}>
+                          {param.name || param.parameter} {/* Use name or fallback to parameter */}
+                        </td>
+                      </tr>
+                    );
+                  } else {
+                    // Determine if the result is abnormal based on flags or range check
+                    const abnormal = param.flag === 'high' || param.flag === 'low' || param.flag === 'critical' || isOutsideRange(param.value, param.referenceRange);
+                    const isSub = param.isSubparameter; // Check if it's a subparameter for indentation
+
+                    return (
+                      <tr key={`${groupIndex}-param-${index}`}>
+                        {/* Parameter Name */}
+                        <td style={{
+                          padding: isSub ? '6px 10px 6px 25px' : '6px 10px', // Indent subparameters
+                          border: '1px solid black',
+                          fontSize: '11pt',
+                          verticalAlign: 'middle'
+                        }}>{param.parameter || param.name}</td> {/* Use parameter or fallback to name */}
+
+                        {/* Result Value */}
+                        <td style={{
+                          padding: '6px 10px',
+                          border: '1px solid black',
+                          color: abnormal ? 'black' : 'inherit',
+                          fontWeight: abnormal ? 'bold' : 'normal',
+                          backgroundColor: abnormal ? '#fff0f0' : 'transparent',
+                          fontSize: '11pt',
+                          verticalAlign: 'middle'
+                        }}>
+                          {/* Display value, handle potential null/undefined */}
+                          {param.value !== null && param.value !== undefined ? param.value : ''}
+                        </td>
+
+                        {/* Unit */}
+                        <td style={{
+                          padding: '6px 10px',
+                          border: '1px solid black',
+                          fontSize: '11pt',
+                          verticalAlign: 'middle'
+                        }}>{param.unit || ''}</td>
+
+                        {/* Reference Range */}
+                        <td style={{
+                          padding: '6px 10px',
+                          border: '1px solid black',
+                          fontSize: '11pt',
+                          verticalAlign: 'middle'
+                        }}>
+                          {param.referenceRange || ''}
+                          {/* Display parameter-specific notes if they exist */}
+                          {param.notes && (
+                            <span style={{ display: 'block', fontSize: '10pt', fontStyle: 'italic', marginTop: '2px' }}>
+                              {param.notes}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  }
                 })
               ) : (
+                // Display if a group has no parameters
                 <tr>
                   <td colSpan="4" style={{ textAlign: 'center', padding: '6px', border: '1px solid black' }}>
-                    No test parameters available
+                    No parameters found for this section.
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
+          {/* Render overall notes AFTER the first group's table */}
+          {groupIndex === 0 && testNotes && (
+            <div className="mt-4" style={{ marginTop: '10px', fontSize: '11pt', pageBreakInside: 'avoid', borderTop: '1px solid #ccc', paddingTop: '10px' }}>
+              <h4 style={{ fontWeight: 'bold', marginBottom: '4px' }}>Notes:</h4>
+              <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{testNotes}</p>
+            </div>
+          )}
+        </div>
+      ))
+    ) : (
+      // Display if no groupedResults are provided at all
+      <div style={{ textAlign: 'center', padding: '10px', border: '1px solid #ccc', marginTop: '10px' }}>
+        No test results available to display.
+      </div>
+    )}
+
+          {/* REMOVED: Overall Notes Section moved to render after the first group */}
 
           {showSignature && (
             <div className="signature-section" style={{
               display: 'flex',
               justifyContent: 'flex-end',
-              marginTop: 'auto', /* Push to bottom of content */
-              marginBottom: '10mm',
+              marginBottom: '38px',
               width: '100%'
             }}>
               <div className="signature-container" style={{
                 textAlign: 'center',
-                width: '200px' 
+                width: '200px'
               }}>
                 {signatureImage ? (
                   <div style={{ width: '100%', textAlign: 'center', overflow: 'hidden' }}>
-                    <img 
-                      src={signatureImage} 
-                      alt="Signature" 
+                    <img
+                      src={signatureImage}
+                      alt="Signature"
                       className="signature-image"
-                      style={{ 
-                        height: '60px', 
+                      style={{
+                        height: '60px',
                         objectFit: 'contain',
                         display: 'block',
                         margin: '0 auto'
@@ -560,40 +574,29 @@ const ReportTemplate = ({ reportData }) => {
                     />
                   </div>
                 ) : (
-                  <div style={{ height: '60px', borderBottom: '1px solid #000' }}></div> 
+                  <div style={{ height: '60px', borderBottom: '1px solid #000' }}></div>
                 )}
-                <div className="signature-name" style={{ fontWeight: 'bold', marginTop: '5px', fontSize: '12pt' }}> 
+                <div className="signature-name" style={{ fontWeight: 'bold', marginTop: '5px', fontSize: '12pt' }}>
                   Dr. {verifiedBy || 'Consultant'}
                 </div>
-                <div className="signature-designation" style={{ fontSize: '12pt', color: '#666' }}> 
+                <div className="signature-designation" style={{ fontSize: '12pt', color: '#666' }}>
                   {designation || 'Pathologist'}
                 </div>
               </div>
             </div>
           )}
         </div>
-        
+
         {/* Footer Section */}
-        <div className="footer" style={{
-          width: '100%',
-          position: 'absolute',
-          bottom: '0',
-          left: '0',
-          right: '0',
-          borderTop: `1px solid black`,
-          height: '30mm', /* Fixed footer height */
-          overflow: 'hidden',
-          display: 'block', /* Always reserve space even when not showing content */
-          visibility: showFooter ? 'visible' : 'hidden' /* Hide content but keep space */
-        }}>
-          {footerImage ? (
+        <div className="footer">
+          {showFooter && footerImage ? (
             <div style={{ width: '100%', height: '100%', overflow: 'hidden' }}>
-              <img 
-                src={footerImage} 
-                alt="Footer" 
-                style={{ 
-                  width: '100%', 
-                  height: '100%', 
+              <img
+                src={footerImage}
+                alt="Footer"
+                style={{
+                  width: '100%',
+                  height: '100%',
                   objectFit: 'contain',
                   display: 'block',
                   margin: '0 auto'
@@ -601,20 +604,22 @@ const ReportTemplate = ({ reportData }) => {
               />
             </div>
           ) : (
-            // Show warning message if footer data is not available
-            <div className="footer-warning" style={{ 
-              padding: '15px', 
-              backgroundColor: '#fff3cd', 
-              color: '#856404',
-              border: '1px solid black',
-              borderRadius: '4px',
-              textAlign: 'center',
-              margin: '10px 0'
-            }}>
-              <p style={{ fontWeight: 'bold', marginBottom: '5px' }}>⚠️ Footer Not Available</p>
-              <p style={{ fontSize: '0.9em' }}>Please configure footer in lab settings</p>
-            </div>
+            showFooter && !footerImage && (
+              <div className="footer-warning" style={{
+                padding: '15px',
+                backgroundColor: '#fff3cd',
+                color: '#856404',
+                border: '1px solid black',
+                borderRadius: '4px',
+                textAlign: 'center',
+                margin: '10px 0'
+              }}>
+                <p style={{ fontWeight: 'bold', marginBottom: '5px' }}>⚠️ Footer Not Available</p>
+                <p style={{ fontSize: '0.9em' }}>Please configure footer in lab settings</p>
+              </div>
+            )
           )}
+          {!showFooter && null}
         </div>
       </div>
     </>
@@ -629,37 +634,47 @@ ReportTemplate.propTypes = {
     doctorName: PropTypes.string,
     address: PropTypes.string,
     phone: PropTypes.string,
-    
+
     // Patient data
     patientName: PropTypes.string,
     patientAge: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     patientGender: PropTypes.string,
     patientId: PropTypes.string,
-    
+
     // Sample data
-    reportDate: PropTypes.string,
+    sampleCollectionDate: PropTypes.string,
+    sampleType: PropTypes.string,
     referringDoctor: PropTypes.string,
-    
+
     // Test data
-    testName: PropTypes.string,
-    testResults: PropTypes.arrayOf(
+    // testName: PropTypes.string, // Removed, using templateName from group
+    groupedResults: PropTypes.arrayOf( // Expecting groupedResults
       PropTypes.shape({
-        name: PropTypes.string.isRequired,
-        result: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-        unit: PropTypes.string,
-        referenceRange: PropTypes.string,
-        isAbnormal: PropTypes.bool
+        templateName: PropTypes.string,
+        parameters: PropTypes.arrayOf(
+          PropTypes.shape({
+            parameter: PropTypes.string, // Changed from name
+            value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]), // Changed from result
+            unit: PropTypes.string,
+            referenceRange: PropTypes.string,
+            flag: PropTypes.string, // Added flag for abnormality check
+            isHeader: PropTypes.bool, // Added isHeader
+            isSubparameter: PropTypes.bool, // Added isSubparameter
+            notes: PropTypes.string // Added parameter-specific notes
+          })
+        )
       })
     ),
-    
+    testNotes: PropTypes.string, // Overall notes
+
     // Signature data
     signatureImage: PropTypes.string,
     verifiedBy: PropTypes.string,
     designation: PropTypes.string,
-    
+
     // Footer data
     footerImage: PropTypes.string,
-    
+
     // Styling
     styling: PropTypes.shape({
       primaryColor: PropTypes.string,

@@ -1,437 +1,746 @@
 [
-  {
-    "name": "Complete Blood Count (CBC)",
-    "category": "hematology",
-    "sampleType": "Whole Blood (EDTA)",
-    "description": "Evaluates overall health and detects disorders like anemia, infection, and leukemia.",
-    "fields": [
+{
+    "templateName": "Kidney Function Test",
+    "shortName": "KFT",
+    "createdBy": "system",
+    "category": "Biochemistry",
+    "sections": [
       {
-        "parameter": "Haemoglobin (Hb)",
-        "unit": "g/dL",
-        "reference_range": "M: 13.5–18.0; F: 11.5–16.4"
+        "displayFormat": "table",
+        "parameters": [
+          { "name": "SERUM CREATININE", "unit": "mg%", "normalRange": "0.6 - 1.4 mg%" },
+          { "name": "BLOOD UREA", "unit": "mg%", "normalRange": "13 - 45 mg%" }
+        ]
+      }
+    ]
+  },
+{
+    "templateName": "Liver Function Test",
+    "shortName": "LFT",
+    "createdBy": "system",
+    "category": "Biochemistry",
+    "sections": [
+      {
+        "displayFormat": "table",
+        "parameters": [
+          {
+            "name": "BILIRUBIN TOTAL",
+            "unit": "mg%",
+            "normalRange": "0.2 - 1.0 mg%",
+            "isSubparameter": true
+          },
+          {
+            "name": "BILIRUBIN DIRECT",
+            "unit": "mg %",
+            "normalRange": "00 - 0.2 mg%",
+            "isSubparameter": true
+          },
+          {
+            "name": "BILIRUBIN INDIRECT",
+            "unit": "mg %",
+            "normalRange": "",
+            "isSubparameter": true
+          }
+        ]
       },
       {
-        "parameter": "Total WBC Count",
-        "unit": "/cumm",
-        "reference_range": "4,000–11,000"
+        "displayFormat": "table",
+        "parameters": [
+          { "name": "S.G.O.T.", "unit": "U/L.", "normalRange": "7 -- 37 U/L." },
+          { "name": "S.G.P.T.", "unit": "U/L.", "normalRange": "8 -- 40 U/L." },
+          { "name": "SERUM ALK.PHOSPHATASE", "unit": "U/L", "normalRange": "Adults 25 - 140 IU/L\nChildren 104 - 390 IU/L" }
+        ]
+      }
+    ]
+  },
+{
+    "templateName": "Complete Blood Count",
+    "shortName": "CBC",
+    "createdBy": "system",
+    "category": "Hematology",
+    "sections": [
+      {
+        "displayFormat": "table",
+        "parameters": [
+          { "name": "Haemoglobin", "unit": "gms%", "normalRange": "M - 13.5 - 18.0\nF - 11.5 - 16.4" },
+          { "name": "Total WBC Count", "unit": "/cumm", "normalRange": "4,000 - 11,000" },
+          { "name": "Differential Count", "isHeader": true },
+          { "name": "Neutrophils", "unit": "%", "normalRange": "40 - 75", "isSubparameter": true },
+          { "name": "Lymphocytes", "unit": "%", "normalRange": "20 - 45", "isSubparameter": true },
+          { "name": "Eosinophils", "unit": "%", "normalRange": "01 - 06", "isSubparameter": true },
+          { "name": "Monocytes", "unit": "%", "normalRange": "02 - 10", "isSubparameter": true },
+          { "name": "Basophils", "unit": "%", "normalRange": "00 - 01", "isSubparameter": true },
+          { "name": "E.S.R.( Wintrobe Method.)", "unit": "mm", "normalRange": "M -00 -08mm , F- 00-20 mm" },
+          { "name": "R.B.C.Count", "unit": "mil/cmm", "normalRange": "4.5 - 6.5" },
+          { "name": "Haematocrit (HCT)", "unit": "%", "normalRange": "40 - 45" },
+          { "name": "MCV", "unit": "fl", "normalRange": "76 - 96" },
+          { "name": "MCH", "unit": "pg", "normalRange": "27 - 32" },
+          { "name": "MCHC", "unit": "gm/dl", "normalRange": "32 - 36" },
+          { "name": "RDW-SD", "unit": "%", "normalRange": "36 - 56" },
+          { "name": "RDW-CV", "unit": "%", "normalRange": "11.5 - 17.5" },
+          { "name": "PLATELETS COUNT", "unit": "/cumm", "normalRange": "1,50,000 - 4,50,000" }
+        ]
+      }
+    ]
+  },
+{
+    "templateName": "WIDAL Test",
+    "shortName": "WIDAL",
+    "createdBy": "system",
+    "category": "Serology",
+    "sections": [
+      {
+        "displayFormat": "paragraph",
+        "parameters": [
+          { "name": "WIDAL TEST ( By Slide Method)" },
+          { "name": "Agglutination seen in", "isSubparameter": true },
+          { "name": "S\" typhi \" O \" & \" H \" Antigens.", "isSubparameter": true },
+          { "name": "TEST", "normalRange": "NEGATIVE" }
+        ]
+      }
+    ]
+  },
+{
+    "templateName": "ANC & Urine Examination",
+    "shortName": "ANC",
+    "createdBy": "system",
+    "category": "Hematology",
+    "sections": [
+      {
+        "sectionTitle": "Blood Group & Serology",
+        "displayFormat": "key-value",
+        "parameters": [
+          { "name": "Blood Group", "unit": "", "normalRange": "" },
+          { "name": "SERUM FOR HBsAg TEST", "unit": "", "normalRange": "NEGATIVE" },
+          { "name": "RANDOM BLOOD SUGAR", "unit": "mg%", "normalRange": "Upto 140 mg%" }
+        ]
       },
       {
-        "parameter": "Neutrophils",
-        "unit": "%",
-        "reference_range": "40–75"
+        "sectionTitle": "SERUM FOR HIV I & II TEST",
+        "displayFormat": "key-value",
+        "parameters": [
+          { "name": "HIV I", "unit": "", "normalRange": "NON REACTIVE" },
+          { "name": "HIV II", "unit": "", "normalRange": "NON REACTIVE" },
+          { "name": "RESULT", "unit": "", "normalRange": "NEGATIVE" }
+        ]
       },
       {
-        "parameter": "Lymphocytes",
-        "unit": "%",
-        "reference_range": "20–45"
+        "sectionTitle": "Urine Examination Report - Physical Exam",
+        "displayFormat": "table",
+        "parameters": [
+          { "name": "Volume", "unit": "ml", "normalRange": "05 ml" },
+          { "name": "Colour", "unit": "", "normalRange": "Pale yellow" },
+          { "name": "Appearance", "unit": "", "normalRange": "Clear" }
+        ]
       },
       {
-        "parameter": "Eosinophils",
-        "unit": "%",
-        "reference_range": "1–6"
+        "sectionTitle": "Urine Examination Report - Chemical Exam",
+        "displayFormat": "table",
+        "parameters": [
+          { "name": "Protein", "unit": "", "normalRange": "Trace" },
+          { "name": "Sugar", "unit": "", "normalRange": "Nil" }
+        ]
       },
       {
-        "parameter": "Monocytes",
-        "unit": "%",
-        "reference_range": "2–10"
+        "sectionTitle": "Urine Examination Report - Microscopic",
+        "displayFormat": "table",
+        "parameters": [
+          { "name": "Red Blood cells", "unit": "", "normalRange": "Nil" },
+          { "name": "Pus cells", "unit": "/hpf", "normalRange": "2 - 3 /hpf" },
+          { "name": "Epithelial cells", "unit": "/hpf", "normalRange": "1 - 2 /hpf" }
+        ]
+      }
+    ]
+  },
+{
+    "templateName": "Electrolyte Test",
+    "shortName": "ELEC",
+    "createdBy": "system",
+    "category": "Biochemistry",
+    "sections": [
+      {
+        "sectionTitle": "METHOD: ST - 200 aQua",
+        "displayFormat": "key-value",
+        "notes": "( METHOD : ST - 200 aQua )\n( ELECTROLYTE ANALYSER Na/K/ICA )\n( SENSA CORE HEALTH CARE & DIAGNOSTICS PRODUCTS )",
+        "parameters": []
       },
       {
-        "parameter": "Basophils",
-        "unit": "%",
-        "reference_range": "0–1"
+        "displayFormat": "table",
+        "parameters": [
+          { "name": "SERUM SODIUM", "unit": "mmol/L", "normalRange": "135 - 145" },
+          { "name": "SERUM POTASSIUM", "unit": "mmol/L", "normalRange": "3.5 - 5.1" },
+          { "name": "SERUM CALCIUM", "unit": "mg%", "normalRange": "8.5 - 10.5" }
+        ]
+      }
+    ]
+  },
+{
+    "templateName": "Lipid Profile Test Report",
+    "shortName": "LIPID",
+    "createdBy": "system",
+    "category": "Biochemistry",
+    "sections": [
+      {
+        "displayFormat": "table",
+        "parameters": [
+          { "name": "SERUM CHOLESTEROL", "unit": "mg%", "normalRange": "130 - 200 mg%" },
+          { "name": "SERUM TRIGLYCERIDES", "unit": "mg%", "normalRange": "50 - 160 mg%" },
+          { "name": "SERUM H.D.L.", "unit": "mg%", "normalRange": "30 - 70 mg%" },
+          { "name": "SERUM L.D.L.", "unit": "mg%", "normalRange": "less than 150 mg%" },
+          { "name": "SERUM V.L.D.L.", "unit": "mg%", "normalRange": "20 - 50 mg%" }
+        ]
+      }
+    ]
+  },
+{
+    "templateName": "Blood Examination - Creatinine",
+    "shortName": "CRE",
+    "createdBy": "system",
+    "category": "Biochemistry",
+    "sections": [
+      {
+        "displayFormat": "table",
+        "parameters": [
+          { "name": "TOTAL", "unit": "mg%", "normalRange": "0.2 - 1.0 mg%", "isSubparameter": true },
+          { "name": "DIRECT", "unit": "mg%", "normalRange": "00 - 0.2 mg%", "isSubparameter": true },
+          { "name": "INDIRECT", "unit": "mg%", "normalRange": "", "isSubparameter": true },
+          { "name": "SERUM CREATININE", "unit": "mg%", "normalRange": "0.6 - 1.4 mg%" },
+          { "name": "RANDOM BLOOD SUGAR", "unit": "mg%", "normalRange": "Upto 140 mg%" },
+          { "name": "SERUM FOR C - REACTIVE PROTEINS", "unit": "mg/lt", "normalRange": "N -less than 6 mg/lt", "notes": "( By Turbilatex)" }
+        ]
+      }
+    ]
+  },
+{
+    "templateName": "C-Reactive Protein (CRP)",
+    "shortName": "CRP",
+    "createdBy": "system",
+    "category": "Biochemistry",
+    "sections": [
+      {
+        "sectionTitle": "Default",
+        "displayFormat": "table",
+        "parameters": []
       },
       {
-        "parameter": "RBC Count",
-        "unit": "mil/cmm",
-        "reference_range": "4.5–6.5"
-      },
-      {
-        "parameter": "Hematocrit (HCT)",
-        "unit": "%",
-        "reference_range": "40–45"
-      },
-      {
-        "parameter": "MCV",
-        "unit": "fL",
-        "reference_range": "76–96"
-      },
-      {
-        "parameter": "MCH",
-        "unit": "pg",
-        "reference_range": "27–32"
-      },
-      {
-        "parameter": "MCHC",
-        "unit": "g/dL",
-        "reference_range": "32–36"
-      },
-      {
-        "parameter": "RDW-SD",
-        "unit": "%",
-        "reference_range": "36–56"
-      },
-      {
-        "parameter": "RDW-CV",
-        "unit": "%",
-        "reference_range": "11.5–17.5"
-      },
-      {
-        "parameter": "Platelets",
-        "unit": "/cumm",
-        "reference_range": "150,000–450,000"
-      },
-      {
-        "parameter": "C-Reactive Protein (CRP)",
-        "unit": "mg/L",
-        "reference_range": "<6.0"
+        "sectionTitle": "CRP test",
+        "displayFormat": "key-value",
+        "notes": "( N -less than 6 mg/lt ) ( By Turbilatex )",
+        "parameters": [
+          {
+            "name": "SERUM FOR C - REACTIVE PROTEINS",
+            "value": "",
+            "unit": "mg/lt",
+            "normalRange": "N -less than 6 mg/lt",
+            "notes": "( By Turbilatex )"
+          }
+        ]
       }
     ]
   },
   {
-    "name": "Kidney Function Test (KFT)",
-    "category": "biochemistry",
-    "sampleType": "Serum",
-    "description": "Assesses kidney function and detects renal disorders.",
-    "fields": [
+    "templateName": "URINE EXAMINATION REPORT",
+    "shortName": "URINE",
+    "createdBy": "system",
+    "category": "Pathology",
+    "sections": [
       {
-        "parameter": "Serum Creatinine",
-        "unit": "mg%",
-        "reference_range": "0.6–1.4"
+        "sectionTitle": "PHYSICAL EXAM",
+        "displayFormat": "table",
+        "parameters": [
+          { "name": "Volume", "unit": "", "normalRange": "" },
+          { "name": "Colour", "unit": "", "normalRange": "" },
+          { "name": "Appearance", "unit": "", "normalRange": "" }
+        ]
       },
       {
-        "parameter": "Blood Urea",
-        "unit": "mg%",
-        "reference_range": "13–45"
+        "sectionTitle": "CHEMICAL EXAM",
+        "displayFormat": "table",
+        "parameters": [
+          { "name": "Protein", "unit": "", "normalRange": "" },
+          { "name": "Sugar", "unit": "", "normalRange": "" },
+          { "name": "Ketone Bodies", "unit": "", "normalRange": "" },
+          { "name": "Bile Salt", "unit": "", "normalRange": "" },
+          { "name": "Bile Pigment", "unit": "", "normalRange": "" },
+          { "name": "Urobilinogen", "unit": "", "normalRange": "" },
+          { "name": "PH", "unit": "", "normalRange": "" }
+        ]
+      },
+      {
+        "sectionTitle": "MICROSCOPIC",
+        "displayFormat": "table",
+        "parameters": [
+          { "name": "Red Blood cells", "unit": "", "normalRange": "" },
+          { "name": "Pus cells", "unit": "/hpf", "normalRange": "" },
+          { "name": "Epithelial cells", "unit": "/hpf", "normalRange": "" },
+          { "name": "Cast", "unit": "", "normalRange": "" },
+          { "name": "Crystals", "unit": "", "normalRange": "" },
+          { "name": "Bacteria", "unit": "", "normalRange": "" }
+        ]
       }
     ]
   },
   {
-    "name": "Liver Function Test (LFT)",
-    "category": "biochemistry",
-    "sampleType": "Serum",
-    "description": "Evaluates liver health and detects conditions like hepatitis or cirrhosis.",
-    "fields": [
+    "templateName": "SERUM FOR HIV I & II TEST",
+    "shortName": "HIV",
+    "createdBy": "system",
+    "category": "Serology",
+    "sections": [
       {
-        "parameter": "Total Bilirubin",
-        "unit": "mg%",
-        "reference_range": "0.2–1.0"
-      },
-      {
-        "parameter": "Direct Bilirubin",
-        "unit": "mg%",
-        "reference_range": "0–0.2"
-      },
-      {
-        "parameter": "Indirect Bilirubin",
-        "unit": "mg%",
-        "reference_range": "Calculated"
-      },
-      {
-        "parameter": "SGOT (AST)",
-        "unit": "U/L",
-        "reference_range": "7–37"
-      },
-      {
-        "parameter": "SGPT (ALT)",
-        "unit": "U/L",
-        "reference_range": "8–40"
-      },
-      {
-        "parameter": "Alkaline Phosphatase",
-        "unit": "U/L",
-        "reference_range": "Adults: 25–140; Children: 104–390"
+        "displayFormat": "key-value",
+        "notes": "(by tri dot, Biomed Industries & co. ltd. lot.no HTD 022212)\n(Note: This is Screening Test, to be confirmed by westorn blot & pcr Analysis.)",
+        "parameters": [
+          { "name": "HIV I", "unit": "", "normalRange": "NON REACTIVE", "inputType": "dropdown", "options": ["NON REACTIVE", "REACTIVE"] },
+          { "name": "HIV II", "unit": "", "normalRange": "NON REACTIVE", "inputType": "dropdown", "options": ["NON REACTIVE", "REACTIVE"] },
+          { "name": "RESULT", "unit": "", "normalRange": "NEGATIVE", "inputType": "dropdown", "options": ["NEGATIVE", "POSITIVE"] }
+        ]
       }
     ]
   },
   {
-    "name": "Lipid Profile",
-    "category": "biochemistry",
-    "sampleType": "Serum",
-    "description": "Measures cholesterol and triglycerides to assess cardiovascular risk.",
-    "fields": [
+    "templateName": "Random Blood Sugar",
+    "shortName": "RBS",
+    "createdBy": "system",
+    "category": "Biochemistry",
+    "sections": [
       {
-        "parameter": "Total Cholesterol",
-        "unit": "mg%",
-        "reference_range": "130–200"
-      },
-      {
-        "parameter": "Triglycerides",
-        "unit": "mg%",
-        "reference_range": "50–160"
-      },
-      {
-        "parameter": "HDL Cholesterol",
-        "unit": "mg%",
-        "reference_range": "30–70"
-      },
-      {
-        "parameter": "LDL Cholesterol",
-        "unit": "mg%",
-        "reference_range": "<150"
-      },
-      {
-        "parameter": "VLDL Cholesterol",
-        "unit": "mg%",
-        "reference_range": "20–50"
+        "displayFormat": "table",
+        "parameters": [
+          { "name": "RANDOM BLOOD SUGAR", "unit": "mg%", "normalRange": "Upto 140 mg%" }
+        ]
       }
     ]
   },
   {
-    "name": "Thyroid Function Test (T3, T4, TSH)",
-    "category": "endocrinology",
-    "sampleType": "Serum",
-    "description": "Evaluates thyroid gland function.",
-    "fields": [
+    "templateName": "Blood Group",
+    "shortName": "BG",
+    "createdBy": "system",
+    "category": "Hematology",
+    "sections": [
       {
-        "parameter": "Free T3 (FT3)",
-        "unit": "pmol/L",
-        "reference_range": "4–8.3"
-      },
-      {
-        "parameter": "Free T4 (FT4)",
-        "unit": "pmol/L",
-        "reference_range": "9–20"
-      },
-      {
-        "parameter": "TSH",
-        "unit": "µIU/mL",
-        "reference_range": "0.2–6.0"
+        "displayFormat": "key-value",
+        "parameters": [
+          { 
+            "name": "BLOOD GROUP", 
+            "unit": "", 
+            "normalRange": "",
+            "inputType": "dropdown",
+            "options": ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]
+          }
+        ]
       }
     ]
   },
   {
-    "name": "Infectious Disease Tests",
-    "category": "serology",
-    "sampleType": "Serum/Whole Blood",
-    "description": "Tests for various infectious diseases.",
-    "sections": {
-      "Widal Test": [
-        {
-          "parameter": "S. Typhi O Antigen",
-          "unit": "Titre",
-          "reference_range": "<1:80 (Non-reactive)"
-        },
-        {
-          "parameter": "S. Typhi H Antigen",
-          "unit": "Titre",
-          "reference_range": "<1:80 (Non-reactive)"
-        }
-      ],
-      "Dengue Test": [
-        {
-          "parameter": "Dengue NS1 Antigen",
-          "unit": "Qualitative",
-          "reference_range": "Negative"
-        },
-        {
-          "parameter": "Dengue IgG/IgM",
-          "unit": "Qualitative",
-          "reference_range": "Negative"
-        }
-      ],
-      "HIV Test": [
-        {
-          "parameter": "HIV I/II Antibodies",
-          "unit": "Qualitative",
-          "reference_range": "Non-reactive"
-        }
-      ]
-    }
-  },
-  {
-    "name": "Urine Examination",
-    "category": "urinalysis",
-    "sampleType": "Urine",
-    "description": "Evaluates urine for abnormalities.",
-    "fields": [
+    "templateName": "Rapid Malaria Test",
+    "shortName": "RMT",
+    "createdBy": "system",
+    "category": "Serology",
+    "sections": [
       {
-        "parameter": "Color",
-        "unit": "–",
-        "reference_range": "Pale Yellow"
-      },
-      {
-        "parameter": "Appearance",
-        "unit": "–",
-        "reference_range": "Clear"
-      },
-      {
-        "parameter": "Protein",
-        "unit": "–",
-        "reference_range": "Trace/Negative"
-      },
-      {
-        "parameter": "Sugar",
-        "unit": "–",
-        "reference_range": "Negative"
-      },
-      {
-        "parameter": "Pus Cells",
-        "unit": "/hpf",
-        "reference_range": "0–5"
-      },
-      {
-        "parameter": "RBCs",
-        "unit": "/hpf",
-        "reference_range": "0–2"
+        "displayFormat": "key-value",
+        "notes": "( Test Done By Card Method  Lot no ACM 140322 )",
+        "parameters": [
+          { 
+            "name": "PV MALARIA", 
+            "unit": "", 
+            "normalRange": "NON REACTIVE",
+            "inputType": "dropdown",
+            "options": ["NON REACTIVE", "REACTIVE"]
+          },
+          { 
+            "name": "PF MALARIA", 
+            "unit": "", 
+            "normalRange": "NON REACTIVE",
+            "inputType": "dropdown",
+            "options": ["NON REACTIVE", "REACTIVE"]
+          },
+          { 
+            "name": "RESULT", 
+            "unit": "", 
+            "normalRange": "NEGATIVE",
+            "inputType": "dropdown",
+            "options": ["NEGATIVE", "POSITIVE"]
+          }
+        ]
       }
     ]
   },
   {
-    "name": "Stool Examination",
-    "category": "microbiology",
-    "sampleType": "Stool",
-    "description": "Evaluates stool for abnormalities.",
-    "fields": [
+    "templateName": "Dengue Test Report",
+    "shortName": "DENGUE",
+    "createdBy": "system",
+    "category": "Serology",
+    "sections": [
       {
-        "parameter": "Consistency",
-        "unit": "–",
-        "reference_range": "Solid"
-      },
-      {
-        "parameter": "Occult Blood",
-        "unit": "–",
-        "reference_range": "Negative"
-      },
-      {
-        "parameter": "Pus Cells",
-        "unit": "/hpf",
-        "reference_range": "0–2"
-      },
-      {
-        "parameter": "Ova/Cysts",
-        "unit": "–",
-        "reference_range": "Absent"
+        "displayFormat": "key-value",
+        "notes": "(by Dengue card method. Lot.no DBA 260624 )\n\n(Dengue card is a rapid solid phase immuno-chromatographic assay,\n\nfor the qualitative and differential detection of IgG & IgM antibodies,\n\nto dengue virus in human serum. Dengue card is intended as an aid in the ,\npresumptive diagnosis between primary and secondary dengue infection.)",
+        "parameters": [
+          { 
+            "name": "DENGUE NS 1 Ag", 
+            "unit": "", 
+            "normalRange": "NEGATIVE",
+            "inputType": "dropdown",
+            "options": ["NEGATIVE", "POSITIVE"]
+          },
+          { 
+            "name": "DENGUE IgG ANTIBODIES", 
+            "unit": "", 
+            "normalRange": "NEGATIVE",
+            "inputType": "dropdown",
+            "options": ["NEGATIVE", "POSITIVE"]
+          },
+          { 
+            "name": "DENGUE IgM ANTIBODIES", 
+            "unit": "", 
+            "normalRange": "NEGATIVE",
+            "inputType": "dropdown",
+            "options": ["NEGATIVE", "POSITIVE"]
+          },
+          { 
+            "name": "RESULT", 
+            "unit": "", 
+            "normalRange": "NEGATIVE",
+            "inputType": "dropdown",
+            "options": ["NEGATIVE", "POSITIVE"]
+          }
+        ]
       }
     ]
   },
   {
-    "name": "Electrolytes (ELEC)",
-    "category": "biochemistry",
-    "sampleType": "Serum",
-    "description": "Measures electrolytes in serum.",
-    "fields": [
+    "templateName": "Rheumatoid Arthritis Factor Test",
+    "shortName": "RA",
+    "createdBy": "system",
+    "category": "Serology",
+    "sections": [
       {
-        "parameter": "Sodium (Na)",
-        "unit": "mmol/L",
-        "reference_range": "135–150"
-      },
-      {
-        "parameter": "Potassium (K)",
-        "unit": "mmol/L",
-        "reference_range": "3.5–5.0"
-      },
-      {
-        "parameter": "Ionic Calcium",
-        "unit": "mmol/L",
-        "reference_range": "1.10–1.35"
+        "displayFormat": "key-value",
+        "notes": "( N -less than 20 mg/lt ) ( By Turbilatex)",
+        "parameters": [
+          { 
+            "name": "SERUM FOR R.A. FACTOR TEST", 
+            "unit": "mg/lt", 
+            "normalRange": "less than 20 mg/lt"
+          }
+        ]
       }
     ]
   },
   {
-    "name": "Coagulation Tests (PT/APTT/BT/CT)",
-    "category": "hematology",
-    "sampleType": "Plasma",
-    "description": "Evaluates blood clotting ability.",
-    "fields": [
+    "templateName": "Serum Calcium Test",
+    "shortName": "CA",
+    "createdBy": "system",
+    "category": "Biochemistry",
+    "sections": [
       {
-        "parameter": "Prothrombin Time (PT)",
-        "unit": "sec",
-        "reference_range": "12–15"
-      },
-      {
-        "parameter": "INR",
-        "unit": "–",
-        "reference_range": "0.9–1.2"
-      },
-      {
-        "parameter": "Bleeding Time (BT)",
-        "unit": "min",
-        "reference_range": "2–5"
-      },
-      {
-        "parameter": "Clotting Time (CT)",
-        "unit": "min",
-        "reference_range": "3–8"
+        "displayFormat": "key-value",
+        "notes": "( N- 8.8--10.2 mg/dl )",
+        "parameters": [
+          { 
+            "name": "SERUM TOTAL CALCIUM", 
+            "unit": "mg/dl", 
+            "normalRange": "8.8 - 10.2 mg/dl"
+          }
+        ]
       }
     ]
   },
   {
-    "name": "CSF Analysis",
-    "category": "biochemistry",
-    "sampleType": "CSF",
-    "description": "Analysis of cerebrospinal fluid to diagnose various neurological conditions.",
-    "fields": [
+    "templateName": "Uric Acid Test",
+    "shortName": "UA",
+    "createdBy": "system",
+    "category": "Biochemistry",
+    "sections": [
       {
-        "parameter": "Protein",
-        "unit": "mg/dL",
-        "reference_range": "15-45"
-      },
-      {
-        "parameter": "Glucose",
-        "unit": "mg/dL",
-        "reference_range": "50-80"
-      },
-      {
-        "parameter": "Cell Count",
-        "unit": "cells/µL",
-        "reference_range": "0-5"
+        "displayFormat": "key-value",
+        "parameters": [
+          { 
+            "name": "SERUM URIC ACID", 
+            "unit": "mg%", 
+            "normalRange": "2.3 - 6.1 mg%"
+          }
+        ]
       }
     ]
   },
   {
-    "name": "CPK-MB",
-    "category": "cardiology",
-    "sampleType": "Serum",
-    "description": "Measures the level of creatine phosphokinase-MB in the blood, which is a marker of heart muscle damage.",
-    "fields": [
+    "templateName": "CPK-MB Test",
+    "shortName": "CPKMB",
+    "createdBy": "system",
+    "category": "Biochemistry",
+    "sections": [
       {
-        "parameter": "CPK-MB",
-        "unit": "U/L",
-        "reference_range": "0-25"
+        "displayFormat": "key-value",
+        "parameters": [
+          { 
+            "name": "SERUM CPK-MB", 
+            "unit": "U/L", 
+            "normalRange": "00 - 25 IU/L"
+          }
+        ]
       }
     ]
   },
   {
-    "name": "Amylase/Lipase",
-    "category": "gastroenterology",
-    "sampleType": "Serum",
-    "description": "Measures the levels of amylase and lipase enzymes in the blood, which are markers of pancreatic function.",
-    "fields": [
+    "templateName": "Typhi Dot Test",
+    "shortName": "TYPHI",
+    "createdBy": "system",
+    "category": "Serology",
+    "sections": [
       {
-        "parameter": "Amylase",
-        "unit": "U/L",
-        "reference_range": "Up to 80"
-      },
-      {
-        "parameter": "Lipase",
-        "unit": "U/L",
-        "reference_range": "Up to 60"
+        "displayFormat": "key-value",
+        "notes": "By Rapid Typhoid Test Kits\nLot No TAB 081218",
+        "parameters": [
+          { 
+            "name": "IgM antibody", 
+            "unit": "", 
+            "normalRange": "Negative",
+            "inputType": "dropdown",
+            "options": ["Negative", "Positive"]
+          },
+          { 
+            "name": "IgG antibody", 
+            "unit": "", 
+            "normalRange": "Negative",
+            "inputType": "dropdown",
+            "options": ["Negative", "Positive"]
+          }
+        ]
       }
     ]
   },
   {
-    "name": "RA Factor",
-    "category": "immunology",
-    "sampleType": "Serum",
-    "description": "Measures the level of rheumatoid factor in the blood, which is a marker of rheumatoid arthritis.",
-    "fields": [
+    "templateName": "Widal Test",
+    "shortName": "WIDAL",
+    "createdBy": "system",
+    "category": "Serology",
+    "sections": [
       {
-        "parameter": "RA Factor",
-        "unit": "mg/L",
-        "reference_range": "<20"
+        "displayFormat": "key-value",
+        "parameters": [
+          { 
+            "name": "Agglutination seen in", 
+            "unit": "", 
+            "normalRange": "No Agglutination",
+            "inputType": "dropdown",
+            "options": ["No Agglutination", "Agglutination"]
+          },
+          { 
+            "name": "Result", 
+            "unit": "", 
+            "normalRange": "Negative",
+            "inputType": "dropdown",
+            "options": ["Negative", "Positive"]
+          }
+        ],
+        "notes": "S. typhi \"O\" & \"H\" Antigens."
       }
     ]
   },
   {
-    "name": "Troponin I",
-    "category": "cardiology",
-    "sampleType": "Serum",
-    "description": "Measures the level of troponin I in the blood, which is a marker of heart muscle damage.",
-    "fields": [
+    "templateName": "Troponin-I Test",
+    "shortName": "TROP I",
+    "createdBy": "system",
+    "category": "Biochemistry",
+    "sections": [
       {
-        "parameter": "Troponin I",
-        "unit": "ng/mL",
-        "reference_range": "<0.5"
+        "displayFormat": "key-value",
+        "notes": "( A 10 Minute lateral flow Immunoassay for the qualitaive detection of Troponin I in human serum or plasma at a detection sensitivity of 0.5 ng/ml )",
+        "parameters": [
+          { 
+            "name": "Troponin-I Test", 
+            "unit": "", 
+            "normalRange": "NEGATIVE",
+            "inputType": "dropdown",
+            "options": ["NEGATIVE", "POSITIVE"]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "templateName": "Lipase Test",
+    "shortName": "LIPASE",
+    "createdBy": "system",
+    "category": "Biochemistry",
+    "sections": [
+      {
+        "displayFormat": "key-value",
+        "parameters": [
+          { 
+            "name": "SERUM LIPASE", 
+            "unit": "U/L", 
+            "normalRange": "Up to 60 U/L"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "templateName": "Amylase Test",
+    "shortName": "AMYLASE",
+    "createdBy": "system",
+    "category": "Biochemistry",
+    "sections": [
+      {
+        "displayFormat": "key-value",
+        "parameters": [
+          { 
+            "name": "SERUM AMYLASE", 
+            "unit": "U/L", 
+            "normalRange": "Up to 80 U/L"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "templateName": "Cholinesterase Test",
+    "shortName": "CHOL",
+    "createdBy": "system",
+    "category": "Biochemistry",
+    "sections": [
+      {
+        "displayFormat": "key-value",
+        "notes": "( Male     N   -- 4620   --   11500 U/L  )\n( Female  N  -- 3930 -- 10800 U/L )",
+        "parameters": [
+          { 
+            "name": "SERUM CHOLINESTERASE", 
+            "unit": "U/L", 
+            "normalRange": "Male: 4620 - 11500 U/L\nFemale: 3930 - 10800 U/L"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "templateName": "VDRL Test",
+    "shortName": "VDRL",
+    "createdBy": "system",
+    "category": "Serology",
+    "sections": [
+      {
+        "displayFormat": "key-value",
+        "notes": "( By Carbogen Antigen)",
+        "parameters": [
+          { 
+            "name": "SERUM FOR V.D.R.L. TEST", 
+            "unit": "", 
+            "normalRange": "NON REACTIVE",
+            "inputType": "dropdown",
+            "options": ["NON REACTIVE", "REACTIVE"]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "templateName": "Bleeding Time & Clotting Time",
+    "shortName": "BT CT",
+    "createdBy": "system",
+    "category": "Hematology",
+    "sections": [
+      {
+        "displayFormat": "key-value",
+        "parameters": [
+          { 
+            "name": "B.T.", 
+            "unit": "", 
+            "normalRange": "Upto 5 min"
+          },
+          { 
+            "name": "C.T.", 
+            "unit": "", 
+            "normalRange": "3 - 8 mts"
+          },
+          { 
+            "name": "The 20-Minute Whole blood Clotting test", 
+            "unit": "", 
+            "normalRange": ""
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "templateName": "Protein Test",
+    "shortName": "PROTEIN",
+    "createdBy": "system",
+    "category": "Biochemistry",
+    "sections": [
+      {
+        "displayFormat": "key-value",
+        "parameters": [
+          { 
+            "name": "SERUM TOTAL PROTEIN", 
+            "unit": "gms%", 
+            "normalRange": "6.5 - 8.3 gms%"
+          },
+          { 
+            "name": "ALBUMIN", 
+            "unit": "gms%", 
+            "normalRange": "3.5 - 5.5 gms%"
+          },
+          { 
+            "name": "GLOBULIN", 
+            "unit": "gms%", 
+            "normalRange": "2.5 - 3.5 gms%"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "templateName": "Bilirubin Test",
+    "shortName": "BILIRUBIN",
+    "createdBy": "system",
+    "category": "Biochemistry",
+    "sections": [
+      {
+        "displayFormat": "key-value",
+        "parameters": [
+          { 
+            "name": "SERUM BILIRUBIN", 
+            "isHeader": true
+          },
+          { 
+            "name": "TOTAL", 
+            "unit": "mg%", 
+            "normalRange": "0.2 - 1.0 mg%",
+            "isSubparameter": true
+          },
+          { 
+            "name": "DIRECT", 
+            "unit": "mg%", 
+            "normalRange": "00 - 0.2 mg%",
+            "isSubparameter": true
+          },
+          { 
+            "name": "INDIRECT", 
+            "unit": "mg%", 
+            "normalRange": "",
+            "isSubparameter": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "templateName": "Creatinine Test",
+    "shortName": "CREATININE",
+    "createdBy": "system",
+    "category": "Biochemistry",
+    "sections": [
+      {
+        "displayFormat": "key-value",
+        "parameters": [
+          { 
+            "name": "SERUM CREATININE", 
+            "unit": "mg%", 
+            "normalRange": "0.6 - 1.4 mg%"
+          }
+        ]
       }
     ]
   }

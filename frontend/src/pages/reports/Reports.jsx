@@ -27,6 +27,8 @@ export default function Reports() {
 
   useEffect(() => {
     fetchReports();
+    // Scroll to top when component mounts
+    window.scrollTo(0, 0); 
   }, []);
 
   const fetchReports = async (isRefresh = false) => {
@@ -36,8 +38,9 @@ export default function Reports() {
       } else {
         setIsLoading(true);
       }
-      console.log('Fetching reports from API...');
-      const response = await reports.getAll(); // Fetch all reports
+      console.log('Fetching reports from API with high limit...');
+      // Pass a large limit to fetch all reports, bypassing default pagination
+      const response = await reports.getAll({ limit: 10000 }); 
       console.log('Reports response received:', response);
       
       // Handle different response formats
@@ -329,15 +332,15 @@ export default function Reports() {
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                 </svg>
                               </Link>
-                            <button
-                                onClick={() => window.open(`/reports/${reportId}/print`, '_self')}
+                            <Link
+                                to={`/reports/${reportId}/print`}
                                 className="text-gray-600 hover:text-gray-900 p-1 rounded-full hover:bg-gray-100 transition-colors"
                                 title="Print Report"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                                 </svg>
-                              </button>
+                            </Link>
                             </div>
                           </td>
                         </tr>

@@ -36,26 +36,33 @@ const AddDoctor = () => {
       setError('Specialty is required.');
       return;
     }
-    if (!formData.phone.trim()) {
-      setError('Phone Number is required.');
-      return;
+    // Phone validation removed as it's now optional
+    // if (!formData.phone.trim()) {
+    //   setError('Phone Number is required.');
+    //   return;
+    // }
+    // Check if phone number is exactly 10 digits (only if provided)
+    if (formData.phone.trim()) {
+      const phoneDigits = formData.phone.replace(/\D/g, '');
+      if (phoneDigits.length !== 10) {
+        setError('Phone number must be exactly 10 digits.');
+        return;
+      }
     }
-    // Check if phone number is exactly 10 digits
-    const phoneDigits = formData.phone.replace(/\D/g, '');
-    if (phoneDigits.length !== 10) {
-      setError('Phone number must be exactly 10 digits.');
-      return;
+    // Email validation removed as it's now optional
+    // if (!formData.email.trim()) {
+    //   setError('Email is required.');
+    //   return;
+    // }
+    // Simple email format check (only if email is provided)
+    if (formData.email.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        setError('Please enter a valid email address.');
+        return;
+      }
     }
-    if (!formData.email.trim()) {
-      setError('Email is required.');
-      return;
-    }
-    // Simple email format check
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      setError('Please enter a valid email address.');
-      return;
-    }
+
 
     setIsLoading(true);
 
@@ -164,13 +171,13 @@ const AddDoctor = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone Number <span className="text-red-500">*</span>
+                  Phone Number {/* Removed asterisk */}
                 </label>
         <input
           type="tel"
           name="phone"
           id="phone"
-          required
+          // required // Removed required attribute
           value={formData.phone}
           onChange={handleInputChange}
           className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
@@ -179,13 +186,13 @@ const AddDoctor = () => {
               </div>
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                  Email <span className="text-red-500">*</span>
+                  Email {/* Removed asterisk */}
                 </label>
         <input
           type="email"
           name="email"
           id="email"
-          required
+          // required // Removed required attribute
           value={formData.email}
           onChange={handleInputChange}
           className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"

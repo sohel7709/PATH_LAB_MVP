@@ -70,11 +70,30 @@ const reportSchema = new mongoose.Schema({
     unit: String,
     referenceRange: String,
     interpretation: String,
+    notes: String, // Field for parameter-specific notes
+    isHeader: Boolean, // Whether this is a header row
+    isSubparameter: Boolean, // Whether this is a subparameter
+    section: String, // Section this parameter belongs to (e.g., "CRP test")
     flag: {
       type: String,
       enum: ['normal', 'low', 'high', 'critical']
-    }
-  }],
+    },
+    templateId: { // Added field to link parameter back to its original template
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'TestTemplate' 
+       // Not strictly required, but useful for grouping in PDF/preview
+     }
+   }],
+  templateNotes: { // Store notes specific to each template used
+    type: Map,
+    of: String,
+    default: {} 
+   },
+  testNotes: String, // Field for general/manual notes added by user
+  showCRPTest: { // Flag to control visibility of CRP test section
+    type: Boolean,
+    default: true // This might be obsolete if CRP is just another template
+  },
   status: {
     type: String,
     enum: ['pending', 'in-progress', 'completed', 'verified', 'delivered'],
@@ -156,8 +175,27 @@ const reportSchema = new mongoose.Schema({
   }
 }, {
   timestamps: true,
-  toJSON: { virtuals: true },
-  toObject: { virtuals: true }
+  toJSON: { 
+    virtuals: true,
+    // Ensure Maps are converted to Objects when converting to JSON/Object
+    transform: function (doc, ret) {
+      // Mongoose likely already converts Map to object here, just ensure it exists
+      ret.templateNotes = ret.templateNotes || {};
+      // You can add other transformations here if needed
+      // delete ret._id; // Example: remove _id
+      // delete ret.__v; // Example: remove __v
+      return ret;
+    }
+  },
+  toObject: { 
+    virtuals: true,
+    // Ensure Maps are converted to Objects when converting to JSON/Object
+    transform: function (doc, ret) {
+      // Mongoose likely already converts Map to object here, just ensure it exists
+      ret.templateNotes = ret.templateNotes || {};
+      return ret;
+    }
+  }
 });
 
 // Indexes for faster queries

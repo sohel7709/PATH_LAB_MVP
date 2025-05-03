@@ -31,7 +31,7 @@ export default function CreateReportForm() {
     collectionDate: new Date().toISOString().split('T')[0],
     reportDate: new Date().toISOString().split('T')[0],
     price: '', // Add price field
-    status: REPORT_STATUS.PENDING,
+    status: 'in-progress',
     notes: '',
     technicianId: user?.id || '',
     labId: user?.lab || '',
@@ -56,7 +56,7 @@ export default function CreateReportForm() {
       }
     };
     
-    initializeData();
+    initializeData(); 
   }, [location]);
 
   // Fetch doctors list
@@ -207,6 +207,13 @@ export default function CreateReportForm() {
         }
       }
       
+      // Debug: Log required fields before validation
+      console.log('DEBUG required fields:', {
+        testName: formData.testName,
+        category: formData.category,
+        sampleType: formData.sampleType
+      });
+
       // Validate required fields
       if (!formData.testName || !formData.category || !formData.sampleType) {
         setError('Please fill in all required test information fields');
@@ -221,9 +228,19 @@ export default function CreateReportForm() {
         return;
       }
 
-      // Check if all test parameters have values
-      const missingValues = formData.testParameters.filter(param => !param.name || !param.value);
+      // Check if all test parameters have values (excluding headers and special parameters)
+      const missingValues = formData.testParameters.filter(param => {
+        // Skip header rows and parameters that don't need values
+        if (param.isHeader) return false;
+        
+        // Skip parameters in CRP test section if it's not shown
+        if (param.section === "CRP test" && !formData.showCRPTest) return false;
+        
+        return !param.name || !param.value;
+      });
+      
       if (missingValues.length > 0) {
+        console.log('Missing values in parameters:', missingValues);
         setError('Please provide values for all test parameters');
         setIsLoading(false);
         return;
@@ -259,17 +276,24 @@ export default function CreateReportForm() {
           value: param.value || 'N/A',
           unit: param.unit || '',
           referenceRange: param.referenceRange || '',
-          flag: param.value && param.referenceRange ? 
-            (isValueNormal(param.value, param.referenceRange, formData.patientGender) ? 'normal' : 'high') : 
-            'normal'
+          notes: param.notes || '',
+          isHeader: param.isHeader || false,
+          isSubparameter: param.isSubparameter || false,
+          section: param.section || 'Default',
+          // flag: getAbnormalFlag(param.value, param.referenceRange, formData.patientGender), // <<< REMOVE frontend flag calculation
+          templateId: param.templateId
         })),
-        status: formData.status,
+        templateNotes: formData.templateNotes || {}, // Send the template notes object
+        testNotes: formData.testNotes || '', // Send the general notes separately
+        // showCRPTest: formData.showCRPTest || false, // This seems unused now
+        status: REPORT_STATUS.IN_PROGRESS,
         lab: user?.lab,
         technician: user?.id,
         reportMeta: {
           generatedAt: new Date(),
           version: 1
-        }
+        },
+        selectedTemplateIds: formData.selectedTemplateIds || []
       };
 
       console.log('Formatted report data:', JSON.stringify(reportData, null, 2));
@@ -292,14 +316,15 @@ export default function CreateReportForm() {
     }
   };
 
-  // Check if value is within normal range (simplified version for form submission)
-  const isValueNormal = (value, referenceRange, gender) => {
-    if (!value || !referenceRange) return true;
-    
-    // Convert value to number (remove commas if present)
-    const numValue = parseFloat(value.toString().replace(/,/g, ''));
-    if (isNaN(numValue)) return true; // If value is not a number, consider it normal
-    
+  // REMOVED frontend getAbnormalFlag function as backend will handle it
+  /*
+  const getAbnormalFlag = (value, referenceRange, gender) => {
+    // ... existing frontend logic ...
+  };
+  */
+  /* // Removing stray code left from previous incorrect diff application
+    if (isNaN(numValue)) return 'normal';
+
     // Handle gender-specific ranges like "M: 13.5–18.0; F: 11.5–16.4"
     const genderMatch = referenceRange.match(/M:\s*(\d+\.?\d*)[–-](\d+\.?\d*);\s*F:\s*(\d+\.?\d*)[–-](\d+\.?\d*)/);
     if (genderMatch) {
@@ -307,31 +332,67 @@ export default function CreateReportForm() {
       const maleMax = parseFloat(genderMatch[2]);
       const femaleMin = parseFloat(genderMatch[3]);
       const femaleMax = parseFloat(genderMatch[4]);
-      
+
       // Use the appropriate range based on patient gender
       if (gender === 'male' && !isNaN(maleMin) && !isNaN(maleMax)) {
-        return numValue >= maleMin && numValue <= maleMax;
+        if (numValue < maleMin) return 'low';
+        if (numValue > maleMax) return 'high';
+        return 'normal';
       } else if (gender === 'female' && !isNaN(femaleMin) && !isNaN(femaleMax)) {
-        return numValue >= femaleMin && numValue <= femaleMax;
+        if (numValue < femaleMin) return 'low';
+        if (numValue > femaleMax) return 'high';
+        return 'normal';
       }
     }
-    
+
     // Clean the reference range by removing commas
     const cleanRange = referenceRange.replace(/,/g, '');
-    
-    // Handle numeric ranges like "10-20" or "10–20" (with en dash) or "10 - 20" (with spaces)
-    const numericMatch = cleanRange.match(/(\d+\.?\d*)\s*[–-]\s*(\d+\.?\d*)/);
+
+    // Handle numeric ranges like "10-20", "10–20", "10 - 20", or "10 -- 20"
+    const numericMatch = cleanRange.match(/(\d+\.?\d*)\s*(?:–|--|-)\s*(\d+\.?\d*)/);
     if (numericMatch) {
       const min = parseFloat(numericMatch[1]);
       const max = parseFloat(numericMatch[2]);
-      
+
       if (!isNaN(min) && !isNaN(max)) {
-        return numValue >= min && numValue <= max;
+        if (numValue < min) return 'low';
+        if (numValue > max) return 'high';
+        return 'normal';
       }
     }
-    
-    return true; // Default to normal if we can't determine
+
+    // Handle "Up to X" format
+    const upToMatch = cleanRange.match(/Up\s+to\s+(\d+\.?\d*)/i);
+    if (upToMatch) {
+      const max = parseFloat(upToMatch[1]);
+      if (!isNaN(max)) {
+        if (numValue > max) return 'high';
+        return 'normal';
+      }
+    }
+
+    // Handle ranges with < or > symbols like "<5" or ">10"
+    const lessThanMatch = cleanRange.match(/\s*<\s*(\d+\.?\d*)/);
+    if (lessThanMatch) {
+      const max = parseFloat(lessThanMatch[1]);
+      if (!isNaN(max)) {
+        if (numValue >= max) return 'high';
+        return 'normal';
+      }
+    }
+
+    const greaterThanMatch = cleanRange.match(/\s*>\s*(\d+\.?\d*)/);
+    if (greaterThanMatch) {
+      const min = parseFloat(greaterThanMatch[1]);
+      if (!isNaN(min)) {
+        if (numValue <= min) return 'low';
+        return 'normal';
+      }
+    }
+
+    return 'normal'; // Default to normal if we can't determine
   };
+  */
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 py-8 px-4 sm:px-6 lg:px-8">
@@ -580,6 +641,7 @@ export default function CreateReportForm() {
             formData={formData} 
             setFormData={setFormData} 
             patientGender={formData.patientGender}
+            patientAge={formData.patientAge}
             setError={setError}
           />
 
