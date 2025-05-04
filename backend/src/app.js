@@ -34,7 +34,7 @@ const app = express();
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production'
     ? process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : []
-    : ['http://localhost:5173'], // Allow frontend dev server origin
+    : ['http://localhost:5173', 'https://www.labnexus.in'], // Allow frontend dev server origin and production frontend URL
 
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
