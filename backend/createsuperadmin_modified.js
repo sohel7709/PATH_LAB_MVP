@@ -7,9 +7,9 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/pathol
 
 // Generate unique email with timestamp
 const timestamp = new Date().getTime();
-const superAdminEmail = `superadmin_${timestamp}@example.com`;
-const adminEmail = `admin_${timestamp}@example.com`;
-const technicianEmail = `technician_${timestamp}@example.com`;
+const superAdminEmail = `superadmin_@example.com`;
+const adminEmail = `admin_@example.com`;
+const technicianEmail = `technician_@example.com`;
 
 mongoose.connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(async () => {
