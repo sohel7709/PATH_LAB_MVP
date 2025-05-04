@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const User = require('./src/models/User');
 const Lab = require('./src/models/Lab');
-const seedDefaultTemplates = require('./backend/loadDefaultTemplatesUpdate');
+const seedDefaultTemplates = require('./loadDefaultTemplatesUpdate');
 require('dotenv').config();
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/pathology-lab-saas';
@@ -36,16 +36,16 @@ async function run() {
     console.log('Connected to MongoDB');
 
     // Create default super admin user
-    const superAdminUser = await createDefaultUsers();
+    await createDefaultUsers();
 
     // Load default templates
     await seedDefaultTemplates();
 
     console.log('Default setup completed successfully.');
-    mongoose.connection.close();
+    await mongoose.connection.close();
   } catch (error) {
     console.error('Error during default setup:', error);
-    mongoose.connection.close();
+    await mongoose.connection.close();
     process.exit(1);
   }
 }
