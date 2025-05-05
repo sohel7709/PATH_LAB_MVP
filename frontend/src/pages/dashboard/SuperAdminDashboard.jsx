@@ -397,7 +397,7 @@ const SuperAdminDashboard = () => {
                                 if (plan.name) {
                                   return `${plan.name} Plan`;
                                 }
-                                if (typeof plan === 'string') {
+                                if (typeof plan === 'string' && plan.length > 0) {
                                   return `${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan`;
                                 }
                                 return 'No Plan';
