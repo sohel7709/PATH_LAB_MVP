@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "github.com/GLips/Figma-Context-MCP": {
-      "command": "cmd",
-      "args": ["/c", "npx", "-y", "figma-developer-mcp", "--figma-api-key=YOUR-KEY", "--stdio"]
-    }
-  }
-}

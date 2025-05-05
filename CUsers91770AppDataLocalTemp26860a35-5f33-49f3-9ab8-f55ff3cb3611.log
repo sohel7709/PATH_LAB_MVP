@@ -1,6 +1,0 @@
-
-D:\projects\black_box_lab\Lab_Managment_blackbox\user-workspace\frontend\src\pages\reports\CreateReportForm.jsx
-  60:6  warning  React Hook useEffect has missing dependencies: 'fetchPatientDetails' and 'fetchPatients'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
-
-✖ 1 problem (0 errors, 1 warning)
-
