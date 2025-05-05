@@ -1,5 +1,5 @@
-// Use environment variable or fallback to localhost
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+// Use environment variable or fallback to production URL
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://www.labnexus.in/api';
 
 // Doctors API calls
 export const doctors = {
