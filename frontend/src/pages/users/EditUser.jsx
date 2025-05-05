@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { users, superAdmin } from '../../utils/api';
+import { users, superAdmin } from '../../utils/api.js';
 import { ExclamationCircleIcon, CheckCircleIcon, UserIcon } from '@heroicons/react/24/outline';
 
 const EditUser = () => {
