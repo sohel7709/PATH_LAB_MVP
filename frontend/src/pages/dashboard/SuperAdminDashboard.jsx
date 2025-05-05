@@ -389,11 +389,19 @@ const SuperAdminDashboard = () => {
                             <p className="text-sm font-medium text-gray-900 truncate">{lab.name}</p>
                             <p className="text-sm text-gray-500 truncate">
                               {/* Handle both object (populated) and string plan references */}
-                              {lab.subscription?.plan?.name 
-                                ? `${lab.subscription.plan.name} Plan` 
-                                : lab.subscription?.plan 
-                                  ? `${lab.subscription.plan.charAt(0).toUpperCase() + lab.subscription.plan.slice(1)} Plan`
-                                  : 'No Plan'} 
+                              {(() => {
+                                const plan = lab.subscription?.plan;
+                                if (!plan) {
+                                  return 'No Plan';
+                                }
+                                if (plan.name) {
+                                  return `${plan.name} Plan`;
+                                }
+                                if (typeof plan === 'string' && plan.length > 0) {
+                                  return `${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan`;
+                                }
+                                return 'No Plan';
+                              })()}
                               {' • '}
                               {lab.status || lab.subscription?.status || 'Unknown'}
                             </p>
