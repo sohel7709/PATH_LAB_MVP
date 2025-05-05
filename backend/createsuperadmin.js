@@ -1,9 +1,10 @@
 const mongoose = require('mongoose');
+const path = require('path'); // Import path module
 const User = require('./src/models/User');
 const Lab = require('./src/models/Lab');
-require('dotenv').config();
+require('dotenv').config({ path: path.join(__dirname, '.env') }); // Explicitly load .env from the script's directory
 
-const MONGODB_URI = process.env.MONGODB_URI ;
+const MONGODB_URI = process.env.MONGODB_URI; // Rely solely on environment variable
 
 mongoose.connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(async () => {
