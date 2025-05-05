@@ -7,7 +7,7 @@ const helmet = require('helmet');
 const xssClean = require('xss-clean');
 const hpp = require('hpp');
 const rateLimit = require('express-rate-limit');
-require('dotenv').config();
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
