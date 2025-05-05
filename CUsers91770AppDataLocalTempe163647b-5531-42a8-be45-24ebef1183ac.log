@@ -1,6 +1,0 @@
-
-D:\projects\black_box_lab\Lab_Managment_blackbox\user-workspace\frontend\src\pages\reports\PrintReport.jsx
-  22:6  warning  React Hook useEffect has a missing dependency: 'fetchReportData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
-
-✖ 1 problem (0 errors, 1 warning)
-

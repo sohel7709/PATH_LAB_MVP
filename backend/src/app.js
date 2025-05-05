@@ -7,7 +7,7 @@ const helmet = require('helmet');
 const xssClean = require('xss-clean');
 const hpp = require('hpp');
 const rateLimit = require('express-rate-limit');
-require('dotenv').config();
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
@@ -34,7 +34,7 @@ const app = express();
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production'
     ? process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : []
-    : ['http://localhost:5173', 'https://www.labnexus.in'], // Allow frontend dev server origin and production frontend URL
+    : ['http://localhost:5173', 'https://labnexus.in', 'https://www.labnexus.in'], // Allow frontend dev server origin and production frontend URL (ensure CORS_ORIGIN is set correctly in production)
 
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
