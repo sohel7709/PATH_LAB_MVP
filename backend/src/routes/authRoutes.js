@@ -22,7 +22,6 @@ const {
 
 // Public routes
 // In your authRoutes.js
-router.options('/login', cors(corsOptions)); // Enable preflight
 router.post('/register', register);
 router.post('/login', login);
 router.post('/forgot-password', forgotPassword);
