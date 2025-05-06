@@ -13,6 +13,9 @@ exports.createLab = async (req, res, next) => {
     // Add user as lab creator
     req.body.createdBy = req.user.id;
 
+    // Set lab status to active by default
+    req.body.status = 'active';
+
     // Check for duplicate lab name
     const existingLab = await Lab.findOne({ name: req.body.name });
     if (existingLab) {
