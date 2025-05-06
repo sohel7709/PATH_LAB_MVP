@@ -83,7 +83,11 @@ const AuthPage = () => {
       await login(loginData.email, loginData.password);
       // Navigation is handled in the AuthContext
     } catch (err) {
-      setLoginError(err.message || 'Login failed');
+      if (err.message === 'Lab account is inactive or suspended') {
+        setLoginError('Your lab account is inactive or suspended. Please contact support or your administrator.');
+      } else {
+        setLoginError(err.message || 'Login failed');
+      }
       setIsLoading(false);
     }
   };

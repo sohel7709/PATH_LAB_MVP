@@ -200,13 +200,13 @@ const CreateUser = () => {
                   className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
                 >
                   <option value="admin">Lab Admin</option>
-                  <option value="lab-technician">Lab Technician</option>
+                  <option value="technician">Lab Technician</option>
                   <option value="super-admin">Super Admin</option>
                 </select>
                 <p className="mt-1 text-xs text-gray-500">
                   {formData.role === "admin"
                     ? "Admins can manage lab settings and users"
-                    : formData.role === "lab-technician"
+                    : formData.role === "technician"
                     ? "Technicians can create and manage reports"
                     : "Super Admins have full system access"}
                 </p>
