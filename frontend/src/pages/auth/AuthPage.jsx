@@ -129,7 +129,7 @@ const AuthPage = () => {
     
     try {
       // Implement actual registration logic with API
-      const response = await fetch('https://path-lab-mvp.onrender.com/api/auth/register', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
