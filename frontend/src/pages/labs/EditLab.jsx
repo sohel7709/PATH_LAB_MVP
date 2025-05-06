@@ -34,7 +34,7 @@ const EditLab = () => {
     setAssignmentSuccess('');
     try {
       // Fetch Lab Details
-      const labResponse = await fetch(`http://localhost:5001/api/lab-management/${labId}`, {
+      const labResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/lab-management/${labId}`, {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -58,7 +58,7 @@ const EditLab = () => {
 
       // Fetch Available Plans (only if Super Admin)
       if (isSuperAdmin) {
-        const plansResponse = await fetch(`http://localhost:5001/api/plans`, {
+        const plansResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/plans`, {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -72,7 +72,7 @@ const EditLab = () => {
       }
 
       // Fetch Subscription History
-      const historyResponse = await fetch(`http://localhost:5001/api/lab-management/${labId}/subscription-history`, {
+      const historyResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/lab-management/${labId}/subscription-history`, {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -130,7 +130,7 @@ const EditLab = () => {
     setError('');
     setSuccess('');
     try {
-      const response = await fetch(`http://localhost:5001/api/lab-management/${labId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/lab-management/${labId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -163,7 +163,7 @@ const EditLab = () => {
     setAssignmentError('');
     setAssignmentSuccess('');
     try {
-      const response = await fetch(`http://localhost:5001/api/lab-management/${labId}/assign-plan`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/lab-management/${labId}/assign-plan`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -231,28 +231,47 @@ const EditLab = () => {
           {/* Edit Lab Information Form */}
           <form onSubmit={handleInfoSubmit} className="space-y-8">
             {/* Basic Information */}
-            <section>
-              <h2 className="text-xl font-semibold text-blue-700 mb-4 border-b border-blue-100 pb-2">
-                Basic Information
-              </h2>
-              <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                    Lab Name <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                    className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
-                    placeholder="Enter lab name"
-                  />
-                </div>
+          <section>
+            <h2 className="text-xl font-semibold text-blue-700 mb-4 border-b border-blue-100 pb-2">
+              Basic Information
+            </h2>
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                  Lab Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  required
+                  className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+                  placeholder="Enter lab name"
+                />
               </div>
-            </section>
+              <div>
+                <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
+                  Lab Status <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="status"
+                  name="status"
+                  value={formData.status || ''}
+                  onChange={handleChange}
+                  required
+                  className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+                >
+                  <option value="">-- Select Status --</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="pending_approval">Pending Approval</option>
+                  <option value="suspended">Suspended</option>
+                </select>
+              </div>
+            </div>
+          </section>
 
             {/* Address */}
             <section>
