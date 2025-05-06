@@ -89,7 +89,12 @@ const prepareReportTemplateData = async (report, lab, labReportSettings, req, sh
             }
           }
           // --- End Get template-specific notes ---
-          groupedResults.push({ templateName, parameters, templateSpecificNotes: notesForThisTemplate });
+
+          // Determine if this is the Widal paragraph format template
+          const isWidalParagraphFormat = templateName === "WIDAL TEST ( By Slide Method)" && report.results.find(r => r.templateId && r.templateId.toString() === templateId.toString())?.displayFormat === "paragraph";
+
+
+          groupedResults.push({ templateName, parameters, templateSpecificNotes: notesForThisTemplate, isWidalParagraphFormat });
         }
       }
     } else {
@@ -101,11 +106,13 @@ const prepareReportTemplateData = async (report, lab, labReportSettings, req, sh
           referenceRange: param.referenceRange,
           isAbnormal: param.flag === 'high' || param.flag === 'low' || param.flag === 'critical',
           isHeader: param.isHeader,
-          isSubparameter: param.isSubparameter
+          isSubparameter: param.isSubparameter,
+          displayFormat: param.displayFormat // Include displayFormat for fallback
        }));
        if (parameters.length > 0) {
          // No template ID, so no specific notes here
-         groupedResults.push({ templateName: report.testInfo?.name || 'Test Results', parameters, templateSpecificNotes: '' });
+         const isWidalParagraphFormat = report.testInfo?.name === "WIDAL TEST ( By Slide Method)" && parameters[0]?.displayFormat === "paragraph";
+         groupedResults.push({ templateName: report.testInfo?.name || 'Test Results', parameters, templateSpecificNotes: '', isWidalParagraphFormat });
        }
     }
     // --- End grouping logic ---

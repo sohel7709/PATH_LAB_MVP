@@ -118,10 +118,10 @@ export const useReportGenerator = (report) => {
         const thead = document.createElement('thead');
         thead.innerHTML = `
           <tr>
-            <th style="width: 40%; text-align: left; font-weight: bold; text-transform: uppercase; font-size: 10pt; padding: 3px 8px; border-top: 1px solid black; border-bottom: 1px solid black;">Parameter</th>
-            <th style="width: 20%; text-align: right; padding-right: 15px; font-weight: bold; text-transform: uppercase; font-size: 10pt; padding: 3px 8px; border-top: 1px solid black; border-bottom: 1px solid black;">Result</th>
-            <th style="width: 10%; text-align: left; padding-left: 5px; font-weight: bold; text-transform: uppercase; font-size: 10pt; padding: 3px 8px; border-top: 1px solid black; border-bottom: 1px solid black;">Unit</th>
-            <th style="width: 30%; text-align: left; font-weight: bold; text-transform: uppercase; font-size: 10pt; padding: 3px 8px; border-top: 1px solid black; border-bottom: 1px solid black;">Reference Range</th>
+            <th style="width: 40%; text-align: left; font-weight: bold; text-transform: uppercase; font-size: 10pt; padding: 3px 8px; border: 1px solid black;">Parameter</th>
+            <th style="width: 20%; text-align: right; padding-right: 15px; font-weight: bold; text-transform: uppercase; font-size: 10pt; padding: 3px 8px; border: 1px solid black;">Result</th>
+            <th style="width: 10%; text-align: left; padding-left: 5px; font-weight: bold; text-transform: uppercase; font-size: 10pt; padding: 3px 8px; border: 1px solid black;">Unit</th>
+            <th style="width: 30%; text-align: left; font-weight: bold; text-transform: uppercase; font-size: 10pt; padding: 3px 8px; border: 1px solid black;">Reference Range</th>
           </tr>
         `;
         table.appendChild(thead);
@@ -176,6 +176,7 @@ export const useReportGenerator = (report) => {
                  nameCell.style.fontSize = '10pt';
                 nameCell.style.verticalAlign = 'top';
                 if (param.isSubparameter) nameCell.style.paddingLeft = '20px';
+                nameCell.style.border = '1px solid black'; // Add border
 
                 resultCell.textContent = param.value !== null && param.value !== undefined ? param.value : '';
                 resultCell.style.padding = '3px 15px 3px 8px';
@@ -183,18 +184,21 @@ export const useReportGenerator = (report) => {
                 resultCell.style.fontWeight = isAbnormal ? 'bold' : 'normal';
                 resultCell.style.fontSize = '10pt';
                 resultCell.style.verticalAlign = 'top';
+                resultCell.style.border = '1px solid black'; // Add border
 
                 unitCell.textContent = param.unit || '';
                 unitCell.style.padding = '3px 8px 3px 5px';
                 unitCell.style.textAlign = 'left';
                 unitCell.style.fontSize = '10pt';
                 unitCell.style.verticalAlign = 'top';
+                unitCell.style.border = '1px solid black'; // Add border
 
                 rangeCell.textContent = param.referenceRange || '';
                 rangeCell.style.padding = '3px 8px';
                 rangeCell.style.textAlign = 'left';
                 rangeCell.style.fontSize = '10pt';
                 rangeCell.style.verticalAlign = 'top';
+                rangeCell.style.border = '1px solid black'; // Add border
               }
             });
           });

@@ -1,5 +1,5 @@
 [
-{
+  {
     "templateName": "Kidney Function Test",
     "shortName": "KFT",
     "createdBy": "system",
@@ -10,11 +10,60 @@
         "parameters": [
           { "name": "SERUM CREATININE", "unit": "mg%", "normalRange": "0.6 - 1.4 mg%" },
           { "name": "BLOOD UREA", "unit": "mg%", "normalRange": "13 - 45 mg%" }
+    ]
+  },
+  {
+    "templateName": "CBC and CRP",
+    "shortName": "CBC_CRP",
+    "createdBy": "system",
+    "category": "Hematology/Biochemistry",
+    "sections": [
+      {
+        "displayFormat": "table",
+        "parameters": [
+          { "name": "Haemoglobin", "unit": "gms%", "normalRange": "M - 13.5 - 18.0\nF - 11.5 - 16.4" },
+          { "name": "Total WBC Count", "unit": "/cumm", "normalRange": "4,000 - 11,000" },
+          { "name": "Differential Count", "isHeader": true },
+          { "name": "Neutrophils", "unit": "%", "normalRange": "40 - 75", "isSubparameter": true },
+          { "name": "Lymphocytes", "unit": "%", "normalRange": "20 - 45", "isSubparameter": true },
+          { "name": "Eosinophils", "unit": "%", "normalRange": "01 - 06", "isSubparameter": true },
+          { "name": "Monocytes", "unit": "%", "normalRange": "02 - 10", "isSubparameter": true },
+          { "name": "Basophils", "unit": "%", "normalRange": "00 - 01", "isSubparameter": true },
+          { "name": "E.S.R.( Wintrobe Method.)", "unit": "mm", "normalRange": "M -00 -08mm , F- 00-20 mm" },
+          { "name": "R.B.C.Count", "unit": "mil/cmm", "normalRange": "4.5 - 6.5" },
+          { "name": "Haematocrit (HCT)", "unit": "%", "normalRange": "40 - 45" },
+          { "name": "MCV", "unit": "fl", "normalRange": "76 - 96" },
+          { "name": "MCH", "unit": "pg", "normalRange": "27 - 32" },
+          { "name": "MCHC", "unit": "gm/dl", "normalRange": "32 - 36" },
+          { "name": "RDW-SD", "unit": "%", "normalRange": "36 - 56" },
+          { "name": "RDW-CV", "unit": "%", "normalRange": "11.5 - 17.5" },
+          { "name": "PLATELETS COUNT", "unit": "/cumm", "normalRange": "1,50,000 - 4,50,000" }
+        ]
+      },
+      {
+        "sectionTitle": "Default",
+        "displayFormat": "table",
+        "parameters": []
+      },
+      {
+        "sectionTitle": "CRP test",
+        "displayFormat": "key-value",
+        "notes": "( N -less than 6 mg/lt ) ( By Turbilatex )",
+        "parameters": [
+          {
+            "name": "SERUM FOR C - REACTIVE PROTEINS",
+            "value": "",
+            "unit": "mg/lt",
+            "normalRange": "N -less than 6 mg/lt",
+            "notes": "( By Turbilatex )"
+          }
         ]
       }
     ]
+  }
+]
   },
-{
+  {
     "templateName": "Liver Function Test",
     "shortName": "LFT",
     "createdBy": "system",
@@ -53,7 +102,7 @@
       }
     ]
   },
-{
+  {
     "templateName": "Complete Blood Count",
     "shortName": "CBC",
     "createdBy": "system",
@@ -83,8 +132,8 @@
       }
     ]
   },
-{
-    "templateName": "WIDAL Test",
+  {
+    "templateName": "WIDAL TEST ( By Slide Method)",
     "shortName": "WIDAL",
     "createdBy": "system",
     "category": "Serology",
@@ -100,7 +149,7 @@
       }
     ]
   },
-{
+  {
     "templateName": "ANC & Urine Examination",
     "shortName": "ANC",
     "createdBy": "system",
@@ -110,8 +159,8 @@
         "sectionTitle": "Blood Group & Serology",
         "displayFormat": "key-value",
         "parameters": [
-          { "name": "Blood Group", "unit": "", "normalRange": "" },
-          { "name": "SERUM FOR HBsAg TEST", "unit": "", "normalRange": "NEGATIVE" },
+          { "name": "Blood Group", "unit": "", "normalRange": "", "inputType": "dropdown", "options": ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"] },
+          { "name": "SERUM FOR HBsAg TEST", "unit": "", "normalRange": "NEGATIVE", "inputType": "dropdown", "options": ["NEGATIVE", "POSITIVE"] },
           { "name": "RANDOM BLOOD SUGAR", "unit": "mg%", "normalRange": "Upto 140 mg%" }
         ]
       },
@@ -119,40 +168,40 @@
         "sectionTitle": "SERUM FOR HIV I & II TEST",
         "displayFormat": "key-value",
         "parameters": [
-          { "name": "HIV I", "unit": "", "normalRange": "NON REACTIVE" },
-          { "name": "HIV II", "unit": "", "normalRange": "NON REACTIVE" },
-          { "name": "RESULT", "unit": "", "normalRange": "NEGATIVE" }
+          { "name": "HIV I", "unit": "", "normalRange": "NON REACTIVE", "inputType": "dropdown", "options": ["NON REACTIVE", "REACTIVE"] },
+          { "name": "HIV II", "unit": "", "normalRange": "NON REACTIVE", "inputType": "dropdown", "options": ["NON REACTIVE", "REACTIVE"] },
+          { "name": "RESULT", "unit": "", "normalRange": "NEGATIVE", "inputType": "dropdown", "options": ["NEGATIVE", "POSITIVE"] }
         ]
       },
       {
         "sectionTitle": "Urine Examination Report - Physical Exam",
         "displayFormat": "table",
         "parameters": [
-          { "name": "Volume", "unit": "ml", "normalRange": "05 ml" },
-          { "name": "Colour", "unit": "", "normalRange": "Pale yellow" },
-          { "name": "Appearance", "unit": "", "normalRange": "Clear" }
+          { "name": "Volume", "unit": "ml" },
+          { "name": "Colour", "unit": "" },
+          { "name": "Appearance", "unit": "" }
         ]
       },
       {
         "sectionTitle": "Urine Examination Report - Chemical Exam",
         "displayFormat": "table",
         "parameters": [
-          { "name": "Protein", "unit": "", "normalRange": "Trace" },
-          { "name": "Sugar", "unit": "", "normalRange": "Nil" }
+          { "name": "Protein", "unit": "" },
+          { "name": "Sugar", "unit": "" }
         ]
       },
       {
         "sectionTitle": "Urine Examination Report - Microscopic",
         "displayFormat": "table",
         "parameters": [
-          { "name": "Red Blood cells", "unit": "", "normalRange": "Nil" },
+          { "name": "Red Blood cells", "unit": "" },
           { "name": "Pus cells", "unit": "/hpf", "normalRange": "2 - 3 /hpf" },
           { "name": "Epithelial cells", "unit": "/hpf", "normalRange": "1 - 2 /hpf" }
         ]
       }
     ]
   },
-{
+  {
     "templateName": "Electrolyte Test",
     "shortName": "ELEC",
     "createdBy": "system",
@@ -174,7 +223,7 @@
       }
     ]
   },
-{
+  {
     "templateName": "Lipid Profile Test Report",
     "shortName": "LIPID",
     "createdBy": "system",
@@ -192,7 +241,7 @@
       }
     ]
   },
-{
+  {
     "templateName": "Blood Examination - Creatinine",
     "shortName": "CRE",
     "createdBy": "system",
