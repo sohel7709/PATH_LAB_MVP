@@ -1,10 +1,8 @@
 import { getAuthHeaders, handleResponse } from './api';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
-
 // Create Razorpay order for a given plan
 export const createOrder = async (planId) => {
-  const response = await fetch(`${API_BASE_URL}/subscriptions/create-order`, {
+  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/subscriptions/create-order`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify({ planId }),
@@ -14,7 +12,7 @@ export const createOrder = async (planId) => {
 
 // Verify Razorpay payment
 export const verifyPayment = async (orderId, paymentId, signature) => {
-  const response = await fetch(`${API_BASE_URL}/subscriptions/verify`, {
+  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/subscriptions/verify`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify({
@@ -28,7 +26,7 @@ export const verifyPayment = async (orderId, paymentId, signature) => {
 
 // Start a free trial subscription
 export const startTrial = async () => {
-  const response = await fetch(`${API_BASE_URL}/subscriptions/trial`, {
+  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/subscriptions/trial`, {
     method: 'POST',
     headers: getAuthHeaders(),
   });
