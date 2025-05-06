@@ -56,7 +56,7 @@ const ResetPasswordPage = () => {
     setIsLoading(true);
     
     try {
-      const response = await fetch(`https://path-lab-mvp.onrender.com/api/auth/reset-password/${token}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/reset-password/${token}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
