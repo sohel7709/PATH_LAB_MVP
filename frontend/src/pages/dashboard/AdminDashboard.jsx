@@ -11,7 +11,6 @@ import {
   ArrowPathIcon,
   ChartBarIcon,
   PlusIcon,
-  TrashIcon,
   PencilSquareIcon,
 } from '@heroicons/react/24/outline';
 
@@ -24,11 +23,7 @@ const AdminDashboard = () => {
   });
   const [recentReports, setRecentReports] = useState([]);
   const [recentPatients, setRecentPatients] = useState([]);
-  const [selectedView, setSelectedView] = useState('admin');
   const [labDetails, setLabDetails] = useState(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [reportToDelete, setReportToDelete] = useState(null);
-  const [apiUtils, setApiUtils] = useState(null);
   
   const { user } = useAuth();
 
@@ -39,9 +34,6 @@ const AdminDashboard = () => {
         // Import API utilities
         const apiModules = await import('../../utils/api');
         const { dashboard, superAdmin, reports, patients } = apiModules;
-        
-        // Store API utilities for use outside this effect
-        setApiUtils(apiModules);
         
         try {
           // Fetch lab details if user has a lab ID
@@ -153,41 +145,6 @@ const AdminDashboard = () => {
     fetchDashboardData();
   }, [user]);
 
-  // Function to handle view switching
-  const handleViewChange = (view) => {
-    setSelectedView(view);
-  };
-  
-  // Function to handle report deletion
-  const handleDeleteClick = (report) => {
-    setReportToDelete(report);
-    setShowDeleteConfirm(true);
-  };
-
-  const confirmDelete = async () => {
-    if (!reportToDelete || !apiUtils) return;
-    
-    try {
-      const reportId = reportToDelete.id;
-      await apiUtils.reports.delete(reportId);
-      
-      // Remove the deleted report from the state
-      setRecentReports(prevReports => 
-        prevReports.filter(report => report.id !== reportId)
-      );
-      
-      setShowDeleteConfirm(false);
-      setReportToDelete(null);
-    } catch (err) {
-      console.error('Error deleting report:', err);
-    }
-  };
-
-  const cancelDelete = () => {
-    setShowDeleteConfirm(false);
-    setReportToDelete(null);
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 py-8 px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-7xl mx-auto space-y-6">
@@ -201,19 +158,7 @@ const AdminDashboard = () => {
                   Welcome, {user?.name || 'Admin'}! | Role: {user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Admin'}
                 </p>
               </div>
-              <div className="bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2">
-                <label htmlFor="view-switcher" className="text-sm font-medium text-white mr-2">
-                  Switch View:
-                </label>
-                <select
-                  id="view-switcher"
-                  value={selectedView}
-                  onChange={(e) => handleViewChange(e.target.value)}
-                  className="rounded-md border-transparent bg-white/80 py-1 pl-3 pr-10 text-sm font-medium text-blue-800 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
-                >
-                  <option value="admin">Admin View</option>
-                </select>
-              </div>
+              
             </div>
           </div>
       
@@ -279,8 +224,6 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-
-
         {/* Revenue Card */}
         <div className="overflow-hidden rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow duration-300">
           <div className="p-5 border-b-4 border-yellow-500">
@@ -300,7 +243,7 @@ const AdminDashboard = () => {
           </div>
           <div className="bg-gray-50 px-5 py-3">
             <div className="text-sm">
-              <Link to="/finance/reports" className="font-medium text-blue-700 hover:text-blue-900 transition duration-200">
+              <Link to="/finance/revenue" className="font-medium text-blue-700 hover:text-blue-900 transition duration-200">
                 View financial reports
               </Link>
             </div>
@@ -335,7 +278,7 @@ const AdminDashboard = () => {
               Manage Doctors
             </Link>
             <Link
-              to="/finance/reports"
+              to="/finance/revenue"
               className="flex items-center justify-center px-4 py-3 bg-white rounded-lg shadow-sm border border-blue-200 text-blue-700 font-medium hover:bg-blue-50 transition-all duration-200"
             >
               <ChartBarIcon className="h-5 w-5 mr-2" aria-hidden="true" />
@@ -407,13 +350,6 @@ const AdminDashboard = () => {
                           <Link to={`/reports/${report.id}/edit`} className="text-green-600 hover:text-green-900 p-1 rounded-full hover:bg-green-50 transition-colors" title="Edit Report">
                             <PencilSquareIcon className="h-5 w-5" aria-hidden="true" />
                           </Link>
-                          <button 
-                            onClick={() => handleDeleteClick(report)}
-                            className="text-red-600 hover:text-red-900 p-1 rounded-full hover:bg-red-50 transition-colors"
-                            title="Delete Report"
-                          >
-                            <TrashIcon className="h-5 w-5" aria-hidden="true" />
-                          </button>
                         </div>
                       </td>
                     </tr>
@@ -486,7 +422,7 @@ const AdminDashboard = () => {
                             <PencilSquareIcon className="h-5 w-5" aria-hidden="true" />
                           </Link>
                           <Link to={`/reports/create?patientId=${patient._id}`} className="text-blue-600 hover:text-blue-900 p-1 rounded-full hover:bg-blue-50 transition-colors" title="Create Report">
-                            <DocumentTextIcon className="h-5 w-5" aria-hidden="true" />
+                            <DocumentTextIcon className="h-5 w-5 mr-2" aria-hidden="true" />
                           </Link>
                         </div>
                       </td>
@@ -512,43 +448,6 @@ const AdminDashboard = () => {
           </div>
         </div>
       </div>
-
-        {/* Delete Confirmation Modal */}
-        {showDeleteConfirm && (
-          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-xl shadow-xl max-w-md w-full">
-            <div className="sm:flex sm:items-start">
-              <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-                <TrashIcon className="h-6 w-6 text-red-600" aria-hidden="true" />
-              </div>
-              <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                <h3 className="text-lg leading-6 font-medium text-gray-900">Delete Report</h3>
-                <div className="mt-2">
-                  <p className="text-sm text-gray-500">
-                    Are you sure you want to delete this report? This action cannot be undone.
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
-              <button
-                type="button"
-                className="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
-                onClick={confirmDelete}
-              >
-                Delete
-              </button>
-              <button
-                type="button"
-                className="mt-3 w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:w-auto sm:text-sm"
-                onClick={cancelDelete}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
         {/* No Financial Overview or Inventory Status sections as requested */}
       </div>

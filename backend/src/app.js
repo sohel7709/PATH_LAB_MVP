@@ -29,8 +29,6 @@ const revenueRoutes = require('./routes/revenueRoutes'); // Import revenue route
 
 const app = express();
 
-// Middleware
-// Configure CORS for production
 const allowedOrigins = [
   'http://localhost:5173',
   'https://labnexus.in',
@@ -51,6 +49,9 @@ const corsOptions = {
   maxAge: 86400 // 24 hours
 };
 app.use(cors(corsOptions));
+
+// Allow OPTIONS requests to pass through without authentication
+app.options('*', cors(corsOptions));
 
 // Use morgan in development mode only
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
