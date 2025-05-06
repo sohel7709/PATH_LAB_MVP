@@ -1,23 +1,21 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.labnexus.in';
-
 // Doctors API calls
 export const doctors = {
   getAll: async () => {
-    const response = await fetch(`${API_BASE_URL}/doctors`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/doctors`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
   },
 
   getById: async (id) => {
-    const response = await fetch(`${API_BASE_URL}/doctors/${id}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/doctors/${id}`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
   },
 
   create: async (doctorData) => {
-    const response = await fetch(`${API_BASE_URL}/doctors`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/doctors`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(doctorData),
@@ -26,7 +24,7 @@ export const doctors = {
   },
 
   update: async (id, doctorData) => {
-    const response = await fetch(`${API_BASE_URL}/doctors/${id}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/doctors/${id}`, {
       method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify(doctorData),
@@ -35,7 +33,7 @@ export const doctors = {
   },
 
   delete: async (id) => {
-    const response = await fetch(`${API_BASE_URL}/doctors/${id}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/doctors/${id}`, {
       method: 'DELETE',
       headers: getAuthHeaders(),
     });
@@ -80,7 +78,7 @@ export const getAuthHeaders = () => {
 // Auth API calls
 export const auth = {
   login: async (credentials) => {
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(credentials),
@@ -89,7 +87,7 @@ export const auth = {
   },
 
   register: async (userData) => {
-    const response = await fetch(`${API_BASE_URL}/auth/register`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(userData),
@@ -98,7 +96,7 @@ export const auth = {
   },
 
   forgotPassword: async (email) => {
-    const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/forgot-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email }),
@@ -107,21 +105,21 @@ export const auth = {
   },
 
   verifyToken: async () => {
-    const response = await fetch(`${API_BASE_URL}/auth/verify`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/verify`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
   },
   
   getProfile: async () => {
-    const response = await fetch(`${API_BASE_URL}/auth/me`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/me`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
   },
   
   updateProfile: async (userData) => {
-    const response = await fetch(`${API_BASE_URL}/auth/updatedetails`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/updatedetails`, {
       method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify(userData),
@@ -130,7 +128,7 @@ export const auth = {
   },
   
   changePassword: async (passwordData) => {
-    const response = await fetch(`${API_BASE_URL}/auth/updatepassword`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/updatepassword`, {
       method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify(passwordData),
@@ -151,8 +149,8 @@ export const reports = {
 
     const queryString = queryParams.toString();
     const url = queryString 
-      ? `${API_BASE_URL}/reports?${queryString}` 
-      : `${API_BASE_URL}/reports`;
+      ? `${import.meta.env.VITE_API_BASE_URL}/reports?${queryString}` 
+      : `${import.meta.env.VITE_API_BASE_URL}/reports`;
     
     const response = await fetch(url, {
       headers: getAuthHeaders(),
@@ -161,14 +159,14 @@ export const reports = {
   },
 
   getById: async (id) => {
-    const response = await fetch(`${API_BASE_URL}/reports/${id}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/reports/${id}`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
   },
 
   create: async (reportData) => {
-    const response = await fetch(`${API_BASE_URL}/reports`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/reports`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(reportData),
@@ -177,7 +175,7 @@ export const reports = {
   },
 
   update: async (id, reportData) => {
-    const response = await fetch(`${API_BASE_URL}/reports/${id}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/reports/${id}`, {
       method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify(reportData),
@@ -186,7 +184,7 @@ export const reports = {
   },
 
   delete: async (id) => {
-    const response = await fetch(`${API_BASE_URL}/reports/${id}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/reports/${id}`, {
       method: 'DELETE',
       headers: getAuthHeaders(),
     });
@@ -197,14 +195,14 @@ export const reports = {
 // Lab Settings API calls
 export const lab = {
   getSettings: async () => {
-    const response = await fetch(`${API_BASE_URL}/lab/settings`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/lab/settings`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
   },
 
   updateSettings: async (settings) => {
-    const response = await fetch(`${API_BASE_URL}/lab/settings`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/lab/settings`, {
       method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify(settings),
@@ -216,14 +214,14 @@ export const lab = {
 // User Management API calls
 export const users = {
   getAll: async () => {
-    const response = await fetch(`${API_BASE_URL}/users`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
   },
 
   create: async (userData) => {
-    const response = await fetch(`${API_BASE_URL}/users`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(userData),
@@ -232,7 +230,7 @@ export const users = {
   },
 
   update: async (id, userData) => {
-    const response = await fetch(`${API_BASE_URL}/users/${id}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/${id}`, {
       method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify(userData),
@@ -241,7 +239,7 @@ export const users = {
   },
 
   delete: async (id) => {
-    const response = await fetch(`${API_BASE_URL}/users/${id}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/${id}`, {
       method: 'DELETE',
       headers: getAuthHeaders(),
     });
@@ -253,8 +251,8 @@ export const users = {
 export const dashboard = {
   getStats: async (labId) => {
     const url = labId 
-      ? `${API_BASE_URL}/dashboard/stats?lab=${labId}` 
-      : `${API_BASE_URL}/dashboard/stats`;
+      ? `${import.meta.env.VITE_API_BASE_URL}/dashboard/stats?lab=${labId}` 
+      : `${import.meta.env.VITE_API_BASE_URL}/dashboard/stats`;
     
     const response = await fetch(url, {
       headers: getAuthHeaders(),
@@ -267,8 +265,8 @@ export const dashboard = {
 export const patients = {
   getAll: async (labId) => {
     const url = labId 
-      ? `${API_BASE_URL}/patients?lab=${labId}` 
-      : `${API_BASE_URL}/patients`;
+      ? `${import.meta.env.VITE_API_BASE_URL}/patients?lab=${labId}` 
+      : `${import.meta.env.VITE_API_BASE_URL}/patients`;
     
     const response = await fetch(url, {
       headers: getAuthHeaders(),
@@ -277,14 +275,14 @@ export const patients = {
   },
 
   getById: async (id) => {
-    const response = await fetch(`${API_BASE_URL}/patients/${id}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/patients/${id}`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
   },
 
   create: async (patientData) => {
-    const response = await fetch(`${API_BASE_URL}/patients`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/patients`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(patientData),
@@ -293,7 +291,7 @@ export const patients = {
   },
 
   update: async (id, patientData) => {
-    const response = await fetch(`${API_BASE_URL}/patients/${id}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/patients/${id}`, {
       method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify(patientData),
@@ -302,7 +300,7 @@ export const patients = {
   },
 
   delete: async (id) => {
-    const response = await fetch(`${API_BASE_URL}/patients/${id}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/patients/${id}`, {
       method: 'DELETE',
       headers: getAuthHeaders(),
     });
@@ -314,14 +312,14 @@ export const patients = {
 export const superAdmin = {
   // Lab Management
   getLabs: async () => {
-    const response = await fetch(`${API_BASE_URL}/lab-management`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/lab-management`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
   },
 
   createLab: async (labData) => {
-    const response = await fetch(`${API_BASE_URL}/lab-management`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/lab-management`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(labData),
@@ -330,14 +328,14 @@ export const superAdmin = {
   },
 
   getLab: async (id) => {
-    const response = await fetch(`${API_BASE_URL}/lab-management/${id}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/lab-management/${id}`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
   },
 
   updateLab: async (id, labData) => {
-    const response = await fetch(`${API_BASE_URL}/lab-management/${id}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/lab-management/${id}`, {
       method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify(labData),
@@ -346,7 +344,7 @@ export const superAdmin = {
   },
 
   deleteLab: async (id) => {
-    const response = await fetch(`${API_BASE_URL}/lab-management/${id}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/lab-management/${id}`, {
       method: 'DELETE',
       headers: getAuthHeaders(),
     });
@@ -354,14 +352,14 @@ export const superAdmin = {
   },
 
   getLabStats: async (id) => {
-    const response = await fetch(`${API_BASE_URL}/lab-management/${id}/stats`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/lab-management/${id}/stats`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
   },
 
   updateLabSubscription: async (id, subscriptionData) => {
-    const response = await fetch(`${API_BASE_URL}/lab-management/${id}/subscription`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/lab-management/${id}/subscription`, {
       method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify(subscriptionData),
@@ -377,8 +375,8 @@ export const superAdmin = {
     
     const queryString = queryParams.toString();
     const url = queryString 
-      ? `${API_BASE_URL}/user-management?${queryString}` 
-      : `${API_BASE_URL}/user-management`;
+      ? `${import.meta.env.VITE_API_BASE_URL}/user-management?${queryString}` 
+      : `${import.meta.env.VITE_API_BASE_URL}/user-management`;
     
     const response = await fetch(url, {
       headers: getAuthHeaders(),
@@ -400,7 +398,7 @@ export const superAdmin = {
       throw new Error('Lab ID is required for admin and technician roles');
     }
     
-    const response = await fetch(`${API_BASE_URL}/user-management`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/user-management`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(userData),
@@ -412,7 +410,7 @@ export const superAdmin = {
   },
 
   getUser: async (id) => {
-    const response = await fetch(`${API_BASE_URL}/user-management/${id}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/user-management/${id}`, {
       headers: getAuthHeaders(),
     });
     
@@ -425,7 +423,7 @@ export const superAdmin = {
   },
 
   updateUser: async (id, userData) => {
-    const response = await fetch(`${API_BASE_URL}/user-management/${id}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/user-management/${id}`, {
       method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify(userData),
@@ -434,7 +432,7 @@ export const superAdmin = {
   },
 
   deleteUser: async (id) => {
-    const response = await fetch(`${API_BASE_URL}/user-management/${id}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/user-management/${id}`, {
       method: 'DELETE',
       headers: getAuthHeaders(),
     });
@@ -443,7 +441,7 @@ export const superAdmin = {
 
   // System-wide Analytics
   getSystemStats: async () => {
-    const response = await fetch(`${API_BASE_URL}/dashboard/system-stats`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/dashboard/system-stats`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
@@ -456,7 +454,7 @@ export const superAdmin = {
       ...filters
     }).toString();
     
-    const response = await fetch(`${API_BASE_URL}/export/${type}?${queryParams}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/export/${type}?${queryParams}`, {
       headers: getAuthHeaders(),
     });
     
@@ -488,7 +486,7 @@ export const testTemplates = {
       baseEndpoint = '/technician/test-templates/all';
     }
     
-    let url = `${API_BASE_URL}${baseEndpoint}`;
+    let url = `${import.meta.env.VITE_API_BASE_URL}${baseEndpoint}`;
     if (queryString) {
       url += `?${queryString}`;
     }
@@ -521,9 +519,9 @@ export const testTemplates = {
       baseEndpoint = '/admin/test-templates';
     }
     
-    console.log('Using endpoint:', `${API_BASE_URL}${baseEndpoint}/${id}`);
+    console.log('Using endpoint:', `${import.meta.env.VITE_API_BASE_URL}${baseEndpoint}/${id}`);
     
-    const response = await fetch(`${API_BASE_URL}${baseEndpoint}/${id}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}${baseEndpoint}/${id}`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
@@ -540,8 +538,8 @@ export const testTemplates = {
       const queryString = queryParams.toString();
       
       const url = queryString 
-        ? `${API_BASE_URL}/technician/test-templates/all?${queryString}` 
-        : `${API_BASE_URL}/technician/test-templates/all`;
+        ? `${import.meta.env.VITE_API_BASE_URL}/technician/test-templates/all?${queryString}` 
+        : `${import.meta.env.VITE_API_BASE_URL}/technician/test-templates/all`;
       
       const response = await fetch(url, {
         headers: getAuthHeaders(),
@@ -550,7 +548,7 @@ export const testTemplates = {
     },
     
     getById: async (id) => {
-      const response = await fetch(`${API_BASE_URL}/technician/test-templates/${id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/technician/test-templates/${id}`, {
         headers: getAuthHeaders(),
       });
       return handleResponse(response);
@@ -563,7 +561,7 @@ export const testTemplates = {
     const role = user.role || '';
     const baseEndpoint = role === 'super-admin' ? '/super-admin/test-templates' : '/admin/test-templates';
     
-    const response = await fetch(`${API_BASE_URL}${baseEndpoint}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}${baseEndpoint}`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(templateData),
@@ -577,7 +575,7 @@ export const testTemplates = {
     const role = user.role || '';
     const baseEndpoint = role === 'super-admin' ? '/super-admin/test-templates' : '/admin/test-templates';
     
-    const response = await fetch(`${API_BASE_URL}${baseEndpoint}/${id}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}${baseEndpoint}/${id}`, {
       method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify(templateData),
@@ -591,7 +589,7 @@ export const testTemplates = {
     const role = user.role || '';
     const baseEndpoint = role === 'super-admin' ? '/super-admin/test-templates' : '/admin/test-templates';
     
-    const response = await fetch(`${API_BASE_URL}${baseEndpoint}/${id}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}${baseEndpoint}/${id}`, {
       method: 'DELETE',
       headers: getAuthHeaders(),
     });
@@ -604,14 +602,14 @@ export const testTemplates = {
 // Lab Report Settings API calls
 export const labReportSettings = {
   getSettings: async (labId) => {
-    const response = await fetch(`${API_BASE_URL}/labs/${labId}/report-settings`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/labs/${labId}/report-settings`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
   },
 
   updateSettings: async (labId, settings) => {
-    const response = await fetch(`${API_BASE_URL}/labs/${labId}/report-settings`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/labs/${labId}/report-settings`, {
       method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify(settings),
@@ -656,7 +654,7 @@ export const labReportSettings = {
         mimeType = type === 'logo' || type === 'header' ? 'image/png' : 'image/jpeg';
       }
       
-      const response = await fetch(`${API_BASE_URL}/labs/${labId}/report-settings/upload?type=${type}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/labs/${labId}/report-settings/upload?type=${type}`, {
         method: 'POST',
         headers: {
           ...getAuthHeaders(),
@@ -673,7 +671,7 @@ export const labReportSettings = {
   },
 
   generatePdf: async (reportId) => {
-    const response = await fetch(`${API_BASE_URL}/reports/${reportId}/generate-pdf`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/reports/${reportId}/generate-pdf`, {
       method: 'POST',
       headers: getAuthHeaders(),
     });
@@ -684,21 +682,21 @@ export const labReportSettings = {
 // Plans API calls
 export const plans = {
   getAll: async () => {
-    const response = await fetch(`${API_BASE_URL}/plans`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/plans`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
   },
 
   getById: async (id) => {
-    const response = await fetch(`${API_BASE_URL}/plans/${id}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/plans/${id}`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
   },
 
   create: async (planData) => {
-    const response = await fetch(`${API_BASE_URL}/plans`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/plans`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(planData),
@@ -707,7 +705,7 @@ export const plans = {
   },
 
   update: async (id, planData) => {
-    const response = await fetch(`${API_BASE_URL}/plans/${id}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/plans/${id}`, {
       method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify(planData),
@@ -716,7 +714,7 @@ export const plans = {
   },
 
   delete: async (id) => {
-    const response = await fetch(`${API_BASE_URL}/plans/${id}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/plans/${id}`, {
       method: 'DELETE',
       headers: getAuthHeaders(),
     });
@@ -727,14 +725,14 @@ export const plans = {
 // WhatsApp Notification Settings API calls
 export const whatsappSettings = {
   getSettings: async () => {
-    const response = await fetch(`${API_BASE_URL}/settings/whatsapp`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/settings/whatsapp`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
   },
 
   updateSettings: async (settings) => {
-    const response = await fetch(`${API_BASE_URL}/settings/whatsapp`, {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/settings/whatsapp`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(settings),
@@ -755,8 +753,8 @@ export const revenue = {
     
     const queryString = queryParams.toString();
     const url = queryString 
-      ? `${API_BASE_URL}/revenue?${queryString}` 
-      : `${API_BASE_URL}/revenue`;
+      ? `${import.meta.env.VITE_API_BASE_URL}/revenue?${queryString}` 
+      : `${import.meta.env.VITE_API_BASE_URL}/revenue`;
     
     const response = await fetch(url, {
       headers: getAuthHeaders(),
@@ -771,7 +769,7 @@ export const revenue = {
       ...params
     });
     
-    const url = `${API_BASE_URL}/export/revenue?${queryParams}`;
+    const url = `${import.meta.env.VITE_API_BASE_URL}/export/revenue?${queryParams}`;
     
     const response = await fetch(url, {
       headers: getAuthHeaders(),
