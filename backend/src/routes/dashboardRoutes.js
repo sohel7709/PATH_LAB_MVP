@@ -101,7 +101,16 @@ router.get('/stats', protect, async (req, res) => {
     }, 0);
     console.log(`[Dashboard Stats] Calculated revenueThisMonth: ${revenueThisMonth}`); // Log final calculated value
 
-    // Send the final response with all calculated stats
+    // Fetch lab name to include in response
+    let labName = 'Your Lab';
+    if (req.user.lab) {
+      const lab = await Lab.findById(req.user.lab).select('name');
+      if (lab) {
+        labName = lab.name;
+      }
+    }
+
+    // Send the final response with all calculated stats and lab name
     res.status(200).json({
       success: true,
       totalReports,
@@ -113,7 +122,8 @@ router.get('/stats', protect, async (req, res) => {
       pendingReports,
       completedReports,
       samplesCollected,
-      assignedTasks
+      assignedTasks,
+      labName
     });
   } catch (error) {
     console.error('Error fetching dashboard stats:', error); // Log the error
