@@ -31,11 +31,20 @@ const app = express();
 
 // Middleware
 // Configure CORS for production
-const corsOptions = {
-  origin: process.env.NODE_ENV === 'production'
-    ? process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['https://www.labnexus.in', 'https://labnexus.in']
-    : ['http://localhost:5173', 'https://labnexus.in', 'https://www.labnexus.in'], // Allow frontend dev server origin and production frontend URL (ensure CORS_ORIGIN is set correctly in production)
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://labnexus.in',
+  'https://www.labnexus.in'
+];
 
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
