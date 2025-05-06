@@ -33,7 +33,7 @@ const app = express();
 // Configure CORS for production
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production'
-    ? process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : []
+    ? process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['https://www.labnexus.in', 'https://labnexus.in']
     : ['http://localhost:5173', 'https://labnexus.in', 'https://www.labnexus.in'], // Allow frontend dev server origin and production frontend URL (ensure CORS_ORIGIN is set correctly in production)
 
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
