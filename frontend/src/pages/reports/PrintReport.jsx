@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ExclamationCircleIcon, PrinterIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
+import { ExclamationCircleIcon, PrinterIcon, ArrowDownTrayIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
 import { reports as apiReports } from '../../utils/api'; // Removed labReportSettings import
 import { useReportGenerator } from '../../hooks/useReportGenerator'; // Import the generator hook
 import { useReportPdf } from '../../hooks/useReportPdf'; // Import the PDF hook
@@ -16,7 +16,17 @@ export default function PrintReport() {
 
   // Use the custom hooks
   const reportHtml = useReportGenerator(report); // Get HTML string from the hook
-  const { printPdf, downloadPdf, isPrinting, isDownloading } = useReportPdf(report, reportHtml); // Get PDF functions and states
+  const { printPdf: originalPrintPdf, downloadPdf, isPrinting, isDownloading } = useReportPdf(report, reportHtml); // Get PDF functions and states
+
+  const printPdf = async () => {
+    try {
+      await apiReports.update(id, { status: 'completed' });
+      console.log('Report status updated to completed');
+    } catch (error) {
+      console.error('Error updating report status:', error);
+    }
+    originalPrintPdf();
+  };
 
   // Define fetchReportData function (only fetches report now)
   const fetchReportData = async () => {
@@ -112,30 +122,31 @@ export default function PrintReport() {
             Print Report
           </h2>
         </div>
-        <div className="mt-4 flex md:ml-4 md:mt-0">
+        <div className="mt-4 flex md:ml-4 md:mt-0 items-center justify-end">
           <button
             type="button"
             onClick={() => navigate(`/reports/${id}/edit`)}
-            className="btn-secondary mr-3"
+            className="btn-secondary mr-3 flex flex-col items-center"
           >
+            <PencilSquareIcon className="h-5 w-5" aria-hidden="true" />
             Edit Report
           </button>
           <button
             type="button"
             onClick={downloadPdf} // Use function from hook
             disabled={isDownloading}
-            className={`btn-secondary mr-3 ${isDownloading ? 'opacity-75 cursor-not-allowed' : ''}`}
+            className={`btn-secondary mr-3 flex flex-col items-center ${isDownloading ? 'opacity-75 cursor-not-allowed' : ''}`}
           >
-            <ArrowDownTrayIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+            <ArrowDownTrayIcon className="h-5 w-5" aria-hidden="true" />
             {isDownloading ? 'Downloading...' : 'Download PDF'}
           </button>
           <button
             type="button"
             onClick={printPdf} // Use function from hook
             disabled={isPrinting}
-            className={`btn-primary ${isPrinting ? 'opacity-75 cursor-not-allowed' : ''}`}
+            className={`btn-primary flex flex-col items-center ${isPrinting ? 'opacity-75 cursor-not-allowed' : ''}`}
           >
-            <PrinterIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+            <PrinterIcon className="h-5 w-5" aria-hidden="true" />
             {isPrinting ? 'Printing...' : 'Print'}
           </button>
         </div>
