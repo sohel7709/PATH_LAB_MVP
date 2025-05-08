@@ -465,10 +465,6 @@ export const superAdmin = {
 // Test Templates API calls
 export const testTemplates = {
   getAll: async (filters = {}) => {
-    // Get user role from localStorage
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const role = user.role || '';
-    
     // Build query string from filters
     const queryParams = new URLSearchParams();
     if (filters?.category) queryParams.append('category', filters.category);
@@ -476,20 +472,34 @@ export const testTemplates = {
     
     const queryString = queryParams.toString();
     
+    // Get token from localStorage to include in headers
+    const token = localStorage.getItem('token');
+    
+    // Try to decode the token to get the user role
+    let role = 'admin'; // Default to admin
+    if (token) {
+      try {
+        const tokenParts = token.split('.');
+        if (tokenParts.length === 3) {
+          const payload = JSON.parse(atob(tokenParts[1]));
+          role = payload.role || 'admin';
+        }
+      } catch (error) {
+        console.error('Error parsing token:', error);
+      }
+    }
+    
     // Use different endpoints based on user role
     let baseEndpoint = '/admin/test-templates';
     if (role === 'super-admin') {
-      // For superadmin, use the dedicated super-admin endpoint
       baseEndpoint = '/super-admin/test-templates';
     } else if (role === 'technician') {
-      // For technicians, use the technician-specific endpoint
       baseEndpoint = '/technician/test-templates/all';
     }
     
-    let url = `${import.meta.env.VITE_API_BASE_URL}${baseEndpoint}`;
-    if (queryString) {
-      url += `?${queryString}`;
-    }
+    const url = queryString 
+      ? `${import.meta.env.VITE_API_BASE_URL}${baseEndpoint}?${queryString}` 
+      : `${import.meta.env.VITE_API_BASE_URL}${baseEndpoint}`;
     
     const response = await fetch(url, {
       headers: getAuthHeaders(),
@@ -779,6 +789,26 @@ export const revenue = {
   }
 };
 
+// Group Test Templates API calls
+export const groupTestTemplates = {
+  getAll: async () => {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/group-test-templates`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  },
+
+  getById: async (id) => {
+    console.log(`Fetching group test template with ID: ${id}`);
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/group-test-templates/${id}`, {
+      headers: getAuthHeaders(),
+    });
+    const result = await handleResponse(response);
+    console.log(`Group test template response:`, result);
+    return result;
+  }
+};
+
 export default {
   auth,
   reports,
@@ -792,5 +822,6 @@ export default {
   doctors,
   plans,
   whatsappSettings,
-  revenue
+  revenue,
+  groupTestTemplates
 };
