@@ -49,7 +49,6 @@ const TestTemplateList = lazy(() => import('./pages/templates/TestTemplateList')
 const CreateTestTemplate = lazy(() => import('./pages/templates/CreateTestTemplate'));
 const ViewTestTemplate = lazy(() => import('./pages/templates/ViewTestTemplate'));
 const EditTestTemplate = lazy(() => import('./pages/templates/EditTestTemplate'));
-const CreateGroupTestTemplate = lazy(() => import('./pages/templates/CreateGroupTestTemplate'));
 
 // Patient Pages
 const PatientList = lazy(() => import('./pages/patients/PatientList'));
@@ -169,11 +168,6 @@ function App() {
               <Route path="/templates/create" element={
                 <ProtectedRoute allowedRoles={['super-admin']}>
                   <CreateTestTemplate />
-                </ProtectedRoute>
-              } />
-              <Route path="/templates/group/create" element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <CreateGroupTestTemplate />
                 </ProtectedRoute>
               } />
               <Route path="/templates/:id/edit" element={
