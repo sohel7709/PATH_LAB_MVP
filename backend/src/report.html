@@ -143,12 +143,14 @@
 
         <!-- Test Results - using divs instead of table -->
         <div class="test-results">
+            {{#unless hideTableHeadingAndReference}}
             <div class="test-header">
                 <div class="test-header-name">Test</div>
                 <div class="test-header-result">Result</div>
                 <div class="test-header-unit">Unit</div>
                 <div class="test-header-range">Reference Range</div>
             </div>
+            {{/unless}}
             
             <hr style="border-top: 0.5px solid #ddd;">
             
@@ -157,7 +159,9 @@
                 <div class="test-name">{{this.name}}</div>
                 <div class="test-result {{#if this.isAbnormal}}abnormal{{/if}}">{{this.result}}</div>
                 <div class="test-unit">{{this.unit}}</div>
+                {{#unless ../hideTableHeadingAndReference}}
                 <div class="test-range">{{this.referenceRange}}</div>
+                {{/unless}}
             </div>
             {{/each}}
         </div>

@@ -19,10 +19,26 @@ exports.createReport = async (req, res, next) => {
     console.log('Received Request Body:', JSON.stringify(req.body, null, 2));
 
     // Prepare data, ensuring results is an array and calculating flags
-    const resultsWithFlags = (Array.isArray(req.body.results) ? req.body.results : []).map(result => ({
+    let resultsWithFlags = (Array.isArray(req.body.results) ? req.body.results : []).map(result => ({
       ...result,
       flag: getAbnormalFlag(result.value, result.referenceRange, req.body.patientInfo?.gender)
     }));
+
+    // Populate templateName in resultsWithFlags
+    const templateIds = [...new Set(resultsWithFlags.map(r => r.templateId).filter(id => id))];
+    if (templateIds.length > 0) {
+      const templates = await TestTemplate.find({ '_id': { $in: templateIds } }).select('templateName name');
+      const templateMap = templates.reduce((map, t) => {
+        map[t._id.toString()] = t.templateName || t.name;
+        return map;
+      }, {});
+      resultsWithFlags = resultsWithFlags.map(result => {
+        if (result.templateId) {
+          result.templateName = templateMap[result.templateId.toString()] || 'Unknown Test';
+        }
+        return result;
+      });
+    }
 
     const reportDataToCreate = {
       ...req.body, // Include all other fields from the request body
@@ -36,6 +52,23 @@ exports.createReport = async (req, res, next) => {
         version: 1
       }
     };
+
+    // Compute hideTableHeadingAndReference flag
+    const testsToHideTableHeadingAndReference = [
+      'blood group',
+      'serum for hiv i & ii test',
+      'c-reactive protein (crp)',
+      'rapid malaria test',
+      'urine examination report',
+      'dengue test report',
+      'rheumatoid arthritis factor test',
+      'typhi dot test',
+      'troponin-i test',
+      'vdrl test'
+    ];
+    const templateNamesLower = (resultsWithFlags || []).map(r => (r.templateName || '').toLowerCase());
+    const hideTableHeadingAndReference = templateNamesLower.some(name => testsToHideTableHeadingAndReference.includes(name));
+    reportDataToCreate.hideTableHeadingAndReference = hideTableHeadingAndReference;
 
     // Remove fields that might have been sent but aren't directly part of the top-level schema
     delete reportDataToCreate.patientName;
@@ -301,7 +334,7 @@ exports.updateReport = async (req, res, next) => {
     console.log('Update report request body:', req.body);
 
     // Prepare update data, starting with allowed fields from req.body
-    const updateData = {
+    let updateData = {
         // Only include fields that are expected and allowed to be updated
         ...(req.body.patientInfo && { patientInfo: req.body.patientInfo }),
         ...(req.body.testInfo && { testInfo: req.body.testInfo }),
@@ -319,6 +352,41 @@ exports.updateReport = async (req, res, next) => {
             version: (report.reportMeta?.version || 1) + 1
         }
     };
+
+    // Populate templateName in results if results are provided
+    if (Array.isArray(req.body.results)) {
+      const templateIds = [...new Set(req.body.results.map(r => r.templateId).filter(id => id))];
+      if (templateIds.length > 0) {
+        const templates = await TestTemplate.find({ '_id': { $in: templateIds } }).select('templateName name');
+        const templateMap = templates.reduce((map, t) => {
+          map[t._id.toString()] = t.templateName || t.name;
+          return map;
+        }, {});
+        req.body.results = req.body.results.map(result => {
+          if (result.templateId) {
+            result.templateName = templateMap[result.templateId.toString()] || 'Unknown Test';
+          }
+          return result;
+        });
+      }
+    }
+
+    // Compute hideTableHeadingAndReference flag
+    const testsToHideTableHeadingAndReference = [
+      'blood group',
+      'serum for hiv i & ii test',
+      'c-reactive protein (crp)',
+      'rapid malaria test',
+      'urine examination report',
+      'dengue test report',
+      'rheumatoid arthritis factor test',
+      'typhi dot test',
+      'troponin-i test',
+      'vdrl test'
+    ];
+    const templateNamesLower = (req.body.results || []).map(r => (r.templateName || '').toLowerCase());
+    const hideTableHeadingAndReference = templateNamesLower.some(name => testsToHideTableHeadingAndReference.includes(name));
+    updateData.hideTableHeadingAndReference = hideTableHeadingAndReference;
 
     // Handle 'results' update separately to ensure flags are recalculated
     if (Array.isArray(req.body.results)) {

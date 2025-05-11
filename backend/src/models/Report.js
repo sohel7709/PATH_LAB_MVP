@@ -94,6 +94,10 @@ const reportSchema = new mongoose.Schema({
     type: Boolean,
     default: true // This might be obsolete if CRP is just another template
   },
+  hideTableHeadingAndReference: {
+    type: Boolean,
+    default: false
+  },
   status: {
     type: String,
     enum: ['pending', 'in-progress', 'completed', 'verified', 'delivered'],

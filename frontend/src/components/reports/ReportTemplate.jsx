@@ -407,6 +407,7 @@ const ReportTemplate = ({ reportData }) => {
             border: '1px solid black',
             tableLayout: 'fixed'
           }}>
+            {!reportData.hideTableHeadingAndReference && (
             <thead>
               <tr>
                 <th style={{
@@ -445,6 +446,7 @@ const ReportTemplate = ({ reportData }) => {
                 }}>Reference Range</th>
               </tr>
                 </thead>
+            )}
                 <tbody>
                   {group.parameters && group.parameters.length > 0 ? (
                     group.parameters.map((param, index) => {
@@ -502,6 +504,7 @@ const ReportTemplate = ({ reportData }) => {
                         }}>{param.unit || ''}</td>
 
                         {/* Reference Range */}
+                        {!reportData.hideTableHeadingAndReference && (
                         <td style={{
                           padding: '6px 10px',
                           border: '1px solid black',
@@ -516,6 +519,7 @@ const ReportTemplate = ({ reportData }) => {
                             </span>
                           )}
                         </td>
+                        )}
                       </tr>
                     );
                   }

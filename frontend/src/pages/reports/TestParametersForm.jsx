@@ -288,7 +288,7 @@ export default function TestParametersForm({
                 notes={formData.templateNotes?.[templateId] || ''} // Access notes using templateId
                 handleChange={(e) => handleTemplateNoteChange(templateId, e.target.value)} // Use specific handler
                 name={`templateNotes-${templateId}`} // Unique name might be needed if using standard form submission
-                label={`Notes for ${templateName}`}
+                label={templateName}
               />
             </div>
           );

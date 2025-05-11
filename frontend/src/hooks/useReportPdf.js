@@ -43,6 +43,7 @@ export const useReportPdf = (report, reportHtml) => {
         } else {
           console.warn('Could not find cloned container or its style for PDF generation adjustments.');
         }
+
       }
     },
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }

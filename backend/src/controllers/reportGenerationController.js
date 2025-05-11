@@ -26,6 +26,20 @@ const prepareReportTemplateData = async (report, lab, labReportSettings, req, sh
     const groupedResults = [];
     const templateIds = [...new Set(report.results.map(r => r.templateId).filter(id => id))]; // Get unique template IDs
 
+    // List of tests for which to hide table heading and reference cell (case-insensitive)
+    const testsToHideTableHeadingAndReference = [
+      'blood group',
+      'serum for hiv i & ii test',
+      'c-reactive protein (crp)',
+      'rapid malaria test',
+      'urine examination report',
+      'dengue test report',
+      'rheumatoid arthritis factor test',
+      'typhi dot test',
+      'troponin-i test',
+      'vdrl test'
+    ];
+
     if (templateIds.length > 0) {
       const templates = await TestTemplate.find({ '_id': { $in: templateIds } }).select('templateName name'); // Only select name fields
       const templateMap = templates.reduce((map, t) => {
@@ -123,6 +137,15 @@ const prepareReportTemplateData = async (report, lab, labReportSettings, req, sh
                              (labReportSettings.footer.signature ||
                               labReportSettings.footer.footerImage);
 
+    // Determine if any of the groupedResults templateName matches testsToHideTableHeadingAndReference
+    console.log('Grouped Results Template Names:', groupedResults.map(g => g.templateName));
+    const hideTableHeadingAndReference = groupedResults.some(group => {
+      const match = testsToHideTableHeadingAndReference.includes(group.templateName.toLowerCase());
+      console.log(`Checking templateName "${group.templateName}" against hide list: ${match}`);
+      return match;
+    });
+    console.log('hideTableHeadingAndReference flag:', hideTableHeadingAndReference);
+
     // Prepare data for the template
     const data = {
       // Header data - only include if settings exist and showHeader is true
@@ -133,11 +156,11 @@ const prepareReportTemplateData = async (report, lab, labReportSettings, req, sh
                (labReportSettings.header.labName || lab.name || 'Pathology Laboratory') : '',
       doctorName: (showHeader && hasHeaderSettings) ?
                   (labReportSettings.header.doctorName || 'Dr. Consultant') : '',
-      address: (showHeader && hasHeaderSettings) ?
+      address: (showHeader && hasHeaderSettings) ? 
                (labReportSettings.header.address || lab.address || 'Lab Address') : '',
-      phone: (showHeader && hasHeaderSettings) ?
+      phone: (showHeader && hasHeaderSettings) ? 
              (labReportSettings.header.phone || lab.phone || '') : '',
-      email: (showHeader && hasHeaderSettings) ?
+      email: (showHeader && hasHeaderSettings) ? 
              (labReportSettings.header.email || lab.email || '') : '',
 
       // Patient data
@@ -186,7 +209,10 @@ const prepareReportTemplateData = async (report, lab, labReportSettings, req, sh
         secondaryColor: labReportSettings?.styling?.secondaryColor || '#6c757d',
         fontFamily: labReportSettings?.styling?.fontFamily || 'Arial, sans-serif',
         fontSize: labReportSettings?.styling?.fontSize || 12
-      }
+      },
+
+      // New flag to hide table heading and reference cell
+      hideTableHeadingAndReference: hideTableHeadingAndReference
     };
     return data;
 };
