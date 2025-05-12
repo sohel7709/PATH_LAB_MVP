@@ -14,6 +14,7 @@ export default function AddPatient() {
   });
   
   const [formData, setFormData] = useState({
+    designation: '', // Added designation field
     fullName: '',
     age: '',
     gender: '',
@@ -177,7 +178,33 @@ export default function AddPatient() {
             </p>
             
             <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-              <div className="sm:col-span-3">
+              {/* Designation Dropdown */}
+              <div className="sm:col-span-1">
+                <label htmlFor="designation" className="block text-sm font-medium text-gray-700 mb-1">
+                  Designation <span className="text-red-500 ml-1">*</span>
+                </label>
+                <div className="mt-1">
+                  <select
+                    id="designation"
+                    name="designation"
+                    required
+                    value={formData.designation}
+                    onChange={handleChange}
+                    className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+                  >
+                    <option value="">Select</option>
+                    <option value="Mr.">Mr.</option>
+                    <option value="Mrs.">Mrs.</option>
+                    <option value="Ms.">Ms.</option>
+                    <option value="Dr.">Dr.</option>
+                    <option value="Master">Master</option>
+                    <option value="Miss">Miss</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Full Name Input - Adjusted column span */}
+              <div className="sm:col-span-2"> 
                 <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
                   Full name <span className="text-red-500 ml-1">*</span>
                   <span className="ml-1 text-gray-400 text-sm">(as per records)</span>

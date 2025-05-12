@@ -22,7 +22,7 @@ export const useReportPdf = (report, reportHtml) => {
 
   // Common PDF generation options
   const getPdfOptions = (filename) => ({
-    margin: [50, 0, 40, 0], // Adjusted bottom margin: [Top 50mm, Right 0, Bottom 40mm, Left 0]
+    margin: [47, 0, 40, 0], // Top margin changed to 47mm: [Top 47mm, Right 0, Bottom 40mm, Left 0]
     filename: filename || 'Report.pdf',
     image: { type: 'jpeg', quality: 0.98 },
     html2canvas: {

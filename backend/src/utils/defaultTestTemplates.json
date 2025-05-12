@@ -10,6 +10,8 @@
         "parameters": [
           { "name": "SERUM CREATININE", "unit": "mg%", "referenceRange": "0.6 - 1.4 mg%" },
           { "name": "BLOOD UREA", "unit": "mg%", "referenceRange": "13 - 45 mg%" }
+        ]
+      }
     ]
   },
   {
@@ -59,8 +61,6 @@
         ]
       }
     ]
-  }
-]
   },
   {
     "templateName": "Liver Function Test",
@@ -72,19 +72,25 @@
         "displayFormat": "table",
         "parameters": [
           {
-            "name": "BILIRUBIN TOTAL",
+            "name": "SERUM BILIRUBIN",
+            "isHeader": true,
+            "unit": "",
+            "referenceRange": ""
+          },
+          {
+            "name": " TOTAL",
             "unit": "mg%",
             "referenceRange": "0.2 - 1.0 mg%",
             "isSubparameter": true
           },
           {
-            "name": "BILIRUBIN DIRECT",
+            "name": " DIRECT",
             "unit": "mg %",
             "referenceRange": "00 - 0.2 mg%",
             "isSubparameter": true
           },
           {
-            "name": "BILIRUBIN INDIRECT",
+            "name": " INDIRECT",
             "unit": "mg %",
             "referenceRange": "",
             "isSubparameter": true
@@ -131,7 +137,6 @@
       }
     ]
   },
-  
   {
     "templateName": "ANC & Urine Examination",
     "shortName": "ANC",
@@ -161,16 +166,21 @@
         "displayFormat": "table",
         "parameters": [
           { "name": "Volume", "unit": "ml" },
-          { "name": "Colour", "unit": "" },
-          { "name": "Appearance", "unit": "" }
+          { "name": "Colour", "unit": "", "inputType": "dropdown", "options": ["Dark Yellow", "Yellow","Pale Yellow"] },
+          { "name": "Appearance", "unit": "", "inputType": "dropdown", "options": ["Clear", "Turbid", "Hazy", "Slightly Turbid"] }
         ]
       },
       {
         "sectionTitle": "Urine Examination Report - Chemical Exam",
         "displayFormat": "table",
         "parameters": [
-          { "name": "Protein", "unit": "" },
-          { "name": "Sugar", "unit": "" }
+          { "name": "Protein", "unit": "", "inputType": "dropdown", "options": ["Trace ", "Present +", "Present ++", "Present +++", "Present ++++"] },
+          { "name": "Sugar", "unit": "", "inputType": "dropdown", "options": ["Nil","Present +", "Present ++", "Present +++", "Present ++++"] },
+          { "name": "Ketone Bodies", "unit": "" , "inputType": "dropdown", "options": [ " - "," Trace Small", "Present","Moderate", "Large"] },
+          { "name": "Bile Salt", "unit": "", "inputType": "dropdown", "options": [ " - ","Absent", "Present"] },
+          { "name": "Bile Pigment", "unit": "", "inputType": "dropdown", "options": [" - ","Absent", "Present"] },
+          { "name": "Urobilinogen", "unit": "" },
+          { "name": "PH", "unit": "" }
         ]
       },
       {
@@ -235,18 +245,25 @@
     "sections": [
       {
         "displayFormat": "table",
+        "notes": "( N -less than 6 mg/lt )\n( By Turbilatex )",
         "parameters": [
+          {
+            "name": "SERUM BILIRUBIN",
+            "isHeader": true,
+            "unit": "",
+            "referenceRange": ""
+          },
           { "name": "TOTAL", "unit": "mg%", "referenceRange": "0.2 - 1.0 mg%", "isSubparameter": true },
           { "name": "DIRECT", "unit": "mg%", "referenceRange": "00 - 0.2 mg%", "isSubparameter": true },
           { "name": "INDIRECT", "unit": "mg%", "referenceRange": "", "isSubparameter": true },
           { "name": "SERUM CREATININE", "unit": "mg%", "referenceRange": "0.6 - 1.4 mg%" },
           { "name": "RANDOM BLOOD SUGAR", "unit": "mg%", "referenceRange": "Upto 140 mg%" },
-          { "name": "SERUM FOR C - REACTIVE PROTEINS", "unit": "mg/lt", "notes": "( By Turbilatex)" }
+          { "name": "SERUM FOR C - REACTIVE PROTEINS", "unit": "mg/lt" }
         ]
       }
     ]
   },
-{
+  {
     "templateName": "C-Reactive Protein (CRP)",
     "shortName": "CRP",
     "createdBy": "system",
@@ -288,7 +305,6 @@
         ]
       },
       {
-
         "sectionTitle": "CHEMICAL EXAM",
         "displayFormat": "table",
         "parameters": [
@@ -358,8 +374,6 @@
           { 
             "name": "BLOOD GROUP", 
             "unit": ""
-           
-            
           }
         ]
       }
@@ -543,7 +557,6 @@
       {
         "displayFormat": "key-value",
         "parameters": [
-         
           { 
             "name": "Result", 
             "unit": "", 

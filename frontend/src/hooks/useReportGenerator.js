@@ -82,7 +82,7 @@ export const useReportGenerator = (report) => {
     patientInfoDiv.style.marginBottom = '5mm';
     patientInfoDiv.innerHTML = `
       <div style="display: flex; flex-direction: column; gap: 2px;">
-        <div><strong>Patient Name:</strong> ${currentReport.patientInfo?.name || 'N/A'}</div>
+        <div><strong>Patient Name:</strong> ${currentReport.patientInfo?.designation || ''} ${currentReport.patientInfo?.name || 'N/A'}</div>
         <div><strong>Age/Gender:</strong> ${currentReport.patientInfo?.age || 'N/A'} / ${currentReport.patientInfo?.gender || 'N/A'}</div>
         <div><strong>Patient ID:</strong> ${currentReport.patientInfo?.patientId || 'N/A'}</div>
       </div>
@@ -221,7 +221,7 @@ export const useReportGenerator = (report) => {
               cell.style.textAlign = 'left';
               cell.style.borderTop = '1px solid #ccc';
               cell.style.borderBottom = '1px solid #ccc';
-              cell.style.backgroundColor = '#f8f8f8';
+              // cell.style.backgroundColor = '#f8f8f8'; // Removed background color
             }
 
             // Render parameters for this section
@@ -236,7 +236,7 @@ export const useReportGenerator = (report) => {
                 cell.style.fontSize = '11pt';
                 cell.style.padding = '6px 8px';
                 cell.style.textAlign = 'left';
-                cell.style.backgroundColor = '#f0f0f0'; // Slightly different background for param headers
+                // cell.style.backgroundColor = '#f0f0f0'; // Removed background color
               } else {
                 const isAbnormal = param.flag === 'high' || param.flag === 'low' || param.flag === 'critical';
                 const nameCell = row.insertCell();

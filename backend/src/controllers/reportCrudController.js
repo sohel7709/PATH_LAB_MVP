@@ -70,22 +70,22 @@ exports.createReport = async (req, res, next) => {
       }
     };
 
-    // Compute hideTableHeadingAndReference flag
-    const testsToHideTableHeadingAndReference = [
-      'blood group',
-      'serum for hiv i & ii test',
-      'c-reactive protein (crp)',
-      'rapid malaria test',
-      'urine examination report',
-      'dengue test report',
-      'rheumatoid arthritis factor test',
-      'typhi dot test',
-      'troponin-i test',
-      'vdrl test'
-    ];
-    const templateNamesLower = (resultsWithFlags || []).map(r => (r.templateName || '').toLowerCase());
-    const hideTableHeadingAndReference = templateNamesLower.some(name => testsToHideTableHeadingAndReference.includes(name));
-    reportDataToCreate.hideTableHeadingAndReference = hideTableHeadingAndReference;
+    // // Compute hideTableHeadingAndReference flag - REMOVED LOGIC - Default false from schema will be used
+    // const testsToHideTableHeadingAndReference = [
+    //   'blood group',
+    //   'serum for hiv i & ii test',
+    //   'c-reactive protein (crp)',
+    //   'rapid malaria test',
+    //   'urine examination report',
+    //   'dengue test report',
+    //   'rheumatoid arthritis factor test',
+    //   'typhi dot test',
+    //   'troponin-i test',
+    //   'vdrl test'
+    // ];
+    // const templateNamesLower = (resultsWithFlags || []).map(r => (r.templateName || '').toLowerCase());
+    // const hideTableHeadingAndReference = templateNamesLower.some(name => testsToHideTableHeadingAndReference.includes(name));
+    // reportDataToCreate.hideTableHeadingAndReference = hideTableHeadingAndReference; // Let schema default handle this
 
     // Remove fields that might have been sent but aren't directly part of the top-level schema
     delete reportDataToCreate.patientName;
@@ -405,22 +405,22 @@ exports.updateReport = async (req, res, next) => {
       }
     }
 
-    // Compute hideTableHeadingAndReference flag
-    const testsToHideTableHeadingAndReference = [
-      'blood group',
-      'serum for hiv i & ii test',
-      'c-reactive protein (crp)',
-      'rapid malaria test',
-      'urine examination report',
-      'dengue test report',
-      'rheumatoid arthritis factor test',
-      'typhi dot test',
-      'troponin-i test',
-      'vdrl test'
-    ];
-    const templateNamesLower = (req.body.results || []).map(r => (r.templateName || '').toLowerCase());
-    const hideTableHeadingAndReference = templateNamesLower.some(name => testsToHideTableHeadingAndReference.includes(name));
-    updateData.hideTableHeadingAndReference = hideTableHeadingAndReference;
+    // // Compute hideTableHeadingAndReference flag - REMOVED LOGIC - Default false from schema will be used
+    // const testsToHideTableHeadingAndReference = [
+    //   'blood group',
+    //   'serum for hiv i & ii test',
+    //   'c-reactive protein (crp)',
+    //   'rapid malaria test',
+    //   'urine examination report',
+    //   'dengue test report',
+    //   'rheumatoid arthritis factor test',
+    //   'typhi dot test',
+    //   'troponin-i test',
+    //   'vdrl test'
+    // ];
+    // const templateNamesLower = (req.body.results || []).map(r => (r.templateName || '').toLowerCase());
+    // const hideTableHeadingAndReference = templateNamesLower.some(name => testsToHideTableHeadingAndReference.includes(name));
+    // updateData.hideTableHeadingAndReference = hideTableHeadingAndReference; // Let schema default handle this
 
     // Handle 'results' update separately to ensure flags are recalculated and referenceRange is set
     if (Array.isArray(req.body.results)) {

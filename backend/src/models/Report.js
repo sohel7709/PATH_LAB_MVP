@@ -2,6 +2,12 @@ const mongoose = require('mongoose');
 
 const reportSchema = new mongoose.Schema({
   patientInfo: {
+    designation: { // Added designation field
+      type: String,
+      required: [true, 'Please provide patient designation'],
+      enum: ['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Master', 'Miss'],
+      trim: true
+    },
     name: {
       type: String,
       required: [true, 'Please provide patient name'],

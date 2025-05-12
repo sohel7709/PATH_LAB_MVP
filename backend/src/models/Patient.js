@@ -5,6 +5,12 @@ const PatientSchema = new mongoose.Schema({
     type: String,
     unique: true
   },
+  designation: {
+    type: String,
+    required: [true, 'Please add a designation'],
+    enum: ['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Master', 'Miss'],
+    trim: true
+  },
   fullName: {
     type: String,
     required: [true, 'Please add a name'],

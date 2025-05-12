@@ -15,9 +15,9 @@ export default function PrintReport() {
   const reportRef = useRef(null); // Ref for the container div (keep if needed for other purposes)
 
   // Use the custom hooks
-  const hideTableHeadingAndReference = report?.hideTableHeadingAndReference || false;
-  console.log('PrintReport.jsx - hideTableHeadingAndReference:', hideTableHeadingAndReference);
-  const reportHtml = useReportGenerator(report, hideTableHeadingAndReference); // Pass flag to hook
+  // REMOVED hideTableHeadingAndReference variable definition
+  // console.log('PrintReport.jsx - hideTableHeadingAndReference:', hideTableHeadingAndReference); // REMOVED log
+  const reportHtml = useReportGenerator(report); // REMOVED flag from hook call
   const { printPdf: originalPrintPdf, downloadPdf, isPrinting, isDownloading } = useReportPdf(report, reportHtml); // Get PDF functions and states
 
   const printPdf = async () => {
