@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react'; // Add useRef
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ExclamationCircleIcon, CheckCircleIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 import { reports, patients, doctors } from '../../utils/api';
@@ -17,6 +17,8 @@ export default function CreateReportForm() {
   const [doctorList, setDoctorList] = useState([]);
   const [patientSearchTerm, setPatientSearchTerm] = useState('');
   const [showPatientDropdown, setShowPatientDropdown] = useState(false);
+  const searchContainerRef = useRef(null); // Ref for the input + dropdown container
+  const dropdownRef = useRef(null); // Ref specifically for the dropdown list
   
   // Form data state
   const [formData, setFormData] = useState({
@@ -59,6 +61,35 @@ export default function CreateReportForm() {
     
     initializeData(); 
   }, [location]);
+
+  // Effect to handle clicks outside the search input/dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Check if dropdown is shown and the click is outside the container and the dropdown itself
+      if (
+        showPatientDropdown &&
+        searchContainerRef.current &&
+        !searchContainerRef.current.contains(event.target) &&
+        dropdownRef.current && // Also check dropdownRef explicitly
+        !dropdownRef.current.contains(event.target)
+      ) {
+        setShowPatientDropdown(false);
+      }
+    };
+
+    // Add listener if dropdown is shown
+    if (showPatientDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      // Remove listener if dropdown is hidden
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+
+    // Cleanup listener on component unmount or when showPatientDropdown changes
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showPatientDropdown]); // Re-run effect when showPatientDropdown changes
 
   // Fetch doctors list
   const fetchDoctors = async () => {
@@ -436,7 +467,7 @@ export default function CreateReportForm() {
               )}
             </h2>
             <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-              <div className="sm:col-span-6">
+              <div className="sm:col-span-6" ref={searchContainerRef}> {/* Add ref here */}
                 <label htmlFor="patientSelect" className="block text-sm font-medium text-gray-700 mb-1">
                   Select or Search Patient
                 </label>
@@ -452,17 +483,15 @@ export default function CreateReportForm() {
                       setShowPatientDropdown(true);
                     }}
                     onFocus={() => setShowPatientDropdown(true)}
-                    onBlur={() => {
-                      // Delay hiding dropdown to allow click events to register
-                      setTimeout(() => setShowPatientDropdown(false), 200);
-                    }}
+                    // REMOVE onBlur handler entirely
                     className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
                   />
                   
                   {showPatientDropdown && patientSearchTerm && (
-                    <div 
+                    <div
+                      ref={dropdownRef} // Add ref here
                       className="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base overflow-auto focus:outline-none sm:text-sm border border-blue-200"
-                      onMouseDown={(e) => e.preventDefault()} // Prevent default mousedown behavior to keep focus
+                      onMouseDown={(e) => e.preventDefault()} // Keep this to prevent focus loss on scrollbar click etc.
                     >
                       {/* Removed "Add New Patient" option */}
                       {patientList
@@ -481,7 +510,7 @@ export default function CreateReportForm() {
                                 console.log(`Patient selected: ID=${patientId}, Name=${patient.fullName}`); // Keep log for verification
                                 fetchPatientDetails(patientId);
                                 setPatientSearchTerm(`${patient.fullName} - ${patient.phone}`);
-                                setShowPatientDropdown(false);
+                                setShowPatientDropdown(false); // Hide immediately on selection
                               }}
                             >
                               {patient.fullName} - {patient.phone}
