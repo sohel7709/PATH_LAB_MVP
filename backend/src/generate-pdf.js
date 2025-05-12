@@ -47,7 +47,7 @@ async function generatePDF() {
       format: 'A4',
       printBackground: true,
       margin: {
-        top: '60mm', // Updated header margin
+top: '55mm', // Updated header margin
         right: '0',
         bottom: '30mm', // Updated footer margin
         left: '0'

@@ -52,7 +52,7 @@ table {
 table th, table td {
     text-align: left;
     padding: 4px;
-    border: none !important; /* Remove all borders */
+    border: none; /* Remove all borders */
 }
 
 /* Test results - div version */
