@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lab Report</title>
-    <link rel="stylesheet" href="print-styles.css">
+    <!-- <link rel="stylesheet" href="print-styles.css"> REMOVED to simplify CSS context for Puppeteer -->
     <style>
         @page {
             size: A4;
@@ -78,18 +78,32 @@
         .test-results {
             margin-top: 10px;
             width: 100%;
+            /* border: 1px solid #000000 !important; */ /* Outer border for the table group - REMOVED */
+            /* Add top and left border to the container to start the grid */
+            border-top: 1px solid #000000 !important;
+            border-left: 1px solid #000000 !important;
         }
 
         .test-header {
             display: flex;
-            margin-bottom: 5px;
+            font-weight: bold; /* Make header text bold */
         }
 
         .test-row {
             display: flex;
-            margin-bottom: 3px;
         }
 
+        /* Styling for all "cells" */
+        .test-header > div,
+        .test-row > div {
+            padding: 4px; /* Add some padding inside cells */
+            box-sizing: border-box !important; /* Ensure consistent box model */
+            /* Each cell defines its own right and bottom border */
+            border-right: 1px solid #000000 !important;
+            border-bottom: 1px solid #000000 !important;
+        }
+        
+        /* Specific widths for cells */
         .test-name, .test-header-name {
             width: 25%;
             font-weight: bold;
@@ -97,6 +111,7 @@
 
         .test-result, .test-header-result {
             width: 25%;
+            text-align: left; /* Default alignment */
         }
 
         .test-unit, .test-header-unit {
@@ -106,6 +121,12 @@
         .test-range, .test-header-range {
             width: 30%;
         }
+
+        /* Center text for result cells in tests that hide columns */
+        .test-result.center-result, .test-header-result.center-result {
+            text-align: center;
+        }
+
 
         /* Highlight abnormal values with underline only */
         .abnormal {
@@ -161,28 +182,66 @@
         <hr>
 
         <!-- Report Title -->
-        <h2 class="report-title">{{testName}}</h2>
+        <!-- Report Title - This might need to be part of the loop if each group has its own title -->
+        <!-- <h2 class="report-title">{{testName}}</h2> -->
 
-        <!-- Test Results - using divs instead of table -->
-        <div class="test-results">
-            <div class="test-header">
-                <div class="test-header-name">Test</div>
-                <div class="test-header-result">Result</div>
-                <div class="test-header-unit">Unit</div>
-                <div class="test-header-range">Reference Range</div>
+        <!-- Test Results - iterating through groupedResults -->
+        {{#each groupedResults}}
+        <div class="test-results-group" style="margin-bottom: 15px;">
+            <h2 class="report-title">{{this.templateName}}</h2>
+
+            <!-- Test Results - using divs instead of table -->
+            <div class="test-results">
+                {{#unless this.shouldHideColumns}} {{!-- Hide header row if this group should hide columns --}}
+                <div class="test-header">
+                    <div class="test-header-name">Test</div>
+                    <div class="test-header-result">Result</div>
+                    <div class="test-header-unit">Unit</div>
+                    <div class="test-header-range">Reference Range</div>
+                </div>
+                {{/unless}}
+                
+                {{#each this.parameters}}
+                {{#if this.isHeader}}
+                <div class="test-row" style="margin-top: 5px;">
+                    <div class="test-name" style="font-weight: bold; text-transform: uppercase;">{{this.name}}</div>
+                    <div class="test-result"></div>
+                    {{#unless ../shouldHideColumns}} {{!-- Hide Unit cell for header row if parent group hides columns --}}
+                    <div class="test-unit"></div>
+                    {{/unless}}
+                    {{#unless ../shouldHideColumns}} {{!-- Hide Reference Range cell for header row if parent group hides columns --}}
+                    <div class="test-range"></div>
+                    {{/unless}}
+                </div>
+                {{else}}
+                <div class="test-row {{#if this.isSubparameter}}subparameter-row{{/if}}">
+                    <div class="test-name" style="{{#if this.isSubparameter}}padding-left: 15px;{{/if}}">{{this.name}}</div>
+                    <div class="test-result {{#if this.isAbnormal}}abnormal{{/if}} {{#if ../shouldHideColumns}}center-result{{/if}}">{{this.result}}</div> {{!-- Add conditional class --}}
+                    {{#unless ../shouldHideColumns}} {{!-- Hide Unit cell if parent group hides columns --}}
+                    <div class="test-unit">{{this.unit}}</div>
+                    {{/unless}}
+                    {{#unless ../shouldHideColumns}} {{!-- Hide Reference Range cell if parent group hides columns --}}
+                    <div class="test-range">{{this.referenceRange}}</div>
+                    {{/unless}}
+                </div>
+                {{/if}}
+                {{/each}}
             </div>
-            
-            <hr style="border-top: 0.5px solid #ddd;">
-            
-            {{#each testResults}}
-            <div class="test-row">
-                <div class="test-name">{{this.name}}</div>
-                <div class="test-result {{#if this.isAbnormal}}abnormal{{/if}}">{{this.result}}</div>
-                <div class="test-unit">{{this.unit}}</div>
-                <div class="test-range">{{this.referenceRange}}</div>
+
+            {{#if this.templateSpecificNotes}}
+            <div style="margin-top: 8px; padding-top: 5px; border-top: 0.5px solid #eee;">
+                <p style="font-size: 10px; white-space: pre-wrap;"><em>{{this.templateSpecificNotes}}</em></p>
             </div>
-            {{/each}}
+            {{/if}}
         </div>
+        {{/each}}
+
+        {{#if testNotes}}
+        <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid black;">
+            <h4 style="font-size: 12px; font-weight: bold; margin-bottom: 5px;">General Notes:</h4>
+            <p style="font-size: 11px; white-space: pre-wrap;">{{testNotes}}</p>
+        </div>
+        {{/if}}
 
         <!-- Signature Section -->
         <div class="signature">

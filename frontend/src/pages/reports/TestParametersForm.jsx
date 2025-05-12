@@ -102,7 +102,7 @@ export default function TestParametersForm({
                   name: param.name || 'Unnamed Parameter',
                   value: '',
                   unit: param.unit || '',
-                  referenceRange: param.normalRange || '',
+                  referenceRange: param.referenceRange || param.normalRange || '',
                   section: sectionTitle,
                   isHeader: param.isHeader || false,           // Ensure isHeader is copied
                   isSubparameter: param.isSubparameter || false,
@@ -122,7 +122,7 @@ export default function TestParametersForm({
               name: field.parameter || 'Unnamed Parameter',
               value: '',
               unit: field.unit || '',
-              referenceRange: field.reference_range || '',
+              referenceRange: field.referenceRange || field.reference_range || '',
               isHeader: false,
               isSubparameter: false,
               templateId: template._id,

@@ -52,16 +52,21 @@ const prepareReportTemplateData = async (report, lab, labReportSettings, req, sh
 
         const parameters = report.results
           .filter(r => r.templateId && r.templateId.toString() === templateId.toString())
-          .map(param => ({
-            name: param.parameter,
-            result: param.value, // Use the value directly (should be '' for headers)
-            unit: param.unit,
-            referenceRange: param.referenceRange,
-            isAbnormal: param.flag === 'high' || param.flag === 'low' || param.flag === 'critical',
-            // Use isHeader directly from the data model if present, otherwise default to false
-            isHeader: param.isHeader || false,
-            isSubparameter: param.isSubparameter // Pass isSubparameter to template
-          }));
+          .map(param => {
+            const shouldHideUnitAndReference = testsToHideTableHeadingAndReference.includes(templateName.toLowerCase());
+            return {
+              name: param.parameter,
+              result: param.value, // Use the value directly (should be '' for headers)
+              unit: shouldHideUnitAndReference ? '' : param.unit, // Clear unit if test is in hide list
+              referenceRange: shouldHideUnitAndReference ? '' : param.referenceRange, // Clear reference range if test is in hide list
+              isAbnormal: param.flag === 'high' || param.flag === 'low' || param.flag === 'critical',
+              // Use isHeader directly from the data model if present, otherwise default to false
+              isHeader: param.isHeader || false,
+              isSubparameter: param.isSubparameter // Pass isSubparameter to template
+            };
+          });
+
+        console.log('Parameters array before header insertion:', parameters.map(p => ({ name: p.name, value: p.result, flag: p.flag, isAbnormal: p.isAbnormal }))); // Added log
 
         // --- START: Insert Differential Count Header ---
         // Check if this group contains 'Neutrophils' (case-insensitive)
@@ -103,7 +108,13 @@ const prepareReportTemplateData = async (report, lab, labReportSettings, req, sh
             }
           }
           // --- End Get template-specific notes ---
-          groupedResults.push({ templateName, parameters, templateSpecificNotes: notesForThisTemplate });
+          groupedResults.push({
+            templateName,
+            parameters,
+            templateSpecificNotes: notesForThisTemplate,
+            // Add flag to indicate if columns should be hidden for THIS group
+            shouldHideColumns: testsToHideTableHeadingAndReference.includes(templateName.toLowerCase())
+          });
         }
       }
     } else {
@@ -119,7 +130,12 @@ const prepareReportTemplateData = async (report, lab, labReportSettings, req, sh
        }));
        if (parameters.length > 0) {
          // No template ID, so no specific notes here
-         groupedResults.push({ templateName: report.testInfo?.name || 'Test Results', parameters, templateSpecificNotes: '' });
+         groupedResults.push({
+           templateName: report.testInfo?.name || 'Test Results',
+           parameters,
+           templateSpecificNotes: '',
+           shouldHideColumns: testsToHideTableHeadingAndReference.includes((report.testInfo?.name || '').toLowerCase()) // Check for custom test name
+         });
        }
     }
     // --- End grouping logic ---
@@ -252,12 +268,12 @@ exports.generateHtmlReport = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Lab not found' });
     }
 
-    // Read the black-only HTML template
-    const reportTemplatePath = path.join(__dirname, '..', 'black-only-report.html');
+    // Read the HTML template (changed from black-only-report.html to pdf-report.html)
+    const reportTemplatePath = path.join(__dirname, '..', 'pdf-report.html');
     let templateSource;
     try {
       templateSource = fs.readFileSync(reportTemplatePath, 'utf8');
-      console.log('Black-only template loaded successfully for HTML view');
+      console.log('pdf-report.html template loaded successfully for HTML view');
     } catch (err) {
       console.error('Error reading template file:', err);
       return res.status(500).json({ success: false, message: 'Error reading report template' });
@@ -329,8 +345,8 @@ exports.generatePdfReport = async (req, res, next) => {
     // Prepare data using the helper function
     const data = await prepareReportTemplateData(report, lab, labReportSettings, req, showHeader, showFooter);
 
-    // Read the black-only template specifically designed for PDF generation
-    const pdfTemplatePath = path.join(__dirname, '..', 'black-only-report.html');
+    // Read the template specifically designed for PDF generation (changed from black-only-report.html to pdf-report.html)
+    const pdfTemplatePath = path.join(__dirname, '..', 'pdf-report.html');
     const templateSource = fs.readFileSync(pdfTemplatePath, 'utf8');
 
     // Compile the template
@@ -341,7 +357,7 @@ exports.generatePdfReport = async (req, res, next) => {
 
     // Generate the HTML
     const html = template(data);
-    console.log('Using black-only template for PDF generation');
+    console.log('Using pdf-report.html template for PDF generation');
 
     // Launch a headless browser with additional configuration
     browser = await puppeteer.launch({

@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const testParameterSchema = new mongoose.Schema({
   name: { type: String, required: true },      // e.g., "SERUM CREATININE", "TOTAL", "Neutrophils"
   unit: { type: String, default: '' },         // e.g., "mg%", "U/L", "gms%"
-  normalRange: { type: String, default: '' },  // e.g., "0.6 - 1.4 mg%", "M - 13.5 - 18.0"
+  referenceRange: { type: String, default: '' },  // e.g., "0.6 - 1.4 mg%", "M - 13.5 - 18.0"
   isSubparameter: { type: Boolean, default: false },
   notes: { type: String, default: '' },
   isHeader: { type: Boolean, default: false },      // <<< ADD isHeader
