@@ -1,4 +1,4 @@
-const Report = require('../models/Report');
+ const Report = require('../models/Report');
 const Lab = require('../models/Lab');
 const LabReportSettings = require('../models/LabReportSettings');
 const TestTemplate = require('../models/TestTemplate'); // Import TestTemplate model
@@ -108,13 +108,7 @@ const prepareReportTemplateData = async (report, lab, labReportSettings, req, sh
             }
           }
           // --- End Get template-specific notes ---
-          groupedResults.push({
-            templateName,
-            parameters,
-            templateSpecificNotes: notesForThisTemplate,
-            // Add flag to indicate if columns should be hidden for THIS group
-            shouldHideColumns: testsToHideTableHeadingAndReference.includes(templateName.toLowerCase())
-          });
+          groupedResults.push({ templateName, parameters, templateSpecificNotes: notesForThisTemplate });
         }
       }
     } else {
@@ -126,16 +120,12 @@ const prepareReportTemplateData = async (report, lab, labReportSettings, req, sh
           referenceRange: param.referenceRange,
           isAbnormal: param.flag === 'high' || param.flag === 'low' || param.flag === 'critical',
           isHeader: param.isHeader,
-          isSubparameter: param.isSubparameter
+          isSubparameter: param.isSubparameter,
+          displayFormat: param.displayFormat // Include displayFormat for fallback
        }));
        if (parameters.length > 0) {
          // No template ID, so no specific notes here
-         groupedResults.push({
-           templateName: report.testInfo?.name || 'Test Results',
-           parameters,
-           templateSpecificNotes: '',
-           shouldHideColumns: testsToHideTableHeadingAndReference.includes((report.testInfo?.name || '').toLowerCase()) // Check for custom test name
-         });
+         groupedResults.push({ templateName: report.testInfo?.name || 'Test Results', parameters, templateSpecificNotes: '' });
        }
     }
     // --- End grouping logic ---

@@ -49,33 +49,37 @@
         .test-results {
             margin-top: 15px;
             width: 100%;
+            border: 1px solid black; /* Add border to the main container */
+            /* border-collapse: collapse; /* Collapse borders for a cleaner look */ /* border-collapse is for tables, not grid */
+        }
+
+        .test-header, .test-row {
+            display: grid; /* Use grid for better table-like structure */
+            grid-template-columns: 25% 25% 20% 30%; /* Define column widths */
+            /* border-bottom: 1px solid #ddd; /* Add subtle bottom border to rows */ */
         }
 
         .test-header {
-            display: flex;
-            margin-bottom: 5px;
-        }
-
-        .test-row {
-            display: flex;
-            margin-bottom: 3px;
-        }
-
-        .test-name, .test-header-name {
-            width: 25%;
+            border-bottom: 1px solid black; /* Stronger bottom border for header */
             font-weight: bold;
         }
 
-        .test-result, .test-header-result {
-            width: 25%;
-        }
-
-        .test-unit, .test-header-unit {
-            width: 20%;
-        }
-
+        .test-name, .test-header-name,
+        .test-result, .test-header-result,
+        .test-unit, .test-header-unit,
         .test-range, .test-header-range {
-            width: 30%;
+            padding: 5px; /* Add some padding to cells */
+            border: 1px solid black; /* Add border to all sides of cells */
+            overflow: hidden; /* Prevent content overflow */
+            text-overflow: ellipsis; /* Add ellipsis for overflowing text */
+        }
+
+        /* .test-range, .test-header-range {
+            border-right: none; /* Remove right border for the last column */
+        } */
+
+        .test-name, .test-header-name {
+            font-weight: bold;
         }
 
         /* Highlight abnormal values with underline only */
@@ -143,14 +147,12 @@
 
         <!-- Test Results - using divs instead of table -->
         <div class="test-results">
-            {{#unless hideTableHeadingAndReference}}
             <div class="test-header">
                 <div class="test-header-name">Test</div>
                 <div class="test-header-result">Result</div>
                 <div class="test-header-unit">Unit</div>
                 <div class="test-header-range">Reference Range</div>
             </div>
-            {{/unless}}
             
             <hr style="border-top: 0.5px solid #ddd;">
             
@@ -159,9 +161,7 @@
                 <div class="test-name">{{this.name}}</div>
                 <div class="test-result {{#if this.isAbnormal}}abnormal{{/if}}">{{this.result}}</div>
                 <div class="test-unit">{{this.unit}}</div>
-                {{#unless ../hideTableHeadingAndReference}}
                 <div class="test-range">{{this.referenceRange}}</div>
-                {{/unless}}
             </div>
             {{/each}}
         </div>

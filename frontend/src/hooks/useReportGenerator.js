@@ -125,7 +125,6 @@ export const useReportGenerator = (report, hideTableHeadingAndReference = false)
           table = document.createElement('table');
           table.style.width = '100%';
           table.style.borderCollapse = 'collapse'; // Keep this for table-cell borders
-          // table.style.border = 'none'; // REMOVE this
           table.style.tableLayout = 'fixed';
           table.style.borderTop = '1px solid black'; // Add top border to table
           table.style.borderLeft = '1px solid black'; // Add left border to table
@@ -135,10 +134,10 @@ export const useReportGenerator = (report, hideTableHeadingAndReference = false)
             const thead = document.createElement('thead');
             thead.innerHTML = `
               <tr>
-                <th style="width: 40%; text-align: left; font-weight: bold; text-transform: uppercase; font-size: 10pt; padding: 3px 8px; border-right: 1px solid black; border-bottom: 1px solid black;">Parameter</th>
-                <th style="width: 20%; text-align: right; padding-right: 15px; font-weight: bold; text-transform: uppercase; font-size: 10pt; padding: 3px 8px; border-right: 1px solid black; border-bottom: 1px solid black;">Result</th>
-                <th style="width: 10%; text-align: left; padding-left: 5px; font-weight: bold; text-transform: uppercase; font-size: 10pt; padding: 3px 8px; border-right: 1px solid black; border-bottom: 1px solid black;">Unit</th>
-                <th style="width: 30%; text-align: left; font-weight: bold; text-transform: uppercase; font-size: 10pt; padding: 3px 8px; border-right: 1px solid black; border-bottom: 1px solid black;">Reference Range</th>
+                <th style="width: 40%; text-align: left; font-weight: bold; text-transform: uppercase; font-size: 10pt; padding: 3px 8px; border: 1px solid black;">Parameter</th>
+                <th style="width: 20%; text-align: right; padding-right: 15px; font-weight: bold; text-transform: uppercase; font-size: 10pt; padding: 3px 8px; border: 1px solid black;">Result</th>
+                <th style="width: 10%; text-align: left; padding-left: 5px; font-weight: bold; text-transform: uppercase; font-size: 10pt; padding: 3px 8px; border: 1px solid black;">Unit</th>
+                <th style="width: 30%; text-align: left; font-weight: bold; text-transform: uppercase; font-size: 10pt; padding: 3px 8px; border: 1px solid black;">Reference Range</th>
               </tr>
             `;
             table.appendChild(thead);
@@ -149,7 +148,6 @@ export const useReportGenerator = (report, hideTableHeadingAndReference = false)
           table = document.createElement('table');
           table.style.width = '100%';
           table.style.borderCollapse = 'collapse'; // Keep this
-          // table.style.border = 'none'; // REMOVE this
           table.style.tableLayout = 'fixed';
           table.style.borderTop = '1px solid black'; // Add top border to table
           table.style.borderLeft = '1px solid black'; // Add left border to table
@@ -158,10 +156,10 @@ export const useReportGenerator = (report, hideTableHeadingAndReference = false)
             const thead = document.createElement('thead');
             thead.innerHTML = `
               <tr>
-                <th style="width: 40%; text-align: left; font-weight: bold; text-transform: uppercase; font-size: 10pt; padding: 3px 8px; border-right: 1px solid black; border-bottom: 1px solid black;">Parameter</th>
-                <th style="width: 20%; text-align: right; padding-right: 15px; font-weight: bold; text-transform: uppercase; font-size: 10pt; padding: 3px 8px; border-right: 1px solid black; border-bottom: 1px solid black;">Result</th>
-                <th style="width: 10%; text-align: left; padding-left: 5px; font-weight: bold; text-transform: uppercase; font-size: 10pt; padding: 3px 8px; border-right: 1px solid black; border-bottom: 1px solid black;">Unit</th>
-                <th style="width: 30%; text-align: left; font-weight: bold; text-transform: uppercase; font-size: 10pt; padding: 3px 8px; border-right: 1px solid black; border-bottom: 1px solid black;">Reference Range</th>
+                <th style="width: 40%; text-align: left; font-weight: bold; text-transform: uppercase; font-size: 10pt; padding: 3px 8px; border: 1px solid black;">Parameter</th>
+                <th style="width: 20%; text-align: right; padding-right: 15px; font-weight: bold; text-transform: uppercase; font-size: 10pt; padding: 3px 8px; border: 1px solid black;">Result</th>
+                <th style="width: 10%; text-align: left; padding-left: 5px; font-weight: bold; text-transform: uppercase; font-size: 10pt; padding: 3px 8px; border: 1px solid black;">Unit</th>
+                <th style="width: 30%; text-align: left; font-weight: bold; text-transform: uppercase; font-size: 10pt; padding: 3px 8px; border: 1px solid black;">Reference Range</th>
               </tr>
             `;
             table.appendChild(thead);
@@ -217,9 +215,8 @@ export const useReportGenerator = (report, hideTableHeadingAndReference = false)
                 nameCell.style.padding = '3px 8px';
                 nameCell.style.fontSize = '10pt';
                 nameCell.style.verticalAlign = 'top';
-                nameCell.style.borderRight = '1px solid black';
-                nameCell.style.borderBottom = '1px solid black';
                 if (param.isSubparameter) nameCell.style.paddingLeft = '20px';
+                nameCell.style.border = '1px solid black'; // Add border
 
                 resultCell.textContent = param.value !== null && param.value !== undefined ? param.value : '';
                 resultCell.style.padding = '3px 15px 3px 8px';
@@ -227,16 +224,14 @@ export const useReportGenerator = (report, hideTableHeadingAndReference = false)
                 resultCell.style.fontWeight = isAbnormal ? 'bold' : 'normal';
                 resultCell.style.fontSize = '10pt';
                 resultCell.style.verticalAlign = 'top';
-                resultCell.style.borderRight = '1px solid black';
-                resultCell.style.borderBottom = '1px solid black';
+                resultCell.style.border = '1px solid black'; // Add border
 
                 unitCell.textContent = param.unit || '';
                 unitCell.style.padding = '3px 8px';
                 unitCell.style.textAlign = 'left';
                 unitCell.style.fontSize = '10pt';
                 unitCell.style.verticalAlign = 'top';
-                unitCell.style.borderRight = '1px solid black';
-                unitCell.style.borderBottom = '1px solid black';
+                unitCell.style.border = '1px solid black'; // Add border
 
                 if (!hideTableHeadingAndReference) {
                   rangeCell.textContent = param.referenceRange || '';
@@ -244,8 +239,7 @@ export const useReportGenerator = (report, hideTableHeadingAndReference = false)
                   rangeCell.style.textAlign = 'left';
                   rangeCell.style.fontSize = '10pt';
                   rangeCell.style.verticalAlign = 'top';
-                  rangeCell.style.borderRight = '1px solid black'; // This will be the table's right border
-                  rangeCell.style.borderBottom = '1px solid black';
+                  rangeCell.style.border = '1px solid black'; // Add border
                 } else {
                   rangeCell.style.display = 'none';
                 }
