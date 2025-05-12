@@ -460,7 +460,10 @@ export default function CreateReportForm() {
                   />
                   
                   {showPatientDropdown && patientSearchTerm && (
-                    <div className="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base overflow-auto focus:outline-none sm:text-sm border border-blue-200">
+                    <div 
+                      className="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base overflow-auto focus:outline-none sm:text-sm border border-blue-200"
+                      onMouseDown={(e) => e.preventDefault()} // Prevent default mousedown behavior to keep focus
+                    >
                       {/* Removed "Add New Patient" option */}
                       {patientList
                         .filter(patient =>
