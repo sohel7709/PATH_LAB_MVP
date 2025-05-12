@@ -102,7 +102,7 @@ export default function TestParametersForm({
                   name: param.name || 'Unnamed Parameter',
                   value: '',
                   unit: param.unit || '',
-                  referenceRange: param.normalRange || '',
+                  referenceRange: param.referenceRange || param.normalRange || '',
                   section: sectionTitle,
                   isHeader: param.isHeader || false,           // Ensure isHeader is copied
                   isSubparameter: param.isSubparameter || false,
@@ -122,7 +122,7 @@ export default function TestParametersForm({
               name: field.parameter || 'Unnamed Parameter',
               value: '',
               unit: field.unit || '',
-              referenceRange: field.reference_range || '',
+              referenceRange: field.referenceRange || field.reference_range || '',
               isHeader: false,
               isSubparameter: false,
               templateId: template._id,
@@ -288,7 +288,7 @@ export default function TestParametersForm({
                 notes={formData.templateNotes?.[templateId] || ''} // Access notes using templateId
                 handleChange={(e) => handleTemplateNoteChange(templateId, e.target.value)} // Use specific handler
                 name={`templateNotes-${templateId}`} // Unique name might be needed if using standard form submission
-                label={`Notes for ${templateName}`}
+                label={templateName}
               />
             </div>
           );

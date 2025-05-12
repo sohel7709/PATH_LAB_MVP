@@ -1,4 +1,4 @@
-const Report = require('../models/Report');
+ const Report = require('../models/Report');
 const Lab = require('../models/Lab');
 const LabReportSettings = require('../models/LabReportSettings');
 const TestTemplate = require('../models/TestTemplate'); // Import TestTemplate model
@@ -26,6 +26,20 @@ const prepareReportTemplateData = async (report, lab, labReportSettings, req, sh
     const groupedResults = [];
     const templateIds = [...new Set(report.results.map(r => r.templateId).filter(id => id))]; // Get unique template IDs
 
+    // List of tests for which to hide table heading and reference cell (case-insensitive)
+    const testsToHideTableHeadingAndReference = [
+      'blood group',
+      'serum for hiv i & ii test',
+      'c-reactive protein (crp)',
+      'rapid malaria test',
+      'urine examination report',
+      'dengue test report',
+      'rheumatoid arthritis factor test',
+      'typhi dot test',
+      'troponin-i test',
+      'vdrl test'
+    ];
+
     if (templateIds.length > 0) {
       const templates = await TestTemplate.find({ '_id': { $in: templateIds } }).select('templateName name'); // Only select name fields
       const templateMap = templates.reduce((map, t) => {
@@ -38,16 +52,21 @@ const prepareReportTemplateData = async (report, lab, labReportSettings, req, sh
 
         const parameters = report.results
           .filter(r => r.templateId && r.templateId.toString() === templateId.toString())
-          .map(param => ({
-            name: param.parameter,
-            result: param.value, // Use the value directly (should be '' for headers)
-            unit: param.unit,
-            referenceRange: param.referenceRange,
-            isAbnormal: param.flag === 'high' || param.flag === 'low' || param.flag === 'critical',
-            // Use isHeader directly from the data model if present, otherwise default to false
-            isHeader: param.isHeader || false,
-            isSubparameter: param.isSubparameter // Pass isSubparameter to template
-          }));
+          .map(param => {
+            const shouldHideUnitAndReference = testsToHideTableHeadingAndReference.includes(templateName.toLowerCase());
+            return {
+              name: param.parameter,
+              result: param.value, // Use the value directly (should be '' for headers)
+              unit: shouldHideUnitAndReference ? '' : param.unit, // Clear unit if test is in hide list
+              referenceRange: shouldHideUnitAndReference ? '' : param.referenceRange, // Clear reference range if test is in hide list
+              isAbnormal: param.flag === 'high' || param.flag === 'low' || param.flag === 'critical',
+              // Use isHeader directly from the data model if present, otherwise default to false
+              isHeader: param.isHeader || false,
+              isSubparameter: param.isSubparameter // Pass isSubparameter to template
+            };
+          });
+
+        console.log('Parameters array before header insertion:', parameters.map(p => ({ name: p.name, value: p.result, flag: p.flag, isAbnormal: p.isAbnormal }))); // Added log
 
         // --- START: Insert Differential Count Header ---
         // Check if this group contains 'Neutrophils' (case-insensitive)
@@ -89,12 +108,7 @@ const prepareReportTemplateData = async (report, lab, labReportSettings, req, sh
             }
           }
           // --- End Get template-specific notes ---
-
-          // Determine if this is the Widal paragraph format template
-          const isWidalParagraphFormat = templateName === "WIDAL TEST ( By Slide Method)" && report.results.find(r => r.templateId && r.templateId.toString() === templateId.toString())?.displayFormat === "paragraph";
-
-
-          groupedResults.push({ templateName, parameters, templateSpecificNotes: notesForThisTemplate, isWidalParagraphFormat });
+          groupedResults.push({ templateName, parameters, templateSpecificNotes: notesForThisTemplate });
         }
       }
     } else {
@@ -111,8 +125,7 @@ const prepareReportTemplateData = async (report, lab, labReportSettings, req, sh
        }));
        if (parameters.length > 0) {
          // No template ID, so no specific notes here
-         const isWidalParagraphFormat = report.testInfo?.name === "WIDAL TEST ( By Slide Method)" && parameters[0]?.displayFormat === "paragraph";
-         groupedResults.push({ templateName: report.testInfo?.name || 'Test Results', parameters, templateSpecificNotes: '', isWidalParagraphFormat });
+         groupedResults.push({ templateName: report.testInfo?.name || 'Test Results', parameters, templateSpecificNotes: '' });
        }
     }
     // --- End grouping logic ---
@@ -130,6 +143,15 @@ const prepareReportTemplateData = async (report, lab, labReportSettings, req, sh
                              (labReportSettings.footer.signature ||
                               labReportSettings.footer.footerImage);
 
+    // Determine if any of the groupedResults templateName matches testsToHideTableHeadingAndReference
+    console.log('Grouped Results Template Names:', groupedResults.map(g => g.templateName));
+    const hideTableHeadingAndReference = groupedResults.some(group => {
+      const match = testsToHideTableHeadingAndReference.includes(group.templateName.toLowerCase());
+      console.log(`Checking templateName "${group.templateName}" against hide list: ${match}`);
+      return match;
+    });
+    console.log('hideTableHeadingAndReference flag:', hideTableHeadingAndReference);
+
     // Prepare data for the template
     const data = {
       // Header data - only include if settings exist and showHeader is true
@@ -140,11 +162,11 @@ const prepareReportTemplateData = async (report, lab, labReportSettings, req, sh
                (labReportSettings.header.labName || lab.name || 'Pathology Laboratory') : '',
       doctorName: (showHeader && hasHeaderSettings) ?
                   (labReportSettings.header.doctorName || 'Dr. Consultant') : '',
-      address: (showHeader && hasHeaderSettings) ?
+      address: (showHeader && hasHeaderSettings) ? 
                (labReportSettings.header.address || lab.address || 'Lab Address') : '',
-      phone: (showHeader && hasHeaderSettings) ?
+      phone: (showHeader && hasHeaderSettings) ? 
              (labReportSettings.header.phone || lab.phone || '') : '',
-      email: (showHeader && hasHeaderSettings) ?
+      email: (showHeader && hasHeaderSettings) ? 
              (labReportSettings.header.email || lab.email || '') : '',
 
       // Patient data
@@ -193,7 +215,10 @@ const prepareReportTemplateData = async (report, lab, labReportSettings, req, sh
         secondaryColor: labReportSettings?.styling?.secondaryColor || '#6c757d',
         fontFamily: labReportSettings?.styling?.fontFamily || 'Arial, sans-serif',
         fontSize: labReportSettings?.styling?.fontSize || 12
-      }
+      },
+
+      // New flag to hide table heading and reference cell
+      hideTableHeadingAndReference: hideTableHeadingAndReference
     };
     return data;
 };
@@ -233,12 +258,12 @@ exports.generateHtmlReport = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Lab not found' });
     }
 
-    // Read the black-only HTML template
-    const reportTemplatePath = path.join(__dirname, '..', 'black-only-report.html');
+    // Read the HTML template (changed from black-only-report.html to pdf-report.html)
+    const reportTemplatePath = path.join(__dirname, '..', 'pdf-report.html');
     let templateSource;
     try {
       templateSource = fs.readFileSync(reportTemplatePath, 'utf8');
-      console.log('Black-only template loaded successfully for HTML view');
+      console.log('pdf-report.html template loaded successfully for HTML view');
     } catch (err) {
       console.error('Error reading template file:', err);
       return res.status(500).json({ success: false, message: 'Error reading report template' });
@@ -310,8 +335,8 @@ exports.generatePdfReport = async (req, res, next) => {
     // Prepare data using the helper function
     const data = await prepareReportTemplateData(report, lab, labReportSettings, req, showHeader, showFooter);
 
-    // Read the black-only template specifically designed for PDF generation
-    const pdfTemplatePath = path.join(__dirname, '..', 'black-only-report.html');
+    // Read the template specifically designed for PDF generation (changed from black-only-report.html to pdf-report.html)
+    const pdfTemplatePath = path.join(__dirname, '..', 'pdf-report.html');
     const templateSource = fs.readFileSync(pdfTemplatePath, 'utf8');
 
     // Compile the template
@@ -322,7 +347,7 @@ exports.generatePdfReport = async (req, res, next) => {
 
     // Generate the HTML
     const html = template(data);
-    console.log('Using black-only template for PDF generation');
+    console.log('Using pdf-report.html template for PDF generation');
 
     // Launch a headless browser with additional configuration
     browser = await puppeteer.launch({

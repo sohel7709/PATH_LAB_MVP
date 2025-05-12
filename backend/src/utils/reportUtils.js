@@ -6,12 +6,16 @@ const getAbnormalFlag = (value, referenceRange, gender) => {
   const trimmedRange = String(referenceRange).trim();
   const rangeStr = trimmedRange.toLowerCase();
 
-  // --- Handle Text-Based Comparisons FIRST ---
-  const isNegativeRange = rangeStr.includes('non reactive') || rangeStr.includes('negative');
-  const isPositiveValue = valueStr.includes('reactive') || valueStr.includes('positive');
+  // --- Handle Specific Abnormal Text Values FIRST ---
+  const isPositiveValue = valueStr.includes('reactive') || valueStr.includes('positive') || valueStr.includes('present');
+  if (isPositiveValue) {
+      return 'high'; // Flag as abnormal (high) if value is reactive, positive, or present
+  }
 
-  if (isNegativeRange && isPositiveValue) {
-    return 'high'; // Flag as abnormal (high) if value is positive/reactive when range is negative/non-reactive
+  // --- Handle Other Text-Based Comparisons ---
+  const isNegativeRange = rangeStr.includes('non reactive') || rangeStr.includes('negative');
+  if (isNegativeRange && isPositiveValue) { // This check is now redundant due to the above, but kept for clarity/structure
+    return 'high';
   }
   // Add more text comparisons here if needed (e.g., specific grades like '+', '++', etc.)
 
@@ -133,11 +137,9 @@ const getAbnormalFlag = (value, referenceRange, gender) => {
       // If range is text and value doesn't match, consider it abnormal (e.g., range "Negative", value "Positive")
       // This needs careful consideration based on expected text ranges.
       // For now, let's assume if it doesn't match a simple text range, it might be abnormal.
-      // However, this could incorrectly flag things. Let's default to normal if unsure.
       // return 'high'; // Or potentially 'abnormal' without direction
       return 'normal'; // Safer default
   }
-
 
   // Default to normal if no numeric or specific text abnormality detected after all checks
   return 'normal';

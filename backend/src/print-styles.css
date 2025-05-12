@@ -14,7 +14,7 @@ body {
 * {
     color: #000000 !important;
     background-color: transparent !important;
-    border-color: #000000 !important;
+    /* border-color: #000000 !important; */ /* Removed to avoid conflicts with specific border styles */
 }
 
 /* Patient info section */

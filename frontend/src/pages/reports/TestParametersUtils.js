@@ -28,11 +28,20 @@ export const isValueNormal = (paramName, value, referenceRange, patientGender, p
     "RESULT": ["POSITIVE", "NEGATIVE"]
   };
 
+  // Handle special string-based parameters with select options
+  // For HIV I, HIV II, and RESULT, "reactive", "positive", or "present" are always abnormal.
+  if (paramName === "HIV I" || paramName === "HIV II" || paramName === "RESULT") {
+    const currentValue = value.toString().toLowerCase().trim();
+    const isAbnormalText = currentValue === 'reactive' || currentValue === 'positive' || currentValue === 'present';
+    console.log(`Checking abnormal text param: ${paramName}, value: ${currentValue}, isAbnormal: ${isAbnormalText}`);
+    return !isAbnormalText; // Return false if it's an abnormal text value
+  }
+
   if (Object.prototype.hasOwnProperty.call(dropdownParams, paramName)) {
     const normalValue = referenceRange.toLowerCase().trim();
     const currentValue = value.toString().toLowerCase().trim();
     console.log(`Checking dropdown param: ${paramName}, value: ${currentValue}, normal: ${normalValue}`);
-    return currentValue === normalValue;
+    return currentValue === normalValue; // For other dropdowns, match the reference range
   }
 
   // Convert value to number (remove commas if present)

@@ -186,8 +186,8 @@
         "sectionTitle": "Urine Examination Report - Chemical Exam",
         "displayFormat": "table",
         "parameters": [
-          { "name": "Protein", "unit": "" },
-          { "name": "Sugar", "unit": "" }
+          { "name": "Protein", "unit": "", "normalRange": "Trace" },
+          { "name": "Sugar", "unit": "", "normalRange": "Nil" }
         ]
       },
       {
@@ -196,7 +196,10 @@
         "parameters": [
           { "name": "Red Blood cells", "unit": "" },
           { "name": "Pus cells", "unit": "/hpf", "normalRange": "2 - 3 /hpf" },
-          { "name": "Epithelial cells", "unit": "/hpf", "normalRange": "1 - 2 /hpf" }
+          { "name": "Epithelial cells", "unit": "/hpf", "normalRange": "1 - 2 /hpf" },
+          { "name": "Cast", "unit": "", "normalRange": "" },
+          { "name": "Crystals", "unit": "", "normalRange": "" },
+          { "name": "Bacteria", "unit": "", "normalRange": "" }
         ]
       }
     ]
@@ -297,20 +300,21 @@
         "sectionTitle": "PHYSICAL EXAM",
         "displayFormat": "table",
         "parameters": [
-          { "name": "Volume", "unit": "", "normalRange": "" },
-          { "name": "Colour", "unit": "", "normalRange": "" },
-          { "name": "Appearance", "unit": "", "normalRange": "" }
+          { "name": "Volume", "unit": "ml", "normalRange": "05 ml" },
+          { "name": "Colour", "unit": "", "normalRange": "Pale yellow", "inputType": "dropdown", "options": ["Dark Yellow", "Yellow","Pale Yellow"] },
+          { "name": "Appearance", "unit": "", "normalRange": "Clear", "inputType": "dropdown", "options": ["Clear", "Turbid", "Hazy", "Slightly Turbid"] }
         ]
       },
       {
+
         "sectionTitle": "CHEMICAL EXAM",
         "displayFormat": "table",
         "parameters": [
-          { "name": "Protein", "unit": "", "normalRange": "" },
-          { "name": "Sugar", "unit": "", "normalRange": "" },
-          { "name": "Ketone Bodies", "unit": "", "normalRange": "" },
-          { "name": "Bile Salt", "unit": "", "normalRange": "" },
-          { "name": "Bile Pigment", "unit": "", "normalRange": "" },
+          { "name": "Protein", "unit": "", "normalRange": "Trace", "inputType": "dropdown", "options": ["Trace ", "Present +", "Present ++", "Present +++", "Present ++++"] },
+          { "name": "Sugar", "unit": "", "normalRange": "Nil", "inputType": "dropdown", "options": ["Nil","Present +", "Present ++", "Present +++", "Present ++++"] },
+          { "name": "Ketone Bodies", "unit": "", "normalRange": "" , "inputType": "dropdown", "options": [" Trace Small", "Present","Moderate", "Large"] },
+          { "name": "Bile Salt", "unit": "", "normalRange": "", "inputType": "dropdown", "options": ["Absent", "Present"] },
+          { "name": "Bile Pigment", "unit": "", "normalRange": "", "inputType": "dropdown", "options": ["Absent", "Present"] },
           { "name": "Urobilinogen", "unit": "", "normalRange": "" },
           { "name": "PH", "unit": "", "normalRange": "" }
         ]
@@ -372,9 +376,9 @@
           { 
             "name": "BLOOD GROUP", 
             "unit": "", 
-            "normalRange": "",
-            "inputType": "dropdown",
-            "options": ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]
+            "normalRange": ""
+           
+            
           }
         ]
       }

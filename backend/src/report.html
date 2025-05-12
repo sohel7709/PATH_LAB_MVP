@@ -147,40 +147,21 @@
 
         <!-- Test Results - using divs instead of table -->
         <div class="test-results">
-            {{#each groupedResults}}
-            <div class="test-group">
-                <h3 class="test-group-title">{{this.templateName}}</h3>
-                {{#unless this.isWidalParagraphFormat}}
-                <div class="test-header">
-                    <div class="test-header-name">Parameter</div>
-                    <div class="test-header-result">Value</div>
-                    <div class="test-header-unit">Unit</div>
-                    <div class="test-header-range">Reference Range</div>
-                </div>
-                <hr style="border-top: 0.5px solid #ddd;">
-                {{/unless}}
-
-                {{#each this.parameters}}
-                <div class="test-row">
-                    {{#if ../isWidalParagraphFormat}}
-                        {{#if (eq this.name "TEST")}}
-                            <div class="test-name">TEST : {{this.result}}</div>
-                        {{else}}
-                            <div class="test-name">{{this.name}}</div>
-                        {{/if}}
-                    {{else}}
-                        <div class="test-name">{{this.name}}</div>
-                        <div class="test-result {{#if this.isAbnormal}}abnormal{{/if}}">{{this.result}}</div>
-                        <div class="test-unit">{{this.unit}}</div>
-                        <div class="test-range">{{this.referenceRange}}</div>
-                    {{/if}}
-                </div>
-                {{/each}}
-                {{#if this.templateSpecificNotes}}
-                <div class="template-notes" style="margin-top: 10px; font-style: italic;">
-                    {{this.templateSpecificNotes}}
-                </div>
-                {{/if}}
+            <div class="test-header">
+                <div class="test-header-name">Test</div>
+                <div class="test-header-result">Result</div>
+                <div class="test-header-unit">Unit</div>
+                <div class="test-header-range">Reference Range</div>
+            </div>
+            
+            <hr style="border-top: 0.5px solid #ddd;">
+            
+            {{#each testResults}}
+            <div class="test-row">
+                <div class="test-name">{{this.name}}</div>
+                <div class="test-result {{#if this.isAbnormal}}abnormal{{/if}}">{{this.result}}</div>
+                <div class="test-unit">{{this.unit}}</div>
+                <div class="test-range">{{this.referenceRange}}</div>
             </div>
             {{/each}}
         </div>
