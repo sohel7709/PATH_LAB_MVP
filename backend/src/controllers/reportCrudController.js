@@ -19,14 +19,47 @@ exports.createReport = async (req, res, next) => {
     console.log('Received Request Body:', JSON.stringify(req.body, null, 2));
 
     // Prepare data, ensuring results is an array and calculating flags
-    const resultsWithFlags = (Array.isArray(req.body.results) ? req.body.results : []).map(result => ({
-      ...result,
-      flag: getAbnormalFlag(result.value, result.referenceRange, req.body.patientInfo?.gender)
-    }));
+    let resultsWithFlags = (Array.isArray(req.body.results) ? req.body.results : []);
+
+    // Populate templateName and referenceRange in resultsWithFlags from TestTemplate parameters
+    const templateIds = [...new Set(resultsWithFlags.map(r => r.templateId).filter(id => id))];
+    if (templateIds.length > 0) {
+      const templates = await TestTemplate.find({ '_id': { $in: templateIds } }).select('templateName name sections');
+      const templateMap = templates.reduce((map, t) => {
+        map[t._id.toString()] = t;
+        return map;
+      }, {});
+      resultsWithFlags = resultsWithFlags.map(result => {
+        if (result.templateId) {
+          const template = templateMap[result.templateId.toString()];
+          if (template) {
+            result.templateName = template.templateName || template.name || 'Unknown Test';
+            // Find matching parameter in template sections to get normalRange
+            let referenceRange = '';
+            for (const section of template.sections || []) {
+              if (section.parameters) {
+                const param = section.parameters.find(p => p.name.toLowerCase() === (result.parameter || result.name || '').toLowerCase());
+                if (param && param.referenceRange) {
+                  referenceRange = param.referenceRange;
+                  break;
+                }
+              }
+            }
+            if (referenceRange) {
+              result.referenceRange = referenceRange;
+            }
+          }
+        }
+        return result;
+      });
+    }
 
     const reportDataToCreate = {
       ...req.body, // Include all other fields from the request body
-      results: resultsWithFlags, // Use results with calculated flags
+      results: resultsWithFlags.map(result => ({
+        ...result,
+        flag: getAbnormalFlag(result.value, result.referenceRange, req.body.patientInfo?.gender)
+      })), // Calculate flags after adding referenceRange
       templateNotes: req.body.templateNotes || {}, // Get template notes object
       testNotes: req.body.testNotes || '', // Get general notes
       lab: req.user.lab,
@@ -36,6 +69,23 @@ exports.createReport = async (req, res, next) => {
         version: 1
       }
     };
+
+    // // Compute hideTableHeadingAndReference flag - REMOVED LOGIC - Default false from schema will be used
+    // const testsToHideTableHeadingAndReference = [
+    //   'blood group',
+    //   'serum for hiv i & ii test',
+    //   'c-reactive protein (crp)',
+    //   'rapid malaria test',
+    //   'urine examination report',
+    //   'dengue test report',
+    //   'rheumatoid arthritis factor test',
+    //   'typhi dot test',
+    //   'troponin-i test',
+    //   'vdrl test'
+    // ];
+    // const templateNamesLower = (resultsWithFlags || []).map(r => (r.templateName || '').toLowerCase());
+    // const hideTableHeadingAndReference = templateNamesLower.some(name => testsToHideTableHeadingAndReference.includes(name));
+    // reportDataToCreate.hideTableHeadingAndReference = hideTableHeadingAndReference; // Let schema default handle this
 
     // Remove fields that might have been sent but aren't directly part of the top-level schema
     delete reportDataToCreate.patientName;
@@ -301,7 +351,7 @@ exports.updateReport = async (req, res, next) => {
     console.log('Update report request body:', req.body);
 
     // Prepare update data, starting with allowed fields from req.body
-    const updateData = {
+    let updateData = {
         // Only include fields that are expected and allowed to be updated
         ...(req.body.patientInfo && { patientInfo: req.body.patientInfo }),
         ...(req.body.testInfo && { testInfo: req.body.testInfo }),
@@ -320,20 +370,139 @@ exports.updateReport = async (req, res, next) => {
         }
     };
 
-    // Handle 'results' update separately to ensure flags are recalculated
+    // Populate templateName and referenceRange in req.body.results from TestTemplate parameters
     if (Array.isArray(req.body.results)) {
-        const patientGenderForFlags = updateData.patientInfo?.gender || report.patientInfo?.gender;
-        updateData.results = req.body.results.map(result => ({
-            ...result,
-            flag: getAbnormalFlag(result.value, result.referenceRange, patientGenderForFlags)
-        }));
+      const templateIds = [...new Set(req.body.results.map(r => r.templateId).filter(id => id))];
+      if (templateIds.length > 0) {
+        const templates = await TestTemplate.find({ '_id': { $in: templateIds } }).select('templateName name sections');
+        const templateMap = templates.reduce((map, t) => {
+          map[t._id.toString()] = t;
+          return map;
+        }, {});
+        req.body.results = req.body.results.map(result => {
+          if (result.templateId) {
+            const template = templateMap[result.templateId.toString()];
+            if (template) {
+              result.templateName = template.templateName || template.name || 'Unknown Test';
+              // Find matching parameter in template sections to get normalRange
+              let referenceRange = '';
+              for (const section of template.sections || []) {
+                if (section.parameters) {
+                  const param = section.parameters.find(p => p.name.toLowerCase() === (result.parameter || result.name || '').toLowerCase());
+                  if (param && param.referenceRange) {
+                    referenceRange = param.referenceRange;
+                    break;
+                  }
+                }
+              }
+              if (referenceRange) {
+                result.referenceRange = referenceRange;
+              }
+            }
+          }
+          return result;
+        });
+      }
+    }
+
+    // // Compute hideTableHeadingAndReference flag - REMOVED LOGIC - Default false from schema will be used
+    // const testsToHideTableHeadingAndReference = [
+    //   'blood group',
+    //   'serum for hiv i & ii test',
+    //   'c-reactive protein (crp)',
+    //   'rapid malaria test',
+    //   'urine examination report',
+    //   'dengue test report',
+    //   'rheumatoid arthritis factor test',
+    //   'typhi dot test',
+    //   'troponin-i test',
+    //   'vdrl test'
+    // ];
+    // const templateNamesLower = (req.body.results || []).map(r => (r.templateName || '').toLowerCase());
+    // const hideTableHeadingAndReference = templateNamesLower.some(name => testsToHideTableHeadingAndReference.includes(name));
+    // updateData.hideTableHeadingAndReference = hideTableHeadingAndReference; // Let schema default handle this
+
+    // Handle 'results' update separately to ensure flags are recalculated and referenceRange is set
+    if (Array.isArray(req.body.results)) {
+      const templateIds = [...new Set(req.body.results.map(r => r.templateId).filter(id => id))];
+      if (templateIds.length > 0) {
+        const templates = await TestTemplate.find({ '_id': { $in: templateIds } }).select('templateName name sections');
+        const templateMap = templates.reduce((map, t) => {
+          map[t._id.toString()] = t;
+          return map;
+        }, {});
+        req.body.results = req.body.results.map(result => {
+          if (result.templateId) {
+            const template = templateMap[result.templateId.toString()];
+            if (template) {
+              result.templateName = template.templateName || template.name || 'Unknown Test';
+              // Find matching parameter in template sections to get referenceRange
+              let refRangeFromTemplate = ''; // Changed variable name for clarity
+              for (const section of template.sections || []) {
+                if (section.parameters) {
+                  const param = section.parameters.find(p => p.name.toLowerCase() === (result.parameter || result.name || '').toLowerCase());
+                  if (param && param.referenceRange) { // Corrected to check param.referenceRange
+                    refRangeFromTemplate = param.referenceRange;
+                    break;
+                  }
+                }
+              }
+              if (refRangeFromTemplate) {
+                result.referenceRange = refRangeFromTemplate; // Corrected to assign from refRangeFromTemplate
+              }
+            }
+          }
+          return result;
+        });
+      }
+      const patientGenderForFlags = updateData.patientInfo?.gender || report.patientInfo?.gender;
+      updateData.results = req.body.results.map(result => ({
+        ...result,
+        flag: getAbnormalFlag(result.value, result.referenceRange, patientGenderForFlags)
+      }));
     } else {
-        // If results are not in the request, keep the existing ones but still recalculate flags
-        const patientGenderForFlags = updateData.patientInfo?.gender || report.patientInfo?.gender;
-        updateData.results = (report.results || []).map(result => ({
-            ...result, // Keep existing data
-            flag: getAbnormalFlag(result.value, result.referenceRange, patientGenderForFlags) // Recalculate flag
-        }));
+      // If results are not in the request, keep the existing ones but still recalculate flags
+      // First, ensure referenceRange is populated for existing results
+      const existingResults = report.results || [];
+      const templateIds = [...new Set(existingResults.map(r => r.templateId).filter(id => id))];
+      let resultsWithPopulatedRefRange = existingResults;
+
+      if (templateIds.length > 0) {
+        const templates = await TestTemplate.find({ '_id': { $in: templateIds } }).select('templateName name sections');
+        const templateMap = templates.reduce((map, t) => {
+          map[t._id.toString()] = t;
+          return map;
+        }, {});
+        resultsWithPopulatedRefRange = existingResults.map(result => {
+          if (result.templateId) {
+            const template = templateMap[result.templateId.toString()];
+            if (template) {
+              // Find matching parameter in template sections to get referenceRange
+              let refRangeFromTemplate = '';
+              for (const section of template.sections || []) {
+                if (section.parameters) {
+                  const param = section.parameters.find(p => p.name.toLowerCase() === (result.parameter || result.name || '').toLowerCase());
+                  if (param && param.referenceRange) {
+                    refRangeFromTemplate = param.referenceRange;
+                    break;
+                  }
+                }
+              }
+              if (refRangeFromTemplate) {
+                result.referenceRange = refRangeFromTemplate;
+              }
+            }
+          }
+          return result;
+        });
+      }
+
+      // Now recalculate flags with potentially updated reference ranges
+      const patientGenderForFlags = updateData.patientInfo?.gender || report.patientInfo?.gender;
+      updateData.results = resultsWithPopulatedRefRange.map(result => ({
+        ...result, // Keep existing data
+        flag: getAbnormalFlag(result.value, result.referenceRange, patientGenderForFlags) // Recalculate flag
+      }));
     }
 
 

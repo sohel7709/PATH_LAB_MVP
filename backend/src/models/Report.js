@@ -2,6 +2,12 @@ const mongoose = require('mongoose');
 
 const reportSchema = new mongoose.Schema({
   patientInfo: {
+    designation: { // Added designation field
+      type: String,
+      required: [true, 'Please provide patient designation'],
+      enum: ['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Master', 'Miss'],
+      trim: true
+    },
     name: {
       type: String,
       required: [true, 'Please provide patient name'],
@@ -93,6 +99,10 @@ const reportSchema = new mongoose.Schema({
   showCRPTest: { // Flag to control visibility of CRP test section
     type: Boolean,
     default: true // This might be obsolete if CRP is just another template
+  },
+  hideTableHeadingAndReference: {
+    type: Boolean,
+    default: false
   },
   status: {
     type: String,

@@ -24,6 +24,7 @@ export default function CreateReportForm() {
     patientName: '',
     patientAge: '',
     patientGender: '',
+    patientDesignation: '', // Added designation state
     patientPhone: '',
     testName: '',
     category: '',
@@ -131,20 +132,25 @@ export default function CreateReportForm() {
       console.log('Full Name from API:', patientData.fullName);
       console.log('Age from API:', patientData.age);
       console.log('Gender from API:', patientData.gender);
+      console.log('Designation from API:', patientData.designation); // Log designation
       console.log('Phone from API:', patientData.phone);
       console.log('--------------------------');
 
-      // Update form data with patient details - these fields will remain editable
+      // Update form data with patient details
       setFormData(prev => ({
         ...prev,
         patientId: patientId,
         patientName: patientData.fullName || '',
         patientAge: patientData.age || '',
         patientGender: patientData.gender || '',
+        patientDesignation: patientData.designation || '', // Set designation
         patientPhone: patientData.phone || ''
       }));
 
       setError('');
+      // Set search term to show selected patient, then close dropdown
+      setPatientSearchTerm(`${patientData.fullName} - ${patientData.phone}`);
+      setShowPatientDropdown(false); // Ensure dropdown closes after selection
     } catch (err) {
       console.error('Error fetching patient details:', err);
       if (err.message === 'Not authorized to access this patient') {
@@ -160,10 +166,21 @@ export default function CreateReportForm() {
   // Handle form field changes
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    if (name === 'price') {
+      // Allow only digits for price, or empty string
+      const intValue = value === '' ? '' : parseInt(value, 10);
+      if (!isNaN(intValue) || value === '') {
+        setFormData(prev => ({
+          ...prev,
+          [name]: value === '' ? '' : String(intValue) // Store as string or empty
+        }));
+      }
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   // Submit form
@@ -174,39 +191,14 @@ export default function CreateReportForm() {
     setSuccess('');
 
     try {
-      // Check if we need to create a new patient first
-      let patientId = formData.patientId;
-      
-      if (!patientId) {
-        // This is a new patient, create it first
-        console.log('Creating new patient...');
-        const newPatientData = {
-          fullName: formData.patientName,
-          age: parseInt(formData.patientAge),
-          gender: formData.patientGender,
-          phone: formData.patientPhone,
-          email: '', // Optional
-          address: '', // Optional
-          labId: user?.lab // Important: Associate with current lab
-        };
-        
-        console.log('New patient data:', newPatientData);
-        
-        try {
-          const createdPatient = await patients.create(newPatientData);
-          console.log('New patient created:', createdPatient);
-          patientId = createdPatient.patientId || createdPatient._id || createdPatient.id;
-          
-          // Update the patient list to include this new patient
-          setPatientList(prev => [...prev, createdPatient]);
-        } catch (patientErr) {
-          console.error('Error creating patient:', patientErr);
-          setError('Failed to create new patient: ' + (patientErr.message || 'Unknown error'));
-          setIsLoading(false);
-          return;
-        }
+      // Ensure a patient is selected
+      if (!formData.patientId) {
+        setError('Please select an existing patient. If the patient is new, add them via the "Add Patient" page first.');
+        setIsLoading(false);
+        return;
       }
-      
+      const patientId = formData.patientId; // Use the selected patient ID
+
       // Debug: Log required fields before validation
       console.log('DEBUG required fields:', {
         testName: formData.testName,
@@ -252,6 +244,7 @@ export default function CreateReportForm() {
       // Format the data according to the Report model structure
       const reportData = {
         patientInfo: {
+          designation: formData.patientDesignation, // Include designation
           name: formData.patientName,
           age: parseInt(formData.patientAge),
           gender: formData.patientGender,
@@ -268,7 +261,7 @@ export default function CreateReportForm() {
           sampleType: formData.sampleType || 'Blood',
           sampleCollectionDate: new Date(formData.collectionDate),
           sampleId: sampleId,
-          price: parseFloat(formData.price) || 0, // Include price
+          price: parseInt(formData.price, 10) || 0, // Ensure price is an integer
           referenceDoctor: formData.referenceDoctor || '' // Include reference doctor
         },
         results: formData.testParameters.map(param => ({
@@ -468,26 +461,9 @@ export default function CreateReportForm() {
                   
                   {showPatientDropdown && patientSearchTerm && (
                     <div className="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base overflow-auto focus:outline-none sm:text-sm border border-blue-200">
-                      <div 
-                        className="cursor-pointer select-none relative py-2 pl-3 pr-9 text-gray-900 hover:bg-blue-50"
-                        onClick={() => {
-                          setPatientSearchTerm('');
-                          setFormData(prev => ({
-                            ...prev,
-                            patientId: '',
-                            patientName: '',
-                            patientAge: '',
-                            patientGender: '',
-                            patientPhone: ''
-                          }));
-                          setShowPatientDropdown(false);
-                        }}
-                      >
-                        Add New Patient
-                      </div>
-                      
+                      {/* Removed "Add New Patient" option */}
                       {patientList
-                        .filter(patient => 
+                        .filter(patient =>
                           patient.fullName?.toLowerCase().includes(patientSearchTerm.toLowerCase()) || 
                           patient.phone?.includes(patientSearchTerm)
                         )
@@ -531,7 +507,7 @@ export default function CreateReportForm() {
 
               <div className="sm:col-span-3">
                 <label htmlFor="patientName" className="block text-sm font-medium text-gray-700 mb-1">
-                  Full name
+                  Full name { !formData.patientId && <span className="text-red-500 ml-1">*</span> }
                 </label>
                 <div className="mt-1">
                   <input
@@ -539,17 +515,18 @@ export default function CreateReportForm() {
                     name="patientName"
                     id="patientName"
                     required
+                    placeholder="Select a patient above"
                     value={formData.patientName}
                     onChange={handleChange}
-                    className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
-                    readOnly={!!formData.patientId}
+                    className={`block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition ${formData.patientId ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                    readOnly={true} // Keep readOnly
                   />
                 </div>
               </div>
 
               <div className="sm:col-span-1">
                 <label htmlFor="patientAge" className="block text-sm font-medium text-gray-700 mb-1">
-                  Age
+                  Age { !formData.patientId && <span className="text-red-500 ml-1">*</span> }
                 </label>
                 <div className="mt-1">
                   <input
@@ -557,19 +534,20 @@ export default function CreateReportForm() {
                     name="patientAge"
                     id="patientAge"
                     required
+                    placeholder="Select patient"
                     min="0"
                     max="150"
                     value={formData.patientAge}
                     onChange={handleChange}
-                    className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
-                    readOnly={!!formData.patientId}
+                    className={`block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition ${formData.patientId ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                    readOnly={true} // Keep readOnly
                   />
                 </div>
               </div>
 
               <div className="sm:col-span-2">
                 <label htmlFor="patientGender" className="block text-sm font-medium text-gray-700 mb-1">
-                  Gender
+                  Gender { !formData.patientId && <span className="text-red-500 ml-1">*</span> }
                 </label>
                 <div className="mt-1">
                   <select
@@ -578,10 +556,10 @@ export default function CreateReportForm() {
                     required
                     value={formData.patientGender}
                     onChange={handleChange}
-                    className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
-                    disabled={!!formData.patientId}
+                    className={`block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition ${formData.patientId ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                    disabled={true} // Keep disabled
                   >
-                    <option value="">Select gender</option>
+                    <option value="">Select patient</option>
                     <option value="male">Male</option>
                     <option value="female">Female</option>
                     <option value="other">Other</option>
@@ -591,7 +569,7 @@ export default function CreateReportForm() {
 
               <div className="sm:col-span-3">
                 <label htmlFor="patientPhone" className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone number
+                  Phone number { !formData.patientId && <span className="text-red-500 ml-1">*</span> }
                 </label>
                 <div className="mt-1">
                   <input
@@ -599,10 +577,11 @@ export default function CreateReportForm() {
                     name="patientPhone"
                     id="patientPhone"
                     required
+                    placeholder="Select patient"
                     value={formData.patientPhone}
                     onChange={handleChange}
-                    className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
-                    readOnly={!!formData.patientId}
+                    className={`block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition ${formData.patientId ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                    readOnly={true} // Keep readOnly
                   />
                 </div>
               </div>

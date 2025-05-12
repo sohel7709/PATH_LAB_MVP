@@ -10,6 +10,7 @@ import EditLab from './pages/labs/EditLab';
 import Profile from './pages/profile/Profile';
 import Inventory from './pages/inventory';
 import RevenueDashboard from './pages/finance/RevenueDashboard';
+import FinancialReports from './pages/finance/reports';
 import DoctorList from './pages/doctors/DoctorList';
 import AddDoctor from './pages/doctors/AddDoctor';
 import EditDoctor from './pages/doctors/EditDoctor';
@@ -43,7 +44,7 @@ const ViewReport = lazy(() => import('./pages/reports/ViewReport'));
 const EditReport = lazy(() => import('./pages/reports/EditReport'));
 const PrintReport = lazy(() => import('./pages/reports/PrintReport'));
 
-// Test Template Pages
+ // Test Template Pages
 const TestTemplateList = lazy(() => import('./pages/templates/TestTemplateList'));
 const CreateTestTemplate = lazy(() => import('./pages/templates/CreateTestTemplate'));
 const ViewTestTemplate = lazy(() => import('./pages/templates/ViewTestTemplate'));
@@ -213,6 +214,11 @@ function App() {
               <Route path="/finance/revenue" element={
                 <ProtectedRoute allowedRoles={['admin', 'super-admin']}>
                   <RevenueDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/finance/reports" element={
+                <ProtectedRoute allowedRoles={['admin', 'super-admin']}>
+                  <FinancialReports />
                 </ProtectedRoute>
               } />
               

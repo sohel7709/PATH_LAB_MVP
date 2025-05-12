@@ -6,6 +6,9 @@ const TestTemplate = require('./src/models/TestTemplate');
 console.log('Attempting to connect to MongoDB...');
 console.log('MongoDB URI:', process.env.MONGODB_URI ? 'URI is defined' : 'URI is undefined');
 
+const dotenv = require('dotenv');
+dotenv.config({ path: './backend/.env' });
+
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
     console.log('Connected to MongoDB');

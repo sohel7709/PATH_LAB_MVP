@@ -115,6 +115,15 @@ const TestTemplateList = () => {
                 Create Template
               </Link>
             )}
+            {user?.role === 'admin' && (
+              <Link
+                to="/templates/group/create"
+                className="inline-flex items-center justify-center rounded-lg border border-transparent bg-white/20 backdrop-blur-sm px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-blue-600 ml-3"
+              >
+                <PlusIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+                Create Group Test Template
+              </Link>
+            )}
           </div>
         </div>
         

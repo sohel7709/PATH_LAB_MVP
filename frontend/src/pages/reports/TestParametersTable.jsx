@@ -1,4 +1,5 @@
 import React from "react";
+import { isValueNormal } from './TestParametersUtils';
 
 export default function TestParametersTable({
   formData,
@@ -62,7 +63,7 @@ export default function TestParametersTable({
         </td>
 
         {/* Value Column */}
-        <td className="px-3 py-3 text-sm">
+        <td className={`px-3 py-3 text-sm ${!isValueNormal(param.name, param.value, param.referenceRange, patientGender, patientAge) ? 'font-bold' : ''}`}>
           {/* Render dropdown only if NOT in custom mode and inputType/options are correct */}
           {param.inputType === 'dropdown' && Array.isArray(param.options) && !isCustomMode ? (
             <select

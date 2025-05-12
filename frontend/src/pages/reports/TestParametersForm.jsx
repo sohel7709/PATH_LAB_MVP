@@ -102,7 +102,7 @@ export default function TestParametersForm({
                   name: param.name || 'Unnamed Parameter',
                   value: '',
                   unit: param.unit || '',
-                  referenceRange: param.normalRange || '',
+                  referenceRange: param.referenceRange || param.normalRange || '',
                   section: sectionTitle,
                   isHeader: param.isHeader || false,           // Ensure isHeader is copied
                   isSubparameter: param.isSubparameter || false,
@@ -122,7 +122,7 @@ export default function TestParametersForm({
               name: field.parameter || 'Unnamed Parameter',
               value: '',
               unit: field.unit || '',
-              referenceRange: field.reference_range || '',
+              referenceRange: field.referenceRange || field.reference_range || '',
               isHeader: false,
               isSubparameter: false,
               templateId: template._id,
@@ -198,10 +198,57 @@ export default function TestParametersForm({
   const handleParameterChange = (index, field, value) => {
     const newParameters = [...formData.testParameters];
     if (index >= 0 && index < newParameters.length) {
-        newParameters[index] = { ...newParameters[index], [field]: value };
-        setFormData(prev => ({ ...prev, testParameters: newParameters }));
+      newParameters[index] = { ...newParameters[index], [field]: value };
+
+      // Auto-calculate INDIRECT Bilirubin
+      const currentTestName = formData.testName?.toLowerCase() || '';
+      const relevantTest = currentTestName.includes('liver function test') || currentTestName.includes('blood examination - creatinine');
+      
+      if (relevantTest && field === 'value') {
+        let totalBilirubinValue = NaN;
+        let directBilirubinValue = NaN;
+        let indirectBilirubinIndex = -1;
+
+        let totalParamName = 'BILIRUBIN TOTAL';
+        let directParamName = 'BILIRUBIN DIRECT';
+        let indirectParamName = 'BILIRUBIN INDIRECT';
+
+        // Check for alternative naming "TOTAL", "DIRECT", "INDIRECT"
+        // This is a simplified check; a more robust solution might involve mapping or template-specific logic
+        const hasTotalDirectIndirect = newParameters.some(p => p.name?.toUpperCase() === 'TOTAL') &&
+                                     newParameters.some(p => p.name?.toUpperCase() === 'DIRECT') &&
+                                     newParameters.some(p => p.name?.toUpperCase() === 'INDIRECT');
+
+        if (hasTotalDirectIndirect) {
+            totalParamName = 'TOTAL';
+            directParamName = 'DIRECT';
+            indirectParamName = 'INDIRECT';
+        }
+
+        newParameters.forEach((param, i) => {
+          const paramNameUpper = param.name?.toUpperCase();
+          if (paramNameUpper === totalParamName) {
+            totalBilirubinValue = parseFloat(param.value);
+          } else if (paramNameUpper === directParamName) {
+            directBilirubinValue = parseFloat(param.value);
+          } else if (paramNameUpper === indirectParamName) {
+            indirectBilirubinIndex = i;
+          }
+        });
+
+        if (!isNaN(totalBilirubinValue) && !isNaN(directBilirubinValue) && indirectBilirubinIndex !== -1) {
+          const indirectValue = totalBilirubinValue - directBilirubinValue;
+          // Ensure indirectValue is not negative, or handle as per medical rules (e.g., 0 or specific note)
+          // For now, just calculate and set, potentially allowing negative if that's how it's handled.
+          newParameters[indirectBilirubinIndex] = {
+            ...newParameters[indirectBilirubinIndex],
+            value: indirectValue.toFixed(2) // Store as string with 2 decimal places
+          };
+        }
+      }
+      setFormData(prev => ({ ...prev, testParameters: newParameters }));
     } else {
-        console.error("Invalid index provided to handleParameterChange:", index);
+      console.error("Invalid index provided to handleParameterChange:", index);
     }
   };
 
@@ -288,7 +335,7 @@ export default function TestParametersForm({
                 notes={formData.templateNotes?.[templateId] || ''} // Access notes using templateId
                 handleChange={(e) => handleTemplateNoteChange(templateId, e.target.value)} // Use specific handler
                 name={`templateNotes-${templateId}`} // Unique name might be needed if using standard form submission
-                label={`Notes for ${templateName}`}
+                label={templateName}
               />
             </div>
           );
