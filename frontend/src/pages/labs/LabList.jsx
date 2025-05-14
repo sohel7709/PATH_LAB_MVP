@@ -11,6 +11,8 @@ import {
   CreditCardIcon,
   MagnifyingGlassIcon, // Icon for search
 } from '@heroicons/react/24/outline';
+import { formatDate } from '../../utils/helpers';
+import { DATE_FORMATS } from '../../utils/constants';
 
 const LabList = () => {
   const [labs, setLabs] = useState([]);
@@ -236,7 +238,7 @@ const LabList = () => {
                     </div>
                      {lab.subscription?.endDate && (
                        <div className="text-xs text-gray-500">
-                         Expires: {new Date(lab.subscription.endDate).toLocaleDateString()}
+                         Expires: {formatDate(lab.subscription.endDate, DATE_FORMATS.DD_MM_YYYY)}
                        </div>
                      )}
                   </td>
@@ -254,7 +256,7 @@ const LabList = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(lab.createdAt).toLocaleDateString()}
+                    {formatDate(lab.createdAt, DATE_FORMATS.DD_MM_YYYY)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {lab.users ? lab.users.length : 0}

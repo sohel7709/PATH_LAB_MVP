@@ -7,7 +7,9 @@ import {
   DocumentTextIcon,
   TrashIcon,
   ExclamationTriangleIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  UserCircleIcon // Added for patient details
+  // ClipboardDocumentListIcon // Removed as the button is no longer present
 } from '@heroicons/react/24/outline';
 import { XMarkIcon } from '@heroicons/react/20/solid';
 import { useAuth } from '../../context/AuthContext';
@@ -251,6 +253,14 @@ export default function PatientList() {
                         </td>
                         <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium">
                           <div className="flex space-x-3 justify-end">
+                            <Link
+                              to={`/patients/${patient._id}/details`} // Link to patient details
+                              className="text-indigo-600 hover:text-indigo-900 p-1 rounded-full hover:bg-indigo-50 transition-colors"
+                              title="View Patient Details"
+                            >
+                              <UserCircleIcon className="h-5 w-5" aria-hidden="true" />
+                            </Link>
+                            {/* Removed View Previous Reports button from here */}
                             <Link
                               to={`/reports/create?patientId=${patient._id}`}
                               className="text-blue-600 hover:text-blue-900 p-1 rounded-full hover:bg-blue-50 transition-colors"

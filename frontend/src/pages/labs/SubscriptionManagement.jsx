@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { getAllLabSubscriptions, extendLabSubscription, changeLabPlan, forceExpireSubscription, getSubscriptionHistory } from '../../utils/superAdminApi';
 import Modal from '../../components/common/Modal';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { formatDate } from '../../utils/helpers';
+import { DATE_FORMATS } from '../../utils/constants';
 
 const SubscriptionManagement = () => {
   const [labs, setLabs] = useState([]);
@@ -130,8 +132,8 @@ const SubscriptionManagement = () => {
         <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={`Manage: ${selectedLab.name}`}>
           <div className="space-y-2">
             <p>📄 Current Plan: {selectedLab.subscription.plan.name}</p>
-            <p>⏳ Start Date: {new Date(selectedLab.subscription.startDate).toLocaleDateString()}</p>
-            <p>📅 End Date: {new Date(selectedLab.subscription.endDate).toLocaleDateString()}</p>
+            <p>⏳ Start Date: {formatDate(selectedLab.subscription.startDate, DATE_FORMATS.DD_MM_YYYY)}</p>
+            <p>📅 End Date: {formatDate(selectedLab.subscription.endDate, DATE_FORMATS.DD_MM_YYYY)}</p>
             <p>🛡️ Status: {selectedLab.subscriptionStatus}</p>
 
             <div className="mt-4">
@@ -167,7 +169,7 @@ const SubscriptionManagement = () => {
               <ul className="max-h-40 overflow-y-auto border p-2 rounded">
                 {history.map(item => (
                   <li key={item._id} className="border-b py-1">
-                    {new Date(item.modifiedAt).toLocaleString()} - {item.modificationType} by {item.modifiedBy.name}: {item.reason}
+                    {formatDate(item.modifiedAt, DATE_FORMATS.DATE_TIME_DISPLAY)} - {item.modificationType} by {item.modifiedBy.name}: {item.reason}
                   </li>
                 ))}
               </ul>

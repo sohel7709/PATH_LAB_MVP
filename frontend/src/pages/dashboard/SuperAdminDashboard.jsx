@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { superAdmin } from '../../utils/api';
+import { formatDate } from '../../utils/helpers';
+import { DATE_FORMATS } from '../../utils/constants';
 import {
   BuildingOfficeIcon,
   UserGroupIcon,
@@ -119,7 +121,7 @@ const SuperAdminDashboard = () => {
       setSystemHealth({
         systemStatus: 'Operational',
         databaseHealth: 'Good',
-        lastBackup: new Date().toLocaleDateString()
+        lastBackup: formatDate(new Date(), DATE_FORMATS.DD_MM_YYYY)
       });
       alert('System status refreshed successfully!');
     } catch (err) {

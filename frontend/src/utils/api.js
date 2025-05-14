@@ -158,6 +158,23 @@ export const reports = {
     return handleResponse(response);
   },
 
+  getByPatientId: async (patientId, filters = {}) => { // Added function
+    const queryParams = new URLSearchParams();
+    queryParams.append('patientId', patientId);
+    if (filters?.limit) queryParams.append('limit', filters.limit);
+    if (filters?.page) queryParams.append('page', filters.page);
+    if (filters?.status) queryParams.append('status', filters.status);
+    // Add other relevant filters if needed
+
+    const queryString = queryParams.toString();
+    const url = `${import.meta.env.VITE_API_BASE_URL}/reports?${queryString}`;
+    
+    const response = await fetch(url, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  },
+
   getById: async (id) => {
     const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/reports/${id}`, {
       headers: getAuthHeaders(),

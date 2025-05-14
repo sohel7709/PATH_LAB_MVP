@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { superAdmin } from '../../utils/api';
+import { formatDate } from '../../utils/helpers';
+import { DATE_FORMATS } from '../../utils/constants';
 import {
   BuildingOfficeIcon,
   UserGroupIcon,
@@ -243,11 +245,11 @@ useEffect(() => {
               </div>
               <div className="sm:col-span-1">
                 <dt className="text-sm font-medium text-gray-500">Created On</dt>
-                <dd className="mt-1 text-sm text-gray-900">{new Date(lab.createdAt).toLocaleDateString()}</dd>
+                <dd className="mt-1 text-sm text-gray-900">{formatDate(lab.createdAt, DATE_FORMATS.DD_MM_YYYY)}</dd>
               </div>
               <div className="sm:col-span-1">
                 <dt className="text-sm font-medium text-gray-500">Last Updated</dt>
-                <dd className="mt-1 text-sm text-gray-900">{new Date(lab.updatedAt).toLocaleDateString()}</dd>
+                <dd className="mt-1 text-sm text-gray-900">{formatDate(lab.updatedAt, DATE_FORMATS.DD_MM_YYYY)}</dd>
               </div>
             </dl>
           </div>
@@ -286,7 +288,7 @@ useEffect(() => {
                 <dt className="text-sm font-medium text-gray-500">Renewal Date</dt>
                 <dd className="mt-1 text-sm text-gray-900">
                   {lab.subscription?.renewalDate 
-                    ? new Date(lab.subscription.renewalDate).toLocaleDateString() 
+                    ? formatDate(lab.subscription.renewalDate, DATE_FORMATS.DD_MM_YYYY) 
                     : 'Not applicable'}
                 </dd>
               </div>
@@ -433,7 +435,7 @@ useEffect(() => {
                         </div>
                         <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
                           <p>
-                            Created: {new Date(user.createdAt).toLocaleDateString()}
+                            Created: {formatDate(user.createdAt, DATE_FORMATS.DD_MM_YYYY)}
                           </p>
                         </div>
                       </div>

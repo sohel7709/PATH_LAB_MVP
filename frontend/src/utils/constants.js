@@ -47,9 +47,12 @@ export const VALIDATION_RULES = {
 
 // Date Formats
 export const DATE_FORMATS = {
-  DISPLAY: 'MMM dd, yyyy',
-  INPUT: 'yyyy-MM-dd',
-  API: 'yyyy-MM-dd HH:mm:ss',
+  DISPLAY: 'MMM dd, yyyy', // Example: Jan 01, 2023
+  INPUT: 'yyyy-MM-dd',     // Example: 2023-01-01
+  API: 'yyyy-MM-dd HH:mm:ss', // Example: 2023-01-01 14:30:00
+  DD_MM_YYYY: 'dd/MM/yyyy', // Example: 01/01/2023  -- Added
+  TIME_12H: 'hh:mm a',      // Example: 02:30 PM
+  DATE_TIME_DISPLAY: 'MMM dd, yyyy hh:mm a' // Example: Jan 01, 2023 02:30 PM
 };
 
 // Pagination
