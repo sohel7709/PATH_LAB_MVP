@@ -1,5 +1,7 @@
 import React from 'react';
 import ReportTemplate from './ReportTemplate';
+import { formatDate } from '../../utils/helpers'; // Adjusted path
+import { DATE_FORMATS } from '../../utils/constants'; // Adjusted path
 
 const ReportPreview = ({ settings }) => {
   // Prepare sample data for the preview
@@ -18,7 +20,7 @@ const ReportPreview = ({ settings }) => {
     patientId: 'P-98765',
     
     // Sample data
-    sampleCollectionDate: new Date().toLocaleDateString(),
+    sampleCollectionDate: formatDate(new Date(), DATE_FORMATS.DD_MM_YYYY),
     sampleType: 'Blood',
     referringDoctor: 'Dr. Smith',
     

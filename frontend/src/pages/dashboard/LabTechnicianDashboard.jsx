@@ -11,6 +11,8 @@ import {
   MagnifyingGlassIcon,
   ArrowPathIcon,
 } from '@heroicons/react/24/outline';
+import { formatDate, truncateText } from '../../utils/helpers';
+import { DATE_FORMATS } from '../../utils/constants';
 
 const LabTechnicianDashboard = () => {
   const [stats, setStats] = useState({
@@ -181,13 +183,13 @@ const LabTechnicianDashboard = () => {
           
           {/* Lab Name */}
           {labDetails?.name && (
-            <div className="py-4 text-center bg-blue-50 border-b border-blue-100">
+            <div className="pt-6 pb-2 text-center bg-white"> {/* Adjusted padding, changed background, removed border */}
               <h2 className="text-xl font-bold text-blue-800">{labDetails.name}</h2>
             </div>
           )}
           
           {/* Quick Actions */}
-          <div className="p-6 bg-white flex flex-wrap gap-4 justify-center">
+          <div className="px-6 pb-6 pt-4 bg-white flex flex-wrap gap-4 justify-center"> {/* Adjusted padding */}
             <Link
               to="/patients/add"
               className="inline-flex items-center justify-center rounded-lg border border-blue-300 bg-white px-6 py-3 text-base font-medium text-blue-700 shadow-sm hover:bg-blue-50 transition-all duration-200"
@@ -206,7 +208,7 @@ const LabTechnicianDashboard = () => {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
           {/* Pending Reports */}
           <div className="overflow-hidden rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow duration-300">
             <div className="p-5 border-b-4 border-yellow-500">
@@ -254,32 +256,6 @@ const LabTechnicianDashboard = () => {
               <div className="text-sm">
                 <Link to="/reports?status=completed" className="font-medium text-blue-700 hover:text-blue-900 transition duration-200">
                   View all completed reports
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          {/* Samples Collected */}
-          <div className="overflow-hidden rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow duration-300">
-            <div className="p-5 border-b-4 border-blue-500">
-              <div className="flex items-center">
-                <div className="flex-shrink-0 bg-blue-100 p-3 rounded-full">
-                  <BeakerIcon className="h-6 w-6 text-blue-600" aria-hidden="true" />
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="truncate text-sm font-medium text-gray-500">Samples Collected</dt>
-                    <dd>
-                      <div className="text-2xl font-bold text-gray-900">{stats.samplesCollected}</div>
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-            <div className="bg-gray-50 px-5 py-3">
-              <div className="text-sm">
-                <Link to="/samples" className="font-medium text-blue-700 hover:text-blue-900">
-                  Manage all samples
                 </Link>
               </div>
             </div>
@@ -436,7 +412,7 @@ const LabTechnicianDashboard = () => {
                       {filteredReports.map((report) => (
                         <tr key={report.id} className="hover:bg-blue-50 transition-colors duration-150">
                           <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{report.patientName}</td>
-                          <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{report.testName}</td>
+                          <td className="px-3 py-4 text-sm text-gray-500 truncate max-w-xs" title={report.testName}>{truncateText(report.testName, 40)}</td>
                           <td className="px-3 py-4 whitespace-nowrap">
                             <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                               report.status === 'completed' ? 'bg-green-100 text-green-800' : 
@@ -446,7 +422,7 @@ const LabTechnicianDashboard = () => {
                             </span>
                           </td>
                           <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {new Date(report.date).toLocaleDateString()}
+                            {formatDate(report.date, DATE_FORMATS.DD_MM_YYYY)}
                           </td>
                           <td className="px-3 py-4 whitespace-nowrap text-sm">
                             <div className="flex space-x-3">

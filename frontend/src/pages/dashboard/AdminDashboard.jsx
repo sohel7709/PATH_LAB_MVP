@@ -13,6 +13,8 @@ import {
   PlusIcon,
   PencilSquareIcon,
 } from '@heroicons/react/24/outline';
+import { formatDate, truncateText } from '../../utils/helpers'; // Added truncateText
+import { DATE_FORMATS } from '../../utils/constants';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({
@@ -328,7 +330,9 @@ const AdminDashboard = () => {
                       <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {report.patientName}
                       </td>
-                      <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{report.testName}</td>
+                      <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500" title={report.testName}>
+                        {truncateText(report.testName, 40)}
+                      </td>
                       <td className="px-3 py-4 whitespace-nowrap">
                         <span
                           className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
@@ -340,7 +344,7 @@ const AdminDashboard = () => {
                         </span>
                       </td>
                       <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(report.date).toLocaleDateString()}
+                        {formatDate(report.date, DATE_FORMATS.DD_MM_YYYY)}
                       </td>
                       <td className="px-3 py-4 whitespace-nowrap text-sm">
                         <div className="flex space-x-3">

@@ -4,6 +4,8 @@ import api from '../../utils/api';
 import { Link } from 'react-router-dom';
 // Removed AuthContext import as user is not needed here
 import { CheckCircleIcon, ExclamationTriangleIcon, InformationCircleIcon } from '@heroicons/react/24/solid';
+import { formatDate as formatSharedDate } from '../../utils/helpers'; // Aliased import
+import { DATE_FORMATS } from '../../utils/constants';
 
 const SubscriptionPage = () => {
   const [subscription, setSubscription] = useState(null);
@@ -38,10 +40,7 @@ const SubscriptionPage = () => {
     fetchSubscription();
   }, []);
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString();
-  };
+  // Removed local formatDate, will use shared one
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -82,11 +81,11 @@ const SubscriptionPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 text-gray-700">
               <div>
                 <p className="font-medium">Start Date:</p>
-                <p>{formatDate(subscription.startDate)}</p>
+                <p>{formatSharedDate(subscription.startDate, DATE_FORMATS.DD_MM_YYYY)}</p>
               </div>
               <div>
                 <p className="font-medium">End Date:</p>
-                <p>{formatDate(subscription.endDate)}</p>
+                <p>{formatSharedDate(subscription.endDate, DATE_FORMATS.DD_MM_YYYY)}</p>
               </div>
               <div>
                 <p className="font-medium">Price:</p>

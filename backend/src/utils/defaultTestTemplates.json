@@ -771,5 +771,29 @@
         ]
       }
     ]
+  },
+  {
+    "templateName": "SERUM FOR HBsAg TEST",
+    "shortName": "HBSAG",
+    "createdBy": "system",
+    "category": "Serology",
+    "sections": [
+      {
+        "displayFormat": "key-value",
+        "notes": "( Note : This is Screening Test,the Result must be confirmed by Elisa/ pcr Method .)\n ( By RECKON B No 21HXO73 )",
+        "parameters": [
+          {
+            "name": "SERUM FOR HBsAg TEST :",
+            "unit": "",
+            "inputType": "dropdown",
+            "options": [
+              "NEGATIVE",
+              "POSITIVE"
+            ]
+            
+          }
+        ]
+      }
+    ]
   }
 ]

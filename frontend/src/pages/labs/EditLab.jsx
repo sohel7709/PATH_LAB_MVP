@@ -3,6 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { ArrowLeftIcon, CreditCardIcon } from '@heroicons/react/24/outline';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { formatDate as formatSharedDate } from '../../utils/helpers'; // Aliased import
+import { DATE_FORMATS } from '../../utils/constants';
 
 const EditLab = () => {
   const { id: labId } = useParams();
@@ -184,12 +186,6 @@ const EditLab = () => {
     } finally {
       setAssigningPlan(false);
     }
-  };
-
-  // Helper to format date strings
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString();
   };
 
   // Helper to format status strings
@@ -430,7 +426,7 @@ const EditLab = () => {
                   <div>
                     <span className="font-medium text-blue-600 block">Expires On:</span>
                     <span className="font-semibold text-gray-800">
-                      {formatDate(labData.subscription?.endDate)}
+                      {formatSharedDate(labData.subscription?.endDate, DATE_FORMATS.DD_MM_YYYY)}
                     </span>
                   </div>
                 </div>
@@ -497,8 +493,8 @@ const EditLab = () => {
                     {subscriptionHistory.map(record => (
                       <tr key={record._id} className="hover:bg-blue-50 transition-colors">
                         <td className="px-4 py-2 whitespace-nowrap">{record.plan?.name || 'N/A'}</td>
-                        <td className="px-4 py-2 whitespace-nowrap">{formatDate(record.startDate)}</td>
-                        <td className="px-4 py-2 whitespace-nowrap">{formatDate(record.endDate)}</td>
+                        <td className="px-4 py-2 whitespace-nowrap">{formatSharedDate(record.startDate, DATE_FORMATS.DD_MM_YYYY)}</td>
+                        <td className="px-4 py-2 whitespace-nowrap">{formatSharedDate(record.endDate, DATE_FORMATS.DD_MM_YYYY)}</td>
                         <td className="px-4 py-2 whitespace-nowrap">
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                             record.status === 'active' ? 'bg-green-100 text-green-800' : 

@@ -54,6 +54,8 @@ const EditTestTemplate = lazy(() => import('./pages/templates/EditTestTemplate')
 const PatientList = lazy(() => import('./pages/patients/PatientList'));
 const AddPatient = lazy(() => import('./pages/patients/AddPatient'));
 const EditPatient = lazy(() => import('./pages/patients/EditPatient'));
+const PatientDetails = lazy(() => import('./pages/patients/PatientDetails')); // Added
+const PatientReports = lazy(() => import('./pages/patients/PatientReports')); // Added
 
 // Settings Pages
 const LabSettings = lazy(() => import('./pages/settings/LabSettings'));
@@ -180,7 +182,10 @@ function App() {
               <Route path="/patients" element={<PatientList />} />
               <Route path="/patients/add" element={<AddPatient />} />
               <Route path="/patients/:id/edit" element={<EditPatient />} />
-              <Route path="/patients/:id" element={<Navigate to="/patients/:id/edit" replace />} />
+              <Route path="/patients/:id/details" element={<PatientDetails />} /> {/* Added */}
+              <Route path="/patients/:id/reports" element={<PatientReports />} /> {/* Added */}
+              {/* Fallback for /patients/:id to redirect to details, or remove if not desired */}
+              <Route path="/patients/:id" element={<Navigate to="/patients/:id/details" replace />} /> 
               
               {/* Doctor Routes */}
               <Route path="/doctors" element={
