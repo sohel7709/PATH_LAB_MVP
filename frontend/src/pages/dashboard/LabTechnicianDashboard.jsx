@@ -183,13 +183,13 @@ const LabTechnicianDashboard = () => {
           
           {/* Lab Name */}
           {labDetails?.name && (
-            <div className="py-4 text-center bg-blue-50 border-b border-blue-100">
+            <div className="pt-6 pb-2 text-center bg-white"> {/* Adjusted padding, changed background, removed border */}
               <h2 className="text-xl font-bold text-blue-800">{labDetails.name}</h2>
             </div>
           )}
           
           {/* Quick Actions */}
-          <div className="p-6 bg-white flex flex-wrap gap-4 justify-center">
+          <div className="px-6 pb-6 pt-4 bg-white flex flex-wrap gap-4 justify-center"> {/* Adjusted padding */}
             <Link
               to="/patients/add"
               className="inline-flex items-center justify-center rounded-lg border border-blue-300 bg-white px-6 py-3 text-base font-medium text-blue-700 shadow-sm hover:bg-blue-50 transition-all duration-200"
@@ -208,7 +208,7 @@ const LabTechnicianDashboard = () => {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
           {/* Pending Reports */}
           <div className="overflow-hidden rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow duration-300">
             <div className="p-5 border-b-4 border-yellow-500">
