@@ -152,7 +152,12 @@ export default function Reports() {
             </div>
             <div className="flex space-x-3">
               <button
-                onClick={() => fetchReports(true)}
+                onClick={() => {
+                  setSearchTerm('');
+                  setFilterStatus('all');
+                  setSortConfig({ key: 'createdAt', direction: 'desc' });
+                  fetchReports(true);
+                }}
                 className="inline-flex items-center justify-center rounded-lg border border-transparent bg-white/20 backdrop-blur-sm px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-blue-600 transition-all duration-300"
                 disabled={isRefreshing}
               >

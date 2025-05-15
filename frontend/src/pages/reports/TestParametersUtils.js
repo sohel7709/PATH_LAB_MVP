@@ -77,10 +77,10 @@ export const isValueNormal = (paramName, value, referenceRange, patientGender, p
 
   // Handle gender-specific ranges like "M - 13.5 - 18.0\nF - 11.5 - 16.4" or "M -00 -08mm , F- 00-20 mm"
   // Regex breakdown:
-  // M\s*-\s*(\d+\.?\d*)\s*-\s*(\d+\.?\d*) - Captures Male min and max
+  // Male:\s*(\d+\.?\d*)\s*-\s*(\d+\.?\d*) - Captures Male min and max
   // .*\n? - Matches any characters (like units) and optional newline
-  // F\s*-\s*(\d+\.?\d*)\s*-\s*(\d+\.?\d*) - Captures Female min and max
-  const genderMatch = trimmedRange.match(/M\s*-\s*(\d+\.?\d*)\s*-\s*(\d+\.?\d*).*\n?F\s*-\s*(\d+\.?\d*)\s*-\s*(\d+\.?\d*)/i);
+  // Female:\s*(\d+\.?\d*)\s*-\s*(\d+\.?\d*) - Captures Female min and max
+  const genderMatch = trimmedRange.match(/Male:\s*(\d+\.?\d*)\s*-\s*(\d+\.?\d*).*\n?Female:\s*(\d+\.?\d*)\s*-\s*(\d+\.?\d*)/i);
   if (genderMatch) {
     // Groups are 1-based index
     const maleMin = parseFloat(genderMatch[1]);

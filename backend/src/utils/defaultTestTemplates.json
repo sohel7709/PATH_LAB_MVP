@@ -48,7 +48,7 @@
         "parameters": []
       },
       {
-        "sectionTitle": "CRP test",
+       
         "displayFormat": "key-value",
         "notes": "( N -less than 6 mg/lt ) ( By Turbilatex )",
         "parameters": [
@@ -681,11 +681,6 @@
             "name": "C.T.", 
             "unit": "", 
             "referenceRange": "3 - 8 mts"
-          },
-          { 
-            "name": "The 20-Minute Whole blood Clotting test", 
-            "unit": "", 
-            "referenceRange": ""
           }
         ]
       }
@@ -791,6 +786,24 @@
               "POSITIVE"
             ]
             
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "templateName": "The 20-Minute Whole blood Clotting test",
+    "shortName": "WBCT20",
+    "createdBy": "system",
+    "category": "Hematology",
+    "sections": [
+      {
+        "displayFormat": "key-value",
+        "parameters": [
+          {
+            "name": "The 20-Minute Whole blood Clotting test",
+            "unit": "",
+            "referenceRange": ""
           }
         ]
       }

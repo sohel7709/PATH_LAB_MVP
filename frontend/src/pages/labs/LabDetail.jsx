@@ -233,11 +233,11 @@ useEffect(() => {
               </div>
               <div className="sm:col-span-1">
                 <dt className="text-sm font-medium text-gray-500">Contact Email</dt>
-                <dd className="mt-1 text-sm text-gray-900">{lab.email || 'Not specified'}</dd>
+                <dd className="mt-1 text-sm text-gray-900">{lab.contact?.email || 'Not specified'}</dd>
               </div>
               <div className="sm:col-span-1">
                 <dt className="text-sm font-medium text-gray-500">Contact Phone</dt>
-                <dd className="mt-1 text-sm text-gray-900">{lab.phone || 'Not specified'}</dd>
+                <dd className="mt-1 text-sm text-gray-900">{lab.contact?.phone || 'Not specified'}</dd>
               </div>
               <div className="sm:col-span-2">
                 <dt className="text-sm font-medium text-gray-500">Description</dt>
