@@ -5,6 +5,115 @@ import { useState, useEffect } from 'react';
 export const useReportGenerator = (report) => {
   const [reportHtml, setReportHtml] = useState('');
 
+  // Function to check if a value is outside the reference range
+  // (Copied and adapted from ReportTemplate.jsx)
+  const isOutsideRange = (value, referenceRange, patientGender) => {
+    console.log(`[isOutsideRange] Checking value: ${value}, range: "${referenceRange}", gender: ${patientGender}`);
+
+    if (!value || !referenceRange) {
+      console.log('[isOutsideRange] Value or referenceRange is null/undefined. Returning false.');
+      return false;
+    }
+
+    const cleanValue = value.toString().replace(/,/g, '');
+    let cleanRange = referenceRange.toString().replace(/,/g, '');
+    const numValue = parseFloat(cleanValue);
+
+    if (isNaN(numValue)) {
+      console.log(`[isOutsideRange] numValue is NaN for cleanValue: "${cleanValue}". Returning false.`);
+      return false;
+    }
+    console.log(`[isOutsideRange] Parsed numValue: ${numValue}`);
+
+    // Attempt to parse gender-specific ranges
+    const maleRegex = /Male:\s*([\d.]+)\s*-\s*([\d.]+)/i;
+    const femaleRegex = /Female:\s*([\d.]+)\s*-\s*([\d.]+)/i;
+    const maleRangeMatch = cleanRange.match(maleRegex);
+    const femaleRangeMatch = cleanRange.match(femaleRegex);
+
+    console.log(`[isOutsideRange] Male match: ${maleRangeMatch}, Female match: ${femaleRangeMatch}`);
+
+    let targetRange = null;
+
+    if (patientGender && patientGender.toLowerCase() === 'male' && maleRangeMatch) {
+      targetRange = `${maleRangeMatch[1]}-${maleRangeMatch[2]}`;
+      console.log(`[isOutsideRange] Using Male range: "${targetRange}"`);
+    } else if (patientGender && patientGender.toLowerCase() === 'female' && femaleRangeMatch) {
+      targetRange = `${femaleRangeMatch[1]}-${femaleRangeMatch[2]}`;
+      console.log(`[isOutsideRange] Using Female range: "${targetRange}"`);
+    }
+
+    if (targetRange) {
+      cleanRange = targetRange; // Use the gender-specific range
+    } else {
+      console.log('[isOutsideRange] No specific gender range matched or applied. Using original/full range for parsing.');
+    }
+    console.log(`[isOutsideRange] Effective cleanRange for parsing: "${cleanRange}"`);
+
+    try {
+      if (cleanRange.includes('-') || cleanRange.includes('–')) {
+        const separator = cleanRange.includes('-') ? '-' : '–';
+        const parts = cleanRange.split(separator);
+        if (parts.length >= 2) {
+            const minStr = parts[0].trim();
+            const maxStr = parts[1].trim();
+            const min = parseFloat(minStr);
+            const max = parseFloat(maxStr);
+            console.log(`[isOutsideRange] Parsed min: ${min} (from "${minStr}"), max: ${max} (from "${maxStr}") for range "${cleanRange}"`);
+            if (!isNaN(min) && !isNaN(max)) {
+              const result = numValue < min || numValue > max;
+              console.log(`[isOutsideRange] Comparing ${numValue} with ${min}-${max}. Abnormal: ${result}`);
+              return result;
+            } else {
+              console.log('[isOutsideRange] Min or Max is NaN for hyphenated range.');
+            }
+        } else {
+          console.log('[isOutsideRange] Hyphenated range does not have at least 2 parts.');
+        }
+      }
+      else if (cleanRange.startsWith('<')) {
+        const max = parseFloat(cleanRange.substring(1).trim());
+        const result = !isNaN(max) && numValue >= max;
+        console.log(`[isOutsideRange] Comparing ${numValue} with <${max}. Abnormal: ${result}`);
+        return result;
+      }
+      else if (cleanRange.startsWith('≤')) {
+        const max = parseFloat(cleanRange.substring(1).trim());
+        const result = !isNaN(max) && numValue > max;
+        console.log(`[isOutsideRange] Comparing ${numValue} with ≤${max}. Abnormal: ${result}`);
+        return result;
+      }
+      else if (cleanRange.startsWith('>')) {
+        const min = parseFloat(cleanRange.substring(1).trim());
+        const result = !isNaN(min) && numValue <= min;
+        console.log(`[isOutsideRange] Comparing ${numValue} with >${min}. Abnormal: ${result}`);
+        return result;
+      }
+      else if (cleanRange.startsWith('≥')) {
+        const min = parseFloat(cleanRange.substring(1).trim());
+        const result = !isNaN(min) && numValue < min;
+        console.log(`[isOutsideRange] Comparing ${numValue} with ≥${min}. Abnormal: ${result}`);
+        return result;
+      }
+      else if (cleanRange.toLowerCase().includes('less than')) {
+        const max = parseFloat(cleanRange.toLowerCase().replace('less than', '').trim());
+        const result = !isNaN(max) && numValue >= max;
+        console.log(`[isOutsideRange] Comparing ${numValue} with "less than ${max}". Abnormal: ${result}`);
+        return result;
+      }
+      else if (cleanRange.toLowerCase().includes('greater than')) {
+        const min = parseFloat(cleanRange.toLowerCase().replace('greater than', '').trim());
+        const result = !isNaN(min) && numValue <= min;
+        console.log(`[isOutsideRange] Comparing ${numValue} with "greater than ${min}". Abnormal: ${result}`);
+        return result;
+      }
+    } catch (error) {
+      console.warn('[isOutsideRange] Error during parsing:', referenceRange, error);
+    }
+    console.log('[isOutsideRange] No range condition met or error occurred. Returning false.');
+    return false;
+  };
+
   // Prepare data structure needed by the build function
   const prepareReportData = (currentReport) => {
      if (!currentReport) {
@@ -106,7 +215,8 @@ export const useReportGenerator = (report) => {
       'typhi dot test', // Keep this format
       'troponin-i test', // Keep this format
       'vdrl test', // Keep this format
-      'serum for hbsag test' // Keep this format
+      'serum for hbsag test', // Keep this format
+      'the 20-minute whole blood clotting test' // Corrected to lowercase
     ];
     // List of template names (lowercase) that should show header but hide REFERENCE column (3 columns total)
     const templatesForThreeColumns = [
@@ -213,7 +323,7 @@ export const useReportGenerator = (report) => {
               const sectionRow = tbody.insertRow();
               const cell = sectionRow.insertCell();
               // Adjust colspan based on hidden columns
-              cell.colSpan = shouldHideUnitAndReference ? 2 : (shouldHideOnlyReference ? 3 : 4);
+              cell.colSpan = shouldHideUnitAndReference ? 2 : (shouldHideOnlyReference ? 3 : 4); // Default to 4 if no hiding
               cell.textContent = sectionTitle;
               cell.style.fontWeight = 'bold';
               cell.style.fontSize = '11pt';
@@ -230,7 +340,7 @@ export const useReportGenerator = (report) => {
               if (param.isHeader) { // This is a parameter acting as a header
                 const cell = row.insertCell();
                 // Adjust colspan based on hidden columns
-                cell.colSpan = shouldHideUnitAndReference ? 2 : (shouldHideOnlyReference ? 3 : 4);
+                cell.colSpan = shouldHideUnitAndReference ? 2 : (shouldHideOnlyReference ? 3 : 4); // Default to 4
                 cell.textContent = param.parameter; // Use param.parameter for header text
                 cell.style.fontWeight = 'bold';
                 cell.style.fontSize = '11pt';
@@ -238,7 +348,10 @@ export const useReportGenerator = (report) => {
                 cell.style.textAlign = 'left';
                 // cell.style.backgroundColor = '#f0f0f0'; // Removed background color
               } else {
-                const isAbnormal = param.flag === 'high' || param.flag === 'low' || param.flag === 'critical';
+                const isAbnormalByFlag = param.flag === 'high' || param.flag === 'low' || param.flag === 'critical';
+                const isAbnormalByRange = isOutsideRange(param.value, param.referenceRange, currentReport.patientInfo?.gender);
+                const isAbnormal = isAbnormalByFlag || isAbnormalByRange;
+                
                 const nameCell = row.insertCell();
                 const resultCell = row.insertCell();
                 // Conditionally insert Unit cell only if Unit column should be shown

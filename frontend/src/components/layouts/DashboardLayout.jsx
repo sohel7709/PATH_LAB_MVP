@@ -40,8 +40,9 @@ const getNavigationItems = (role) => {
   ];
 
   const adminItems = [
-    ...commonItems,
+    { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
     { name: 'Patients', href: '/patients', icon: UserGroupIcon },
+    { name: 'Reports', href: '/reports', icon: DocumentTextIcon },
     { name: 'Reference Doctors', href: '/doctors', icon: UserGroupIcon },
     { name: 'Test Templates', href: '/templates', icon: DocumentDuplicateIcon },
     { name: 'Report Settings', href: '/settings/reports', icon: DocumentTextIcon },
@@ -50,8 +51,9 @@ const getNavigationItems = (role) => {
   ];
 
   const technicianItems = [
-    ...commonItems,
+    { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
     { name: 'Patients', href: '/patients', icon: UserGroupIcon },
+    { name: 'Reports', href: '/reports', icon: DocumentTextIcon },
   ];
 
   switch (role) {

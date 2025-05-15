@@ -63,6 +63,7 @@ userSchema.methods.getSignedJwtToken = function() {
   return jwt.sign(
     { 
       id: this._id,
+      name: this.name, // Add name to JWT payload
       role: this.role,
       lab: this.lab 
     },

@@ -33,7 +33,8 @@ export const AuthProvider = ({ children }) => {
           setUser({
             id: payload.id,
             role: payload.role,
-            lab: payload.lab
+            lab: payload.lab,
+            name: payload.name || 'User' // Add name from token payload
           });
           
           console.log('User set from token payload:', payload);

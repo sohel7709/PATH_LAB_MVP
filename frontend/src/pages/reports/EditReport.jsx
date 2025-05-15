@@ -13,6 +13,7 @@ export default function EditReport() {
   const [error, setError] = useState('');
   
   const [formData, setFormData] = useState({
+    patientDesignation: '', // Added patientDesignation
     patientName: '',
     patientAge: '',
     patientGender: '',
@@ -47,10 +48,12 @@ export default function EditReport() {
       // Map the data from the API response to the form fields
       setFormData({
         // Patient Information - handle both flat and nested structures
+        patientDesignation: data.patientInfo?.designation || '', // Added patientDesignation
         patientName: data.patientName || (data.patientInfo ? data.patientInfo.name : ''),
         patientAge: data.patientAge || (data.patientInfo ? data.patientInfo.age : ''),
         patientGender: data.patientGender || (data.patientInfo ? data.patientInfo.gender : ''),
         patientPhone: data.patientPhone || (data.patientInfo && data.patientInfo.contact ? data.patientInfo.contact.phone : ''),
+        patientId: data.patientInfo?.patientId || '', // Ensure patientId is also populated
         
         // Test Information - handle both flat and nested structures
         testName: data.testName || (data.testInfo ? data.testInfo.name : ''),
@@ -174,6 +177,7 @@ export default function EditReport() {
       const reportData = {
         // Patient Information
         patientInfo: {
+          designation: formData.patientDesignation, // Added designation
           name: formData.patientName,
           age: parseInt(formData.patientAge, 10), // Convert to number
           gender: formData.patientGender,
@@ -181,7 +185,7 @@ export default function EditReport() {
             phone: formData.patientPhone
           },
           // Preserve patientId if it exists in the original data
-          patientId: formData.patientId || `PAT-${Date.now().toString().slice(-6)}`
+          patientId: formData.patientId // Use populated patientId
         },
         
         // Test Information
@@ -385,7 +389,23 @@ export default function EditReport() {
                 </div>
               </div>
               
-              <div className="sm:col-span-3">
+              <div className="sm:col-span-2"> 
+                <label htmlFor="patientDesignation" className="block text-sm font-medium text-gray-700 mb-1">
+                  Designation
+                </label>
+                <div className="mt-1">
+                  <input
+                    type="text"
+                    name="patientDesignation"
+                    id="patientDesignation"
+                    value={formData.patientDesignation}
+                    className="block w-full rounded-lg border border-blue-300 px-4 py-2 bg-gray-100 cursor-not-allowed"
+                    disabled
+                  />
+                </div>
+              </div>
+
+              <div className="sm:col-span-4"> 
                 <label htmlFor="patientName" className="block text-sm font-medium text-gray-700 mb-1">
                   Full name
                 </label>
