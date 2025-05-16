@@ -100,11 +100,12 @@ export default function PatientList() {
   };
 
   const filteredPatients = patients.filter((patient) => {
+    const searchTermLower = searchTerm.toLowerCase();
     return (
-      (patient.patientId && patient.patientId.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      patient.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.phone.includes(searchTerm) ||
-      (patient.email && patient.email.toLowerCase().includes(searchTerm.toLowerCase()))
+      (patient.patientId && patient.patientId.toLowerCase().includes(searchTermLower)) ||
+      (patient.fullName && patient.fullName.toLowerCase().includes(searchTermLower)) ||
+      (patient.phone && patient.phone.includes(searchTerm)) || // searchTerm is not lowercased here, assuming phone search is exact or numeric
+      (patient.email && patient.email.toLowerCase().includes(searchTermLower))
     );
   });
 
@@ -245,7 +246,7 @@ export default function PatientList() {
                           {patient.age} / {patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1)}
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          <div>{patient.phone.replace(/[()]/g, '')}</div>
+                          <div>{patient.phone ? patient.phone.replace(/[()]/g, '') : 'N/A'}</div>
                           {patient.email && <div className="text-xs">{patient.email}</div>}
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">

@@ -3,12 +3,11 @@ const Lab = require('../models/Lab');
 const asyncHandler = require('express-async-handler');
 
 // Helper function to generate patient ID (2 characters + dash + 6 digits)
-const generatePatientId = async (labId) => {
-  // Get the lab code (first 2 characters)
-  const lab = await Lab.findById(labId);
-  let labCode = lab.name.substring(0, 2).toUpperCase();
+const generatePatientId = async (labCodePrefix) => {
+  // labCodePrefix is already derived and passed in
+  let labCode = labCodePrefix;
   
-  // Find the highest existing patient ID for this lab
+  // Find the highest existing patient ID for this lab prefix
   const highestPatient = await Patient.find({ patientId: new RegExp(`^${labCode}-\\d{6}$`) })
     .sort({ patientId: -1 })
     .limit(1);
@@ -41,61 +40,95 @@ exports.createPatient = asyncHandler(async (req, res) => {
   }
 
   // Check if lab exists
-  const lab = await Lab.findById(req.body.labId);
-  if (!lab) {
+  const labInstance = await Lab.findById(req.body.labId); // Renamed variable
+  if (!labInstance) {
     return res.status(404).json({ message: 'Lab not found' });
+  }
+  // Derive labCodePrefix from the fetched labInstance
+  const labCodePrefix = labInstance.name.substring(0, 2).toUpperCase();
+
+  // Destructure all necessary fields from req.body at a higher scope
+  // Renamed 'fullName' from destructuring to 'originalFullName' to avoid confusion
+  let { fullName: originalFullName, phone, age, gender, email, designation, address, lastTestType } = req.body;
+  let processedFullName = originalFullName; // Initialize processedFullName
+
+  // Format fullName: Capitalize the first letter (if it exists)
+  if (processedFullName && typeof processedFullName === 'string' && processedFullName.length > 0) {
+    processedFullName = processedFullName.charAt(0).toUpperCase() + processedFullName.slice(1);
   }
 
   try {
     // Check for duplicate patient
-    let { fullName, phone, age, gender, email } = req.body; // Use let for fullName
-
-    // Format fullName: Capitalize the first letter
-    if (fullName && typeof fullName === 'string' && fullName.length > 0) {
-      fullName = fullName.charAt(0).toUpperCase() + fullName.slice(1);
-      req.body.fullName = fullName; // Update req.body as well for the create call
-    }
-    
-    // Build query to check for duplicate
     const duplicateQuery = {
-      fullName: fullName,
-      phone: phone,
+      fullName: processedFullName, // Use the processed (capitalized) fullName
       labId: req.body.labId
     };
+    // Use variables from the higher scope (phone, age, gender, email)
+    if (phone && phone.trim() !== "") { 
+        duplicateQuery.phone = phone.trim();
+    } else {
+        // If phone is not provided, we might want to be more careful about declaring duplicates
+        // For now, if phone is not provided, we won't use it in the duplicate check.
+        // This means two patients with same name, age, gender, email but different/no phone will not be caught as duplicates by this logic.
+        // Consider if this is the desired behavior.
+    }
     
     // Add additional fields to query if they exist
     if (age) duplicateQuery.age = parseInt(age);
     if (gender) duplicateQuery.gender = gender;
-    if (email) duplicateQuery.email = email;
+    // Email is optional, so only add to duplicate check if provided
+    if (email && email.trim() !== "") duplicateQuery.email = email.trim().toLowerCase();
     
-    console.log('Checking for duplicate patient with query:', duplicateQuery);
-    
-    const existingPatient = await Patient.findOne(duplicateQuery);
-    
-    if (existingPatient) {
-      console.log('Duplicate patient found:', existingPatient);
-      return res.status(400).json({ 
-        message: 'Patient already exists',
-        duplicate: true,
-        patient: existingPatient
-      });
+    // Only perform duplicate check if essential fields for it are present
+    // (e.g., fullName and labId are always there based on prior checks)
+    if (fullName) { // fullName is required by schema, so it should be present
+        console.log('Checking for duplicate patient with query:', duplicateQuery);
+        const existingPatient = await Patient.findOne(duplicateQuery);
+        if (existingPatient) {
+            console.log('Duplicate patient found:', existingPatient);
+            return res.status(400).json({ 
+                message: 'A patient with similar details (name, and phone if provided) already exists in this lab.',
+                duplicate: true,
+                patient: existingPatient
+            });
+        }
     }
   } catch (error) {
     console.error('Error checking for duplicate patient:', error);
-    return res.status(500).json({ message: 'Error checking for duplicate patient' });
+    // Don't stop creation for an error in duplicate check, but log it.
+    // Proceed to attempt creation.
   }
 
   try {
-    // Generate patient ID
-    const patientId = await generatePatientId(req.body.labId);
-    req.body.patientId = patientId;
+    // Generate patient ID using the derived labCodePrefix
+    const patientId = await generatePatientId(labCodePrefix);
+    
+    const patientDataForCreation = {
+        patientId, 
+        designation: designation, // Use destructured designation from higher scope
+        fullName: processedFullName, // Use the processed fullName from higher scope
+        age: age, // Use destructured age from higher scope
+        gender: gender, // Use destructured gender from higher scope
+        labId: req.body.labId, 
+        
+        // Optional fields - use destructured variables from higher scope
+        phone: (phone && phone.trim() !== "") ? phone.trim() : null,
+        email: (email && email.trim() !== "") ? email.trim().toLowerCase() : null,
+        address: (address && address.trim() !== "") ? address.trim() : null,
+        lastTestType: (lastTestType && lastTestType.trim() !== "") ? lastTestType.trim() : null,
+    };
     
     // Create patient
-    const patient = await Patient.create(req.body);
+    const patient = await Patient.create(patientDataForCreation);
     res.status(201).json(patient);
   } catch (error) {
-    console.error('Error creating patient:', error);
-    return res.status(500).json({ message: 'Error creating patient' });
+    console.error('Detailed error creating patient:', error); // Log the full error
+    if (error.name === 'ValidationError') {
+        const messages = Object.values(error.errors).map(val => val.message);
+        return res.status(400).json({ success: false, message: messages.join(', '), details: error.errors });
+    }
+    // For other types of errors, provide a more generic server error message but log details
+    return res.status(500).json({ success: false, message: 'Server error occurred while creating patient.', error: error.message });
   }
 });
 
@@ -177,7 +210,23 @@ exports.updatePatient = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: 'Cannot change patient lab assignment' });
   }
 
-  patient = await Patient.findByIdAndUpdate(req.params.id, req.body, {
+  // Prepare update data, ensuring optional fields are handled (empty string to null)
+  const updateData = { ...req.body };
+  if (updateData.phone !== undefined) {
+    updateData.phone = (updateData.phone && updateData.phone.trim() !== "") ? updateData.phone.trim() : null;
+  }
+  if (updateData.email !== undefined) {
+    updateData.email = (updateData.email && updateData.email.trim() !== "") ? updateData.email.trim().toLowerCase() : null;
+  }
+  if (updateData.address !== undefined) {
+    updateData.address = (updateData.address && updateData.address.trim() !== "") ? updateData.address.trim() : null;
+  }
+   if (updateData.lastTestType !== undefined) {
+    updateData.lastTestType = (updateData.lastTestType && updateData.lastTestType.trim() !== "") ? updateData.lastTestType.trim() : null;
+  }
+
+
+  patient = await Patient.findByIdAndUpdate(req.params.id, updateData, {
     new: true,
     runValidators: true
   });

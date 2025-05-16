@@ -134,7 +134,7 @@ const EditDoctor = () => {
                     type="text"
                     name="specialty"
                     id="specialty"
-                    required
+                    // required // Removed required attribute
                     value={formData.specialty}
                     onChange={handleChange}
                     className="block w-full rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"

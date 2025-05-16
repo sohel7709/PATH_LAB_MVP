@@ -58,17 +58,19 @@ export default function EditPatient() {
     }
   };
 
-  // Validate phone number
+  // Validate phone number (optional)
   const validatePhoneNumber = (phone) => {
     // Remove any non-digit characters
     const digitsOnly = phone.replace(/\D/g, '');
     
+    // If phone is empty, it's valid as it's optional
     if (digitsOnly.length === 0) {
-      return ''; // Empty is allowed during typing
+      return ''; 
     }
     
+    // If phone is not empty, it must be 10 digits
     if (digitsOnly.length !== 10) {
-      return 'Phone number must be exactly 10 digits';
+      return 'If provided, phone number must be exactly 10 digits';
     }
     
     return ''; // No error
@@ -109,16 +111,21 @@ export default function EditPatient() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validate phone number before submission
-    const phoneError = validatePhoneNumber(formData.phone);
-    if (phoneError) {
-      setValidationErrors(prev => ({
-        ...prev,
-        phone: phoneError
-      }));
-      // Focus on the phone input
-      document.getElementById('phone').focus();
-      return;
+    // Validate phone number before submission (only if provided)
+    if (formData.phone && formData.phone.trim() !== '') { // Check if formData.phone exists
+        const phoneError = validatePhoneNumber(formData.phone);
+        if (phoneError) {
+          setValidationErrors(prev => ({
+            ...prev,
+            phone: phoneError
+          }));
+          // Focus on the phone input
+          document.getElementById('phone').focus();
+          return;
+        }
+    } else {
+        // Clear any previous phone error if phone is now empty or undefined
+        setValidationErrors(prev => ({ ...prev, phone: ''}));
     }
     
     setIsSaving(true);
@@ -269,25 +276,25 @@ export default function EditPatient() {
 
               <div className="sm:col-span-3">
                 <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone number <span className="text-red-500 ml-1">*</span>
+                  Phone number <span className="text-gray-400 text-sm">(optional)</span>
                 </label>
                 <div className="mt-1 relative">
                   <input
                     type="tel"
                     name="phone"
                     id="phone"
-                    required
+                    // required // Removed required attribute
                     placeholder="Enter contact number"
-                    value={formData.phone}
+                    value={formData.phone || ''} // Ensure value is not null/undefined for controlled input
                     onChange={handleChange}
-                    className={`block w-full rounded-lg border ${validationErrors.phone ? 'border-red-500' : formData.phone.length === 10 ? 'border-green-500' : 'border-blue-300'} px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition`}
-                    pattern="[0-9]{10}"
-                    title="Phone number must be exactly 10 digits"
+                    className={`block w-full rounded-lg border ${validationErrors.phone ? 'border-red-500' : ((formData.phone || '').length === 0 || (formData.phone || '').length === 10) ? ((formData.phone || '').length === 10 ? 'border-green-500' : 'border-blue-300') : 'border-blue-300'} px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition`}
+                    pattern="[0-9]{10}" // Keep pattern for format guidance if filled
+                    title="If provided, phone number must be 10 digits"
                     maxLength="10"
                   />
-                  {formData.phone.length > 0 && (
+                  {(formData.phone || '').length > 0 && ( // Show icon only if something is typed
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                      {formData.phone.length === 10 ? (
+                      {(formData.phone || '').length === 10 ? (
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                         </svg>
@@ -299,13 +306,17 @@ export default function EditPatient() {
                     </div>
                   )}
                 </div>
-                {validationErrors.phone ? (
+                {validationErrors.phone && ( // Show validation error if it exists
                   <p className="mt-1 text-sm text-red-600">{validationErrors.phone}</p>
-                ) : (
+                )}
+                {(formData.phone || '').length > 0 && (formData.phone || '').length < 10 && !validationErrors.phone && ( // Show guidance if partially filled and no error
                   <p className="text-xs text-gray-500 mt-1">
-                    Format: 10-digit number without spaces or dashes
-                    {formData.phone.length > 0 && formData.phone.length < 10 && 
-                      ` (${10 - formData.phone.length} more digits needed)`}
+                    {10 - (formData.phone || '').length} more digits needed for a 10-digit number.
+                  </p>
+                )}
+                 {!validationErrors.phone && (formData.phone || '').length === 0 && ( // Default helper text when empty and no error
+                  <p className="text-xs text-gray-500 mt-1">
+                    Optional. If provided, must be 10 digits.
                   </p>
                 )}
               </div>
