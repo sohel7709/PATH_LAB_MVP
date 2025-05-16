@@ -7,15 +7,15 @@ const doctorSchema = new mongoose.Schema({
   },
   specialty: {
     type: String,
-    required: true,
+    required: false,
   },
   phone: {
     type: String,
-     required: true, // Made optional
+    required: false,
   },
   email: {
     type: String,
-    // required: true, // Made optional
+    required: false,
     // unique: true, // Removed unique constraint as email is optional
   },
   lab: {

@@ -5,25 +5,39 @@ const Doctor = require('../models/Doctor');
 // @access  Private (Admin)
 exports.createDoctor = async (req, res) => {
   try {
-    const { name, specialty, phone, email, lab } = req.body;
+    const { name, specialty, phone, email } = req.body; // Removed 'lab' from req.body destructuring
 
-    const doctor = await Doctor.create({
+    // Ensure req.user and req.user.lab exist, as lab is a required field for a doctor
+    if (!req.user || !req.user.lab) {
+      console.error('Error creating doctor: User or user.lab is undefined. req.user:', req.user);
+      return res.status(400).json({
+        success: false,
+        message: 'User not authenticated or not associated with a lab. Cannot create doctor.'
+      });
+    }
+
+    const doctorData = {
       name,
-      specialty,
-      phone,
-      email,
       lab: req.user.lab // Associate the doctor with the lab of the admin
-    });
+    };
+
+    // Add optional fields. Convert empty strings to null for better handling with unique indexes.
+    doctorData.specialty = (specialty === '' || specialty === undefined) ? null : specialty;
+    doctorData.phone = (phone === '' || phone === undefined) ? null : phone;
+    doctorData.email = (email === '' || email === undefined) ? null : email;
+
+    const doctor = await Doctor.create(doctorData);
 
     res.status(201).json({
       success: true,
       data: doctor
     });
   } catch (error) {
+    console.error('Detailed error creating doctor:', error); // Log the full error object
     res.status(500).json({
       success: false,
-      message: 'Error creating doctor',
-      error: error.message
+      message: error.message || 'Error creating doctor', // Use Mongoose error message if available
+      error: error.toString() // Send a string representation of the error
     });
   }
 };
@@ -99,14 +113,15 @@ exports.updateDoctor = async (req, res) => {
     }
 
     // Update the doctor
+    // Prepare update data, converting empty strings to null for optional fields
+    const updateData = { name };
+    updateData.specialty = (specialty === '' || specialty === undefined) ? null : specialty;
+    updateData.phone = (phone === '' || phone === undefined) ? null : phone;
+    updateData.email = (email === '' || email === undefined) ? null : email;
+
     doctor = await Doctor.findByIdAndUpdate(
       req.params.id,
-      {
-        name,
-        specialty,
-        phone,
-        email
-      },
+      updateData,
       { new: true, runValidators: true }
     );
 

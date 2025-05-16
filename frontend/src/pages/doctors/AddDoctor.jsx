@@ -32,10 +32,10 @@ const AddDoctor = () => {
       setError('Full Name is required.');
       return;
     }
-    if (!formData.specialty.trim()) {
-      setError('Specialty is required.');
-      return;
-    }
+    // if (!formData.specialty.trim()) {
+    //   setError('Specialty is required.');
+    //   return;
+    // }
     // Phone validation removed as it's now optional
     // if (!formData.phone.trim()) {
     //   setError('Phone Number is required.');
@@ -147,13 +147,13 @@ const AddDoctor = () => {
               </div>
               <div>
                 <label htmlFor="specialty" className="block text-sm font-medium text-gray-700 mb-1">
-                  Specialty <span className="text-red-500">*</span>
+                  Specialty {/* Removed asterisk */}
                 </label>
         <input
           type="text"
           name="specialty"
           id="specialty"
-          required
+          // required // Removed required attribute
           value={formData.specialty}
           onChange={handleInputChange}
           className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
