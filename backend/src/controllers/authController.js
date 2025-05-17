@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const Lab = require('../models/Lab');
 const { validateEmail, validatePassword } = require('../utils/validators');
+const crypto = require('crypto');
 
 // @desc    Register user
 // @route   POST /api/auth/register
@@ -59,8 +60,9 @@ exports.register = async (req, res, next) => {
       lab: role !== 'super-admin' ? labId : undefined
     });
 
-    // Generate token
-    const token = user.getSignedJwtToken();
+    // Generate token (we'll modify getSignedJwtToken later to include jti)
+    // For now, let's assume jti will be part of the token and handled by middleware
+    const token = user.getSignedJwtToken(); 
 
     res.status(201).json({
       success: true,
@@ -155,8 +157,36 @@ exports.login = async (req, res, next) => {
       }
     }
 
-    // Generate token
-    const token = user.getSignedJwtToken();
+    // Prune expired sessions (older than 24 hours)
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    user.activeSessions = user.activeSessions.filter(
+      session => session.loggedInAt > twentyFourHoursAgo
+    );
+
+    // Limit concurrent sessions to 1 (invalidate any existing session on new login)
+    const MAX_SESSIONS = 1;
+    if (user.activeSessions.length >= MAX_SESSIONS) {
+      // Remove all existing sessions to allow only the new one
+      user.activeSessions = []; 
+    }
+
+    // Generate a unique session ID (jti for the JWT)
+    const sessionId = crypto.randomBytes(16).toString('hex');
+
+    // Add new session
+    user.activeSessions.push({
+      sessionId,
+      userAgent: req.headers['user-agent'],
+      ipAddress: req.ip,
+      loggedInAt: new Date(),
+      lastAccessedAt: new Date()
+    });
+
+    await user.save();
+
+    // Generate token - this will need to be modified in User.js to include sessionId as jti
+    // And the JWT_EXPIRE should be set to 24h in .env
+    const token = user.getSignedJwtToken(sessionId); // Pass sessionId to be used as jti
 
     res.status(200).json({
       success: true,
@@ -293,6 +323,17 @@ exports.updatePassword = async (req, res, next) => {
 // @access  Private
 exports.logout = async (req, res, next) => {
   try {
+    // req.authInfo should be populated by auth middleware and include the jti of the current token
+    if (req.authInfo && req.authInfo.jti && req.user) { // req.user for id
+      const user = await User.findById(req.user.id); // Find user by id from req.user
+      if (user) {
+        user.activeSessions = user.activeSessions.filter(
+          session => session.sessionId !== req.authInfo.jti // Use jti from req.authInfo
+        );
+        await user.save();
+      }
+    }
+    // Even if session removal fails or jti is not present, proceed to logout client-side
     res.status(200).json({
       success: true,
       message: 'Successfully logged out'

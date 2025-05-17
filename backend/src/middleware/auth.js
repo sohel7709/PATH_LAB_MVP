@@ -67,14 +67,39 @@ exports.protect = async (req, res, next) => {
 
       // Add user to req object
       // Select 'lab' field explicitly if needed, otherwise it might be excluded by default schema settings
-      req.user = await User.findById(decoded.id).select('+lab');
+      // Explicitly select fields to ensure 'role' and others are present on req.user
+      const user = await User.findById(decoded.id).select('name email role lab activeSessions'); 
 
-      if (!req.user) {
+      if (!user) {
         return res.status(401).json({
           success: false,
-          message: 'User not found'
+          message: 'User not found for token'
         });
       }
+
+      // Check for JTI (session ID) in token and validate session
+      if (!decoded.jti) {
+        return res.status(401).json({
+          success: false,
+          message: 'Session identifier missing from token. Please log in again.'
+        });
+      }
+
+      const currentSession = user.activeSessions.find(session => session.sessionId === decoded.jti);
+
+      if (!currentSession) {
+        return res.status(401).json({
+          success: false,
+          message: 'Session is invalid or has expired. Please log in again.'
+        });
+      }
+
+      // Update lastAccessedAt for the current session
+      currentSession.lastAccessedAt = new Date();
+      await user.save();
+      
+      req.user = user; // Assign the full user object
+      req.authInfo = decoded; // Store decoded token info (contains id, role, lab, jti)
 
       // --- Lab Status Check ---
       // Check if the user's lab is inactive (skip for super-admin)
