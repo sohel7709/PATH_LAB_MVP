@@ -20,7 +20,9 @@
     "react": "^19.0.0",
     "react-bootstrap": "^2.10.9",
     "react-dom": "^19.0.0",
+    "react-json-view": "^1.21.3",
     "react-router-dom": "^7.4.1",
+    "react-toastify": "^11.0.5",
     "recharts": "^2.15.3"
   },
   "devDependencies": {
