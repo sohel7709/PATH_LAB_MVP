@@ -152,6 +152,12 @@ exports.authorize = (...roles) => {
   };
 };
 
+// Middleware to verify if the user is a Super Admin
+exports.verifySuperAdmin = (req, res, next) => {
+  // Use the existing authorize middleware to check for the 'super-admin' role
+  exports.authorize('super-admin')(req, res, next);
+};
+
 // Middleware to check if a specific feature is enabled for the lab's plan
 exports.checkFeature = (...requiredFeatures) => {
   return async (req, res, next) => {
