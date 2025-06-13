@@ -29,6 +29,12 @@ const Login = lazy(() => import('./pages/auth/ImprovedLogin'));
 const ForgotPassword = lazy(() => import('./pages/auth/ForgotPasswordWrapper'));
 const ResetPassword = lazy(() => import('./pages/auth/ResetPasswordWrapper'));
 
+// Pricing Page
+const PricingPage = lazy(() => import('./pages/PricingPage'));
+
+// Landing Page
+const LandingPage = lazy(() => import('./pages/LandingPage'));
+
 import ComingSoon from './pages/ComingSoon';
 import UserIntelligence from './pages/UserIntelligence';
 
@@ -100,6 +106,12 @@ function App() {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password/:token" element={<ResetPassword />} />
             </Route>
+
+            {/* Public Pricing Page Route */}
+            <Route path="/pricing" element={<PricingPage />} />
+
+            {/* Public Landing Page Route */}
+            <Route path="/" element={<LandingPage />} />
             
             {/* Dashboard Routes */}
             <Route element={
@@ -187,9 +199,6 @@ function App() {
                 <DashboardLayout />
               </ProtectedRoute>
             }>
-              {/* Dashboard Routes - Redirect to role-specific dashboard */}
-              <Route path="/" element={<Dashboard />} />
-              
               {/* Report Routes */}
               <Route path="/reports" element={<Reports />} />
               <Route path="/reports/create" element={<CreateReport />} />

@@ -108,6 +108,11 @@ app.use(limiter);
 
 // Add security headers
 app.use((req, res, next) => {
+  // Conditionally skip for public PDF route
+  if (req.path.startsWith('/api/reports/public/') && req.path.endsWith('/pdf')) {
+    console.log('[DEBUG] Skipping custom security headers for public PDF path:', req.path);
+    return next();
+  }
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-XSS-Protection', '1; mode=block');

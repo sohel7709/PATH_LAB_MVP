@@ -49,23 +49,59 @@ const handleResponse = async (response) => {
     throw new Error('Too many requests. Please try again later.');
   }
   
-  try {
-    const data = await response.json();
+  // Check content type to decide how to parse
+  const contentType = response.headers.get("content-type");
+  if (contentType && contentType.indexOf("application/json") !== -1) {
+    try {
+      const data = await response.json();
+      if (!response.ok) {
+        const error = new Error(data.message || 'An error occurred');
+        error.response = { data }; // Keep original error structure for JSON
+        throw error;
+      }
+      return data;
+    } catch (error) {
+      if (error instanceof SyntaxError) { // JSON parsing error
+        throw new Error(`Failed to parse JSON response: ${response.status} ${response.statusText}`);
+      }
+      throw error; // Re-throw other errors (like network or custom error from above)
+    }
+  } else if (contentType && contentType.indexOf("text/html") !== -1) {
+    // Handle HTML response
+    const textData = await response.text();
     if (!response.ok) {
-      // Create an error object with the response data
-      const error = new Error(data.message || 'An error occurred');
-      error.response = { data };
+      // For HTML errors, the textData might be an HTML error page or a plain message
+      const error = new Error(textData || `HTTP error ${response.status}`);
+      error.response = { status: response.status, statusText: response.statusText, data: textData };
       throw error;
     }
-    return data;
-  } catch (error) {
-    // Handle JSON parsing errors
-    if (error instanceof SyntaxError) {
-      throw new Error(`Failed to parse response: ${response.status} ${response.statusText}`);
+    return textData; // Return HTML as text
+  } else {
+    // Fallback for other content types or no content type
+    if (!response.ok) {
+      const errorText = await response.text();
+      const error = new Error(errorText || `HTTP error ${response.status}`);
+      error.response = { status: response.status, statusText: response.statusText, data: errorText };
+      throw error;
     }
-    throw error;
+    // If response is OK but not JSON or HTML, decide what to do. For now, try text.
+    return response.text(); 
   }
 };
+
+// Helper function for HTML responses (alternative if modifying handleResponse is too complex)
+// const handleHtmlResponse = async (response) => {
+//   if (response.status === 429) {
+//     throw new Error('Too many requests. Please try again later.');
+//   }
+//   const textData = await response.text();
+//   if (!response.ok) {
+//     const error = new Error(textData || `HTTP error ${response.status}`);
+//     error.response = { status: response.status, statusText: response.statusText, data: textData };
+//     throw error;
+//   }
+//   return textData;
+// };
 
 export const getAuthHeaders = () => {
   const token = localStorage.getItem('token');
@@ -199,6 +235,14 @@ export const reports = {
       body: JSON.stringify(reportData),
     });
     return handleResponse(response);
+  },
+
+  getHtmlById: async (id) => { // New function to get HTML report
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/reports/${id}/html`, {
+      headers: getAuthHeaders(), // Assuming HTML route also needs auth
+    });
+    // Use the modified handleResponse, which should now handle text/html
+    return handleResponse(response); 
   },
 
   delete: async (id) => {

@@ -5,6 +5,12 @@ const Doctor = require('../models/Doctor'); // Needed for doctor notification
 const TestTemplate = require('../models/TestTemplate'); // Needed for populating template names
 const whatsappService = require('../utils/whatsappService');
 const { getAbnormalFlag } = require('../utils/reportUtils'); // Import from the new utility file
+const { generatePdfFromHtml } = require('../utils/pdfGenerator');
+const fs = require('fs').promises; // fs.promises is used, fs directly for sync ops if any
+const path = require('path');
+const Handlebars = require('handlebars');
+const LabReportSettings = require('../models/LabReportSettings'); // Added
+const { prepareReportTemplateData } = require('./reportGenerationController'); // Added
 
 // @desc    Create new report
 // @route   POST /api/technician/reports or /api/admin/reports
@@ -156,6 +162,84 @@ exports.createReport = async (req, res, next) => {
     });
   } catch (error) {
     console.error('Error creating report:', error);
+    next(error);
+  }
+};
+
+// @desc    Serve public report as PDF
+// @route   GET /api/reports/public/:id/pdf
+// @access  Public
+exports.servePublicReportPdf = async (req, res, next) => {
+  try {
+    const reportId = req.params.id;
+    // Fetch the full report document, not lean, as prepareReportTemplateData might expect a Mongoose doc or specific methods
+    // However, prepareReportTemplateData seems to work with plain objects for report.results.
+    // Let's try with lean first and adjust if needed.
+    const reportDocument = await Report.findById(reportId).lean(); // Using .lean() for performance
+
+    if (!reportDocument) {
+      return res.status(404).json({ success: false, message: 'Report not found' });
+    }
+
+    // Fetch Lab details
+    const labObject = await Lab.findById(reportDocument.lab).lean();
+    if (!labObject) {
+      // This case should ideally not happen if data integrity is maintained
+      return res.status(404).json({ success: false, message: 'Lab associated with the report not found' });
+    }
+
+    // Fetch LabReportSettings
+    const labReportSettings = await LabReportSettings.findOne({ lab: reportDocument.lab }).lean();
+    // labReportSettings can be null if not configured, prepareReportTemplateData should handle this
+
+    // Prepare data for the template using the imported function
+    // For public reports, we'll assume showHeader and showFooter are true
+    const templateData = await prepareReportTemplateData(reportDocument, labObject, labReportSettings, req, true, true);
+
+    // Read the correct HTML template (now report.html)
+    const reportTemplatePath = path.join(__dirname, '..', 'report.html'); // Changed to report.html
+    const templateSource = await fs.readFile(reportTemplatePath, 'utf8');
+
+    // Compile the template
+    const compiledHtmlTemplate = Handlebars.compile(templateSource);
+
+    // Generate the HTML
+    const finalHtml = compiledHtmlTemplate(templateData);
+    console.log(`[servePublicReportPdf] Using report.html template for public PDF generation for report ${reportId}`); // Changed log
+
+    // Define PDF options consistent with generatePdfReport
+    const pdfOptions = {
+      format: 'A4',
+      printBackground: true,
+      margin: {
+        top: '40mm',
+        right: '10mm',
+        bottom: '10mm',
+        left: '10mm'
+      },
+      preferCSSPageSize: true,
+      displayHeaderFooter: false, // pdf-report.html handles its own header/footer
+      scale: 1,
+      landscape: false
+    };
+
+    // Generate PDF using the utility
+    const pdfBuffer = await generatePdfFromHtml(finalHtml, pdfOptions);
+    
+    // --- DEBUG: Save buffer to file (optional) ---
+    // const tempPdfPath = path.join(__dirname, `../../debug_public_pdf_${reportId}.pdf`);
+    // await fs.writeFile(tempPdfPath, pdfBuffer);
+    // console.log(`[servePublicReportPdf] DEBUG: PDF buffer saved to ${tempPdfPath}`);
+    // --- END DEBUG ---
+
+    // Send PDF
+    console.log(`[servePublicReportPdf] Sending dynamic PDF buffer of size: ${pdfBuffer?.length} bytes for report ${reportId}`);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="report-${reportDocument._id}.pdf"`);
+    res.end(pdfBuffer);
+
+  } catch (error) {
+    console.error('Error serving public report PDF:', error);
     next(error);
   }
 };
@@ -318,15 +402,33 @@ exports.getReport = async (req, res, next) => {
         });
       }
     }
-    // --- End Populate Test Template Names ---
+    // --- End Populate Test Template Names --- (This block will be replaced by prepareReportTemplateData)
 
-    console.log('[getReport] Sending reportObject:', JSON.stringify(reportObject, null, 2)); // Log the object being sent
+    // Fetch Lab details for prepareReportTemplateData
+    const labObject = await Lab.findById(report.lab).lean();
+    if (!labObject) {
+      return res.status(404).json({ success: false, message: 'Lab associated with the report not found for data preparation' });
+    }
+
+    // Fetch LabReportSettings for prepareReportTemplateData
+    const labReportSettings = await LabReportSettings.findOne({ lab: report.lab }).lean();
+
+    // Use prepareReportTemplateData to get the fully processed data object
+    // For this context (fetching a report for viewing/editing), showHeader/showFooter are typically true.
+    const preparedData = await prepareReportTemplateData(reportObject, labObject, labReportSettings, req, true, true);
+    
+    // The publicReportUrl and qrCodeDataUrl are now part of preparedData, so no need to add them separately here.
+    // If reportObject was modified by prepareReportTemplateData (e.g. if it wasn't a deep clone), 
+    // it's safer to send preparedData or merge specific fields if needed.
+    // For simplicity, assuming prepareReportTemplateData returns all necessary fields.
+
+    console.log('[getReport] Sending preparedData:', JSON.stringify(preparedData, null, 2));
     res.status(200).json({
       success: true,
-      data: reportObject
+      data: preparedData 
     });
   } catch (error) {
-    console.error('[getReport] Error occurred:', error); // Log the specific error
+    console.error('[getReport] Error occurred:', error);
     next(error);
   }
 };
