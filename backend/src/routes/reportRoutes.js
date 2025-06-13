@@ -6,7 +6,8 @@ const {
   getReports,
   getReport,
   updateReport,
-  deleteReport
+  deleteReport,
+  servePublicReportPdf
 } = require('../controllers/reportCrudController'); // Import CRUD functions
 const {
   verifyReport,
@@ -18,7 +19,10 @@ const {
   testTemplate
 } = require('../controllers/reportGenerationController'); // Import generation functions
 
-// All routes require authentication
+// Public route for PDF - This should be defined BEFORE router.use(protect)
+router.get('/public/:id/pdf', servePublicReportPdf);
+
+// All subsequent routes require authentication
 router.use(protect);
 
 // Routes for both Admin and Technician

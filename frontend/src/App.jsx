@@ -18,6 +18,7 @@ import EditDoctor from './pages/doctors/EditDoctor';
 import { Suspense, lazy } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import { ToastContainer } from 'react-toastify';
 
 // Layout Components
 const DashboardLayout = lazy(() => import('./components/layouts/DashboardLayout'));
@@ -27,6 +28,12 @@ const AuthLayout = lazy(() => import('./components/layouts/AuthLayout'));
 const Login = lazy(() => import('./pages/auth/ImprovedLogin'));
 const ForgotPassword = lazy(() => import('./pages/auth/ForgotPasswordWrapper'));
 const ResetPassword = lazy(() => import('./pages/auth/ResetPasswordWrapper'));
+
+// Pricing Page
+const PricingPage = lazy(() => import('./pages/PricingPage'));
+
+// Landing Page
+const LandingPage = lazy(() => import('./pages/LandingPage'));
 
 import ComingSoon from './pages/ComingSoon';
 import UserIntelligence from './pages/UserIntelligence';
@@ -44,11 +51,15 @@ const ViewReport = lazy(() => import('./pages/reports/ViewReport'));
 const EditReport = lazy(() => import('./pages/reports/EditReport'));
 const PrintReport = lazy(() => import('./pages/reports/PrintReport'));
 
- // Test Template Pages
+// Test Template Pages
 const TestTemplateList = lazy(() => import('./pages/templates/TestTemplateList'));
 const CreateTestTemplate = lazy(() => import('./pages/templates/CreateTestTemplate'));
 const ViewTestTemplate = lazy(() => import('./pages/templates/ViewTestTemplate'));
 const EditTestTemplate = lazy(() => import('./pages/templates/EditTestTemplate'));
+
+// New Template Manager Pages
+import TemplateManagerDashboard from './pages/templates/TemplateManagerDashboard'; // Direct import for debugging
+const EditTemplate = lazy(() => import('./pages/templates/EditTemplate')); // Keep EditTemplate lazy for now
 
 // Patient Pages
 const PatientList = lazy(() => import('./pages/patients/PatientList'));
@@ -76,6 +87,18 @@ function App() {
     <Router>
       <AuthProvider>
         <Suspense fallback={<LoadingSpinner />}>
+          <ToastContainer
+            position="top-right"
+            autoClose={5000}
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="colored"
+          />
           <Routes>
             {/* Public Routes */}
             <Route element={<AuthLayout />}>
@@ -83,6 +106,12 @@ function App() {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password/:token" element={<ResetPassword />} />
             </Route>
+
+            {/* Public Pricing Page Route */}
+            <Route path="/pricing" element={<PricingPage />} />
+
+            {/* Public Landing Page Route */}
+            <Route path="/" element={<LandingPage />} />
             
             {/* Dashboard Routes */}
             <Route element={
@@ -109,6 +138,14 @@ function App() {
             </Route>
 
             {/* Lab Management Routes */}
+            {/* Lab Management Routes */}
+            {/* Temporarily moving /template-manager outside DashboardLayout but keeping ProtectedRoute */}
+            <Route path="/template-manager" element={
+              <ProtectedRoute allowedRoles={['super-admin']}>
+                <TemplateManagerDashboard />
+              </ProtectedRoute>
+            } />
+
             <Route element={
               <ProtectedRoute allowedRoles={['super-admin']}>
                 <DashboardLayout />
@@ -129,6 +166,14 @@ function App() {
               <Route path="/user-intelligence" element={
                 <ProtectedRoute allowedRoles={['super-admin']}>
                   <UserIntelligence />
+                </ProtectedRoute>
+              } />
+
+              {/* New Template Manager Routes (Super Admin only) - Edit route still here */}
+              {/* <Route path="/template-manager" element={<TemplateManagerDashboard />} /> MOVED FOR DEBUGGING */}
+              <Route path="/template-manager/edit/:id" element={
+                <ProtectedRoute allowedRoles={['super-admin']}> 
+                  <EditTemplate />
                 </ProtectedRoute>
               } />
             </Route>
@@ -154,9 +199,6 @@ function App() {
                 <DashboardLayout />
               </ProtectedRoute>
             }>
-              {/* Dashboard Routes - Redirect to role-specific dashboard */}
-              <Route path="/" element={<Dashboard />} />
-              
               {/* Report Routes */}
               <Route path="/reports" element={<Reports />} />
               <Route path="/reports/create" element={<CreateReport />} />

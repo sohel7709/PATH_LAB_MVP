@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const handlebars = require('handlebars');
 const puppeteer = require('puppeteer'); // Needed for PDF generation
+const qrcode = require('qrcode'); // Re-adding for QR code generation
 
 // Register a helper for debugging (can be useful in templates)
 handlebars.registerHelper('debug', function(optionalValue) {
@@ -21,10 +22,13 @@ handlebars.registerHelper('debug', function(optionalValue) {
 });
 
 // Helper function to prepare report data for templating (HTML & PDF)
-const prepareReportTemplateData = async (report, lab, labReportSettings, req, showHeader, showFooter) => {
+exports.prepareReportTemplateData = async (report, lab, labReportSettings, req, showHeader, showFooter) => {
     // --- Group results by templateId ---
     const groupedResults = [];
-    const templateIds = [...new Set(report.results.map(r => r.templateId).filter(id => id))]; // Get unique template IDs
+    const rawTemplateIds = report.results.map(r => r.templateId?.toString()).filter(id => id);
+    console.log('[prepareReportTemplateData] Raw Template IDs from report.results:', rawTemplateIds);
+    const templateIds = [...new Set(rawTemplateIds)]; // Get unique template IDs
+    console.log('[prepareReportTemplateData] Unique Template IDs to process:', templateIds);
 
     // List of tests for which to hide table heading and reference cell (case-insensitive)
     const testsToHideTableHeadingAndReference = [
@@ -43,12 +47,15 @@ const prepareReportTemplateData = async (report, lab, labReportSettings, req, sh
     if (templateIds.length > 0) {
       const templates = await TestTemplate.find({ '_id': { $in: templateIds } }).select('templateName name'); // Only select name fields
       const templateMap = templates.reduce((map, t) => {
-        map[t._id.toString()] = t.templateName || t.name;
+        map[t._id.toString()] = { id: t._id.toString(), name: t.templateName || t.name };
         return map;
       }, {});
+      console.log('[prepareReportTemplateData] Template Map (ID -> Name):', JSON.stringify(templateMap, null, 2));
 
       for (const templateId of templateIds) {
-        const templateName = templateMap[templateId.toString()] || 'Unknown Test';
+        const templateInfo = templateMap[templateId.toString()];
+        const templateName = templateInfo ? templateInfo.name : 'Unknown Test';
+        console.log(`[prepareReportTemplateData] Processing group for templateId: ${templateId}, resolved templateName: ${templateName}`);
 
         const parameters = report.results
           .filter(r => r.templateId && r.templateId.toString() === templateId.toString())
@@ -108,7 +115,13 @@ const prepareReportTemplateData = async (report, lab, labReportSettings, req, sh
             }
           }
           // --- End Get template-specific notes ---
-          groupedResults.push({ templateName, parameters, templateSpecificNotes: notesForThisTemplate });
+          const shouldHideThisGroupColumns = testsToHideTableHeadingAndReference.includes(templateName.toLowerCase());
+          groupedResults.push({ 
+            templateName, 
+            parameters, 
+            templateSpecificNotes: notesForThisTemplate,
+            shouldHideThisGroupColumns: shouldHideThisGroupColumns // Add per-group flag
+          });
         }
       }
     } else {
@@ -129,9 +142,23 @@ const prepareReportTemplateData = async (report, lab, labReportSettings, req, sh
        }
     }
     // --- End grouping logic ---
+    console.log('[prepareReportTemplateData] Final groupedResults:', JSON.stringify(groupedResults.map(g => ({ templateName: g.templateName, numParams: g.parameters.length })), null, 2));
 
     // Get the server's base URL for image paths
     const baseUrl = `${req.protocol}://${req.get('host')}`;
+
+    // Re-add QR Code generation
+    const publicReportUrl = `${baseUrl}/api/reports/public/${report._id}/pdf`;
+    let qrCodeDataUrl = '';
+    try {
+      qrCodeDataUrl = await qrcode.toDataURL(publicReportUrl, { 
+        errorCorrectionLevel: 'H',
+        margin: 1, 
+        width: 80 
+      });
+    } catch (qrErr) {
+      console.error('[prepareReportTemplateData] Error generating QR code:', qrErr);
+    }
 
     // Check if header and footer settings exist and should be shown
     const hasHeaderSettings = labReportSettings &&
@@ -143,14 +170,14 @@ const prepareReportTemplateData = async (report, lab, labReportSettings, req, sh
                              (labReportSettings.footer.signature ||
                               labReportSettings.footer.footerImage);
 
-    // Determine if any of the groupedResults templateName matches testsToHideTableHeadingAndReference
-    console.log('Grouped Results Template Names:', groupedResults.map(g => g.templateName));
-    const hideTableHeadingAndReference = groupedResults.some(group => {
-      const match = testsToHideTableHeadingAndReference.includes(group.templateName.toLowerCase());
-      console.log(`Checking templateName "${group.templateName}" against hide list: ${match}`);
-      return match;
-    });
-    console.log('hideTableHeadingAndReference flag:', hideTableHeadingAndReference);
+    // Determine if any of the groupedResults templateName matches testsToHideTableHeadingAndReference (This global flag is no longer primary for conditional rendering in template)
+    // console.log('Grouped Results Template Names:', groupedResults.map(g => g.templateName));
+    // const hideTableHeadingAndReferenceGlobal = groupedResults.some(group => {
+    //   const match = testsToHideTableHeadingAndReference.includes(group.templateName.toLowerCase());
+    //   console.log(`Checking templateName "${group.templateName}" against hide list: ${match}`);
+    //   return match;
+    // });
+    // console.log('Global hideTableHeadingAndReference flag (for reference, not direct template use):', hideTableHeadingAndReferenceGlobal);
 
     // Prepare data for the template
     const data = {
@@ -217,8 +244,12 @@ const prepareReportTemplateData = async (report, lab, labReportSettings, req, sh
         fontSize: labReportSettings?.styling?.fontSize || 12
       },
 
-      // New flag to hide table heading and reference cell
-      hideTableHeadingAndReference: hideTableHeadingAndReference
+      // Global hideTableHeadingAndReference removed, as per-group flag is now used by template
+      // hideTableHeadingAndReference: hideTableHeadingAndReferenceGlobal, 
+
+      // Re-add QR Code data
+      qrCodeDataUrl: qrCodeDataUrl,
+      publicReportUrl: publicReportUrl
     };
     return data;
 };
@@ -258,12 +289,12 @@ exports.generateHtmlReport = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Lab not found' });
     }
 
-    // Read the HTML template (changed from black-only-report.html to pdf-report.html)
-    const reportTemplatePath = path.join(__dirname, '..', 'pdf-report.html');
+    // Read the HTML template, now using report.html
+    const reportTemplatePath = path.join(__dirname, '..', 'report.html');
     let templateSource;
     try {
       templateSource = fs.readFileSync(reportTemplatePath, 'utf8');
-      console.log('pdf-report.html template loaded successfully for HTML view');
+      console.log('report.html template loaded successfully for HTML view');
     } catch (err) {
       console.error('Error reading template file:', err);
       return res.status(500).json({ success: false, message: 'Error reading report template' });
@@ -286,7 +317,11 @@ exports.generateHtmlReport = async (req, res, next) => {
     const html = template(data);
 
     // Log the data being passed to the template for debugging
-    console.log('HTML Template data:', JSON.stringify(data, null, 2));
+    console.log('[generateHtmlReport] Data passed to Handlebars template:', JSON.stringify(data, null, 2));
+    console.log('[generateHtmlReport] Generated HTML for preview (first 500 chars):', html.substring(0, 500));
+    if (html.length === 0) {
+      console.error('[generateHtmlReport] CRITICAL: Handlebars rendered an empty HTML string!');
+    }
 
     // Send the HTML as the response
     res.setHeader('Content-Type', 'text/html');
@@ -335,9 +370,9 @@ exports.generatePdfReport = async (req, res, next) => {
     // Prepare data using the helper function
     const data = await prepareReportTemplateData(report, lab, labReportSettings, req, showHeader, showFooter);
 
-    // Read the template specifically designed for PDF generation (changed from black-only-report.html to pdf-report.html)
-    const pdfTemplatePath = path.join(__dirname, '..', 'pdf-report.html');
-    const templateSource = fs.readFileSync(pdfTemplatePath, 'utf8');
+    // Read the template, now using report.html
+    const reportTemplatePath = path.join(__dirname, '..', 'report.html'); // Changed to report.html
+    const templateSource = fs.readFileSync(reportTemplatePath, 'utf8');
 
     // Compile the template
     const template = handlebars.compile(templateSource);
@@ -347,7 +382,7 @@ exports.generatePdfReport = async (req, res, next) => {
 
     // Generate the HTML
     const html = template(data);
-    console.log('Using pdf-report.html template for PDF generation');
+    console.log('Using report.html template for PDF generation'); // Changed log message
 
     // Launch a headless browser with additional configuration
     browser = await puppeteer.launch({

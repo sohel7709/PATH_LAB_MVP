@@ -16,7 +16,7 @@
             width: 210mm;
             margin: 0;
             font-family: Arial, sans-serif;
-            font-size: 11px;
+            font-size: 12px; /* Changed from 11px */
             line-height: 1.3;
             color: #000000; /* All text in black */
         }
@@ -27,6 +27,8 @@
             position: fixed;
             left: 0;
             background: transparent;
+            border: 1px solid black; /* Added border */
+            box-sizing: border-box; /* Added box-sizing */
         }
 
         .header-space {
@@ -53,17 +55,37 @@
         .details-container {
             display: flex;
             justify-content: space-between;
-            flex-wrap: wrap;
-            margin-bottom: 8px;
+            align-items: flex-start; /* Align items to the top */
+            flex-wrap: nowrap; /* Prevent wrapping for three columns */
+            margin-bottom: 10px; /* Increased margin */
         }
 
-        .left-details, .right-details {
-            width: 48%;
+        .patient-info-col {
+            width: 40%; /* Adjusted for 3 columns */
+        }
+        .qr-code-col { /* Styles re-added */
+            width: 20%; 
+            text-align: center;
+        }
+        .qr-code-col img { /* Styles re-added */
+            width: 70px; 
+            height: 70px;
+            display: block;
+            margin: 0 auto;
+        }
+        .report-info-col {
+            width: 40%; /* Adjusted for 3 columns */
+            text-align: left; 
         }
 
-        .left-details p, .right-details p {
+        .patient-info-col p, .report-info-col p {
             margin: 2px 0;
+            font-size: 12px; /* Changed from 10px */
         }
+        .patient-info-col p strong, .report-info-col p strong {
+            font-weight: bold;
+        }
+
 
         /* Report title */
         h2.report-title {
@@ -86,7 +108,11 @@
 
         .test-header {
             display: flex;
-            font-weight: bold; /* Make header text bold */
+            font-weight: bold; 
+        }
+        .test-header > div {
+            text-align: center; /* Center text in header cells */
+            font-weight: bold; /* Ensure header text is bold */
         }
 
         .test-row {
@@ -96,31 +122,23 @@
         /* Styling for all "cells" */
         .test-header > div,
         .test-row > div {
-            padding: 4px; /* Add some padding inside cells */
-            box-sizing: border-box !important; /* Ensure consistent box model */
-            /* Each cell defines its own right and bottom border */
+            padding: 5px; /* Increased padding */
+            box-sizing: border-box !important; 
             border-right: 1px solid #000000 !important;
             border-bottom: 1px solid #000000 !important;
         }
         
         /* Specific widths for cells */
-        .test-name, .test-header-name {
-            width: 25%;
-            font-weight: bold;
-        }
+        .test-header-name, .test-name { width: 35%; font-weight: bold; } /* PARAMETER column wider */
+        .test-header-result, .test-result { width: 15%; text-align: center; } /* RESULT centered */
+        .test-header-unit, .test-unit { width: 15%; text-align: center; }    /* UNIT centered */
+        .test-header-range, .test-range { width: 35%; }                      /* REFERENCE RANGE wider */
 
-        .test-result, .test-header-result {
-            width: 25%;
-            text-align: left; /* Default alignment */
+        .test-row > .test-name { /* Specifically target test names in rows, not headers */
+            font-weight: normal;
         }
-
-        .test-unit, .test-header-unit {
-            width: 20%;
-        }
-
-        .test-range, .test-header-range {
-            width: 30%;
-        }
+        /* The subheader .test-name elements have inline font-weight: bold, which should suffice.
+           The rule .test-row > .test-name[style*="font-weight: bold"] was removed. */
 
         /* Center text for result cells in tests that hide columns */
         .test-result.center-result, .test-header-result.center-result {
@@ -142,18 +160,13 @@
         }
 
         /* Signature section */
-        .signature {
+        .computer-generated-note {
             margin-top: 50px;
-            text-align: right;
+            text-align: center; /* Center the new note */
+            font-size: 10px;   /* Smaller font size for the note */
+            font-style: italic;
         }
-
-        .signature-line {
-            display: inline-block;
-            width: 150px;
-            border-top: 1px solid black;
-            margin-top: 30px;
-            text-align: center;
-        }
+        /* .signature and .signature-line styles removed/kept if needed for other things, but effectively replaced */
     </style>
 </head>
 <body>
@@ -167,19 +180,24 @@
     <div class="print-area">
         <!-- Patient Info -->
         <div class="details-container">
-            <div class="left-details">
+            <div class="patient-info-col">
                 <p><strong>Patient Name:</strong> {{patientName}}</p>
-                <p><strong>Age/Gender:</strong> {{patientAge}} Years / {{patientGender}}</p>
+                <p><strong>Age/Gender:</strong> {{patientAge}} / {{patientGender}}</p> <!-- Assuming patientAge includes "Years" already or adjust if not -->
                 <p><strong>Patient ID:</strong> {{patientId}}</p>
             </div>
-            <div class="right-details">
-                <p><strong>Sample Collection:</strong> {{sampleCollectionDate}}</p>
-                <p><strong>Sample Type:</strong> {{sampleType}}</p>
-                <p><strong>Referring Doctor:</strong> {{referringDoctor}}</p>
+            <div class="qr-code-col">
+                {{#if qrCodeDataUrl}}
+                <img src="{{qrCodeDataUrl}}" alt="QR Code for Report"> <!-- Simplified alt text -->
+                {{/if}}
+            </div>
+            <div class="report-info-col">
+                <p><strong>Report Date:</strong> {{reportDate}}</p> <!-- Changed from sampleCollectionDate -->
+                <p><strong>Sample Type:</strong> {{sampleType}}</p> <!-- This was in target, but not in right col -->
+                <p><strong>Ref. Doctor:</strong> {{referringDoctor}}</p>
             </div>
         </div>
 
-        <hr>
+        <hr style="margin-top: 5px; margin-bottom: 10px;"> <!-- Adjusted hr margin -->
 
         <!-- Report Title -->
         <!-- Report Title - This might need to be part of the loop if each group has its own title -->
@@ -192,36 +210,33 @@
 
             <!-- Test Results - using divs instead of table -->
             <div class="test-results">
-                {{#unless this.shouldHideColumns}} {{!-- Hide header row if this group should hide columns --}}
+                {{#unless hideTableHeadingAndReference}} <!-- Use the flag from data context -->
                 <div class="test-header">
-                    <div class="test-header-name">Test</div>
-                    <div class="test-header-result">Result</div>
-                    <div class="test-header-unit">Unit</div>
-                    <div class="test-header-range">Reference Range</div>
+                    <div class="test-header-name">PARAMETER</div> <!-- Changed to PARAMETER -->
+                    <div class="test-header-result">RESULT</div>
+                    <div class="test-header-unit">UNIT</div>
+                    <div class="test-header-range">REFERENCE RANGE</div>
                 </div>
                 {{/unless}}
                 
                 {{#each this.parameters}}
                 {{#if this.isHeader}}
-                <div class="test-row" style="margin-top: 5px;">
-                    <div class="test-name" style="font-weight: bold; text-transform: uppercase;">{{this.name}}</div>
-                    <div class="test-result"></div>
-                    {{#unless ../shouldHideColumns}} {{!-- Hide Unit cell for header row if parent group hides columns --}}
+                <div class="test-row subheader-row" style="margin-top: 2px; margin-bottom: 2px;"> <!-- Added class for potential specific styling -->
+                    <div class="test-name" style="font-weight: bold; text-transform: none; text-align: left;">{{this.name}}</div> <!-- No uppercase, left align -->
+                    <div class="test-result"></div> <!-- Empty cells for subheader -->
                     <div class="test-unit"></div>
-                    {{/unless}}
-                    {{#unless ../shouldHideColumns}} {{!-- Hide Reference Range cell for header row if parent group hides columns --}}
                     <div class="test-range"></div>
-                    {{/unless}}
                 </div>
                 {{else}}
                 <div class="test-row {{#if this.isSubparameter}}subparameter-row{{/if}}">
-                    <div class="test-name" style="{{#if this.isSubparameter}}padding-left: 15px;{{/if}}">{{this.name}}</div>
-                    <div class="test-result {{#if this.isAbnormal}}abnormal{{/if}} {{#if ../shouldHideColumns}}center-result{{/if}}">{{this.result}}</div> {{!-- Add conditional class --}}
-                    {{#unless ../shouldHideColumns}} {{!-- Hide Unit cell if parent group hides columns --}}
-                    <div class="test-unit">{{this.unit}}</div>
-                    {{/unless}}
-                    {{#unless ../shouldHideColumns}} {{!-- Hide Reference Range cell if parent group hides columns --}}
-                    <div class="test-range">{{this.referenceRange}}</div>
+                    <div class="test-name" style="{{#if this.isSubparameter}}padding-left: 20px;{{else}}padding-left: 5px;{{/if}}">{{this.name}}</div> <!-- Indent subparameters, normal padding otherwise -->
+                    <div class="test-result {{#if this.isAbnormal}}abnormal{{/if}}">{{this.result}}</div>
+                    {{#unless ../hideTableHeadingAndReference}} <!-- Use the flag from parent group context -->
+                        <div class="test-unit">{{this.unit}}</div>
+                        <div class="test-range">{{this.referenceRange}}</div>
+                    {{else}} <!-- If hiding columns, these cells might need to be omitted or styled to be invisible -->
+                        <div class="test-unit" style="visibility: hidden;"></div>
+                        <div class="test-range" style="visibility: hidden;"></div>
                     {{/unless}}
                 </div>
                 {{/if}}
@@ -230,7 +245,7 @@
 
             {{#if this.templateSpecificNotes}}
             <div style="margin-top: 8px; padding-top: 5px; border-top: 0.5px solid #eee;">
-                <p style="font-size: 10px; white-space: pre-wrap;"><em>{{this.templateSpecificNotes}}</em></p>
+                <p style="font-size: 12px; white-space: pre-wrap;"><em>{{this.templateSpecificNotes}}</em></p> <!-- Changed from 10px -->
             </div>
             {{/if}}
         </div>
@@ -239,16 +254,13 @@
         {{#if testNotes}}
         <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid black;">
             <h4 style="font-size: 12px; font-weight: bold; margin-bottom: 5px;">General Notes:</h4>
-            <p style="font-size: 11px; white-space: pre-wrap;">{{testNotes}}</p>
+            <p style="font-size: 12px; white-space: pre-wrap;">{{testNotes}}</p> <!-- Changed from 11px -->
         </div>
         {{/if}}
 
-        <!-- Signature Section -->
-        <div class="signature">
-            <div class="signature-line">
-                Dr. Consultant<br>
-                Consultant Pathologist
-            </div>
+        <!-- Signature Section Replaced -->
+        <div class="computer-generated-note">
+            <p>Signature is not required this is computer generated pdf report.</p>
         </div>
     </div>
 </body>

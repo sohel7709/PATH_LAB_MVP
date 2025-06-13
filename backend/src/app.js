@@ -26,6 +26,7 @@ const planRoutes = require('./routes/planRoutes'); // Import plan routes
 const settingsRoutes = require('./routes/settingsRoutes'); // Import settings routes
 const superAdminRoutes = require('./routes/superAdminRoutes'); // Import super admin routes
 const revenueRoutes = require('./routes/revenueRoutes'); // Import revenue routes
+const templateRoutes = require('./routes/templateRoutes'); // Import template routes
 // const groupTestTemplateRoutes = require('./routes/groupTestTemplateRoutes');
 
 const app = express();
@@ -107,6 +108,11 @@ app.use(limiter);
 
 // Add security headers
 app.use((req, res, next) => {
+  // Conditionally skip for public PDF route
+  if (req.path.startsWith('/api/reports/public/') && req.path.endsWith('/pdf')) {
+    console.log('[DEBUG] Skipping custom security headers for public PDF path:', req.path);
+    return next();
+  }
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-XSS-Protection', '1; mode=block');
@@ -131,6 +137,7 @@ app.use('/api/plans', planRoutes); // Mount plan routes
 app.use('/api/settings', settingsRoutes); // Mount settings routes
 app.use('/api/superadmin', superAdminRoutes); // Mount super admin routes
 app.use('/api/revenue', revenueRoutes); // Mount revenue routes
+app.use('/api/templates', templateRoutes); // Mount template routes
 // app.use('/api/group-test-templates', groupTestTemplateRoutes);
 
 // Health check endpoint

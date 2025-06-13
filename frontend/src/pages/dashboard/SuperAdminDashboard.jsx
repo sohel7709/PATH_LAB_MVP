@@ -320,21 +320,14 @@ const SuperAdminDashboard = () => {
             
             {/* Test Templates */}
             <div className="bg-indigo-50 rounded-lg p-4 shadow-sm">
-              <h4 className="text-indigo-800 font-medium mb-3">Test Templates</h4>
+              <h4 className="text-indigo-800 font-medium mb-3">Template Management</h4>
               <div className="space-y-2">
                 <Link
-                  to="/templates/create"
+                  to="/template-manager" // Updated link
                   className="inline-flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                 >
-                  <PlusCircleIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-                  Create Template
-                </Link>
-                <Link
-                  to="/templates"
-                  className="inline-flex w-full items-center justify-center rounded-md border border-indigo-300 bg-white px-4 py-2 text-sm font-medium text-indigo-700 shadow-sm hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                >
-                  <EyeIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-                  View Templates
+                  <CogIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+                  Manage Report Layout Templates
                 </Link>
               </div>
             </div>

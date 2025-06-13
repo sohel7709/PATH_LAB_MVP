@@ -1,0 +1,130 @@
+/* Print-friendly styles for reports */
+
+/* Base styles */
+body {
+    font-family: Arial, sans-serif;
+    font-size: 12px;
+    line-height: 1.4;
+    color: #000000 !important; /* Force black text */
+    margin: 0;
+    padding: 0;
+}
+
+/* Remove all colors */
+* {
+    color: #000000 !important;
+    background-color: transparent !important;
+    /* border-color: #000000 !important; */ /* Removed to avoid conflicts with specific border styles */
+}
+
+/* Patient info section */
+.details-container {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+.left-details, .right-details {
+    width: 48%;
+}
+
+.left-details p, .right-details p {
+    margin: 3px 0;
+}
+
+/* Report title */
+h2.report-title {
+    text-align: center;
+    margin: 10px 0;
+    text-transform: uppercase;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+/* Test results - table version (for backward compatibility) */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+table th, table td {
+    text-align: left;
+    padding: 4px;
+    border: 1px solid #000000; /* Apply solid black border */
+}
+
+/* Test results - div version */
+.test-results {
+    margin-top: 15px;
+    width: 100%;
+}
+
+.test-header, .test-row {
+    display: flex;
+    margin-bottom: 5px;
+}
+
+.test-name, .test-header-name {
+    width: 25%;
+    font-weight: bold;
+}
+
+.test-result, .test-header-result {
+    width: 25%;
+}
+
+.test-unit, .test-header-unit {
+    width: 20%;
+}
+
+.test-range, .test-header-range {
+    width: 30%;
+}
+
+/* Highlight abnormal values with underline only */
+.abnormal {
+    font-weight: bold !important;
+    text-decoration: underline !important;
+}
+
+/* Horizontal line */
+hr {
+    border: none;
+    border-top: 1px solid black;
+    margin: 5px 0;
+}
+
+/* Signature section */
+.signature {
+    margin-top: 50px;
+    text-align: right;
+}
+
+.signature-line {
+    display: inline-block;
+    width: 150px;
+    border-top: 1px solid black;
+    margin-top: 30px;
+    text-align: center;
+}
+
+/* Print-specific styles */
+@media print {
+    body {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+    }
+    
+    table th, table td {
+        /* Removed border: none !important; to allow general border style */
+    }
+    
+    .abnormal {
+        color: #000000 !important;
+        font-weight: bold !important;
+        text-decoration: underline !important;
+    }
+}
