@@ -15,8 +15,10 @@ export default function PrintReport() {
   const reportRef = useRef(null); // Ref for the container div (keep if needed for other purposes)
 
   // Use the custom hooks
-  const { reportHtml, isLoadingReportHtml, reportHtmlError } = useReportGenerator(report);
-  const { printPdf: originalPrintPdf, downloadPdf, isPrinting, isDownloading } = useReportPdf(report, reportHtml); // Pass the stateful reportHtml
+  // REMOVED hideTableHeadingAndReference variable definition
+  // console.log('PrintReport.jsx - hideTableHeadingAndReference:', hideTableHeadingAndReference); // REMOVED log
+  const reportHtml = useReportGenerator(report); // REMOVED flag from hook call
+  const { printPdf: originalPrintPdf, downloadPdf, isPrinting, isDownloading } = useReportPdf(report, reportHtml); // Get PDF functions and states
 
   const printPdf = async () => {
     try {
@@ -174,28 +176,10 @@ export default function PrintReport() {
            margin: '0 auto' 
            // overflow: 'hidden' // REMOVED: This can interfere with fixed positioning inside
          }}
-         // Render the generated HTML string for preview, with loading/error states
+         // Render the generated HTML string for preview
+        dangerouslySetInnerHTML={{ __html: reportHtml }} 
       >
-        {isLoadingReportHtml && (
-          <div className="flex justify-center items-center" style={{height: '297mm'}}>
-            <p>Loading print preview...</p>
-            {/* You can add a spinner component here */}
-          </div>
-        )}
-        {reportHtmlError && (
-          <div className="flex justify-center items-center p-4 text-red-700 bg-red-100 border border-red-400 rounded" style={{height: '297mm'}}>
-            <ExclamationCircleIcon className="h-5 w-5 text-red-400 mr-2" aria-hidden="true" />
-            <p>Error loading print preview: {reportHtmlError}</p>
-          </div>
-        )}
-        {!isLoadingReportHtml && !reportHtmlError && reportHtml && (
-          <div dangerouslySetInnerHTML={{ __html: reportHtml }} />
-        )}
-        {!isLoadingReportHtml && !reportHtmlError && !reportHtml && (
-          <div className="flex justify-center items-center" style={{height: '297mm'}}>
-            <p>Report preview is not available. The generated HTML content is empty.</p>
-          </div>
-        )}
+        {/* Removed inline style tag and ReportTemplate component */}
       </div>
     </div>
   ); // End of main return statement
