@@ -41,13 +41,6 @@ const userSchema = new mongoose.Schema({
       return this.role !== 'super-admin';
     }
   },
-  activeSessions: [{
-    sessionId: { type: String, unique: true, required: true },
-    userAgent: String,
-    ipAddress: String,
-    loggedInAt: { type: Date, default: Date.now },
-    lastAccessedAt: { type: Date, default: Date.now }
-  }],
   createdAt: {
     type: Date,
     default: Date.now
@@ -66,21 +59,17 @@ userSchema.pre('save', async function(next) {
 });
 
 // Sign JWT and return
-userSchema.methods.getSignedJwtToken = function(jti) { // Accept jti as an argument
-  const payload = { 
-    id: this._id,
-    name: this.name, // Add name to JWT payload
-    role: this.role,
-    lab: this.lab
-  };
-  if (jti) {
-    payload.jti = jti; // Add jti to payload if provided
-  }
+userSchema.methods.getSignedJwtToken = function() {
   return jwt.sign(
-    payload,
+    { 
+      id: this._id,
+      name: this.name, // Add name to JWT payload
+      role: this.role,
+      lab: this.lab 
+    },
     process.env.JWT_SECRET,
     {
-      expiresIn: process.env.JWT_EXPIRE // Ensure JWT_EXPIRE is set to '24h' in .env
+      expiresIn: process.env.JWT_EXPIRE
     }
   );
 };

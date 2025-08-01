@@ -72,7 +72,7 @@ function classNames(...classes) {
   return classes.filter(Boolean).join(' ');
 }
 
-export default function DashboardLayout({ children }) { // Accept children prop
+export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(true); // Collapsed by default
   const [labName, setLabName] = useState('PathLab');
@@ -358,7 +358,7 @@ export default function DashboardLayout({ children }) { // Accept children prop
 
         <main className="py-10">
           <div className="px-4 sm:px-6 lg:px-8">
-            {children || <Outlet />} {/* Render children if provided, else Outlet */}
+            <Outlet />
           </div>
         </main>
       </div>
