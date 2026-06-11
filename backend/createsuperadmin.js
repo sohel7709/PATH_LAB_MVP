@@ -29,7 +29,7 @@ mongoose.connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true 
       email: 'technician_new@example.com',
       password: 'Technician@2025!',
       role: 'technician',
-      lab: null // Assign a lab ID if needed
+      lab: null // Assign a lab ID if need
     };
 
     // Create super admin user first
