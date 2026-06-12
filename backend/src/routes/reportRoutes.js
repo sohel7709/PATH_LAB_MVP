@@ -15,8 +15,11 @@ const {
 const {
   generateHtmlReport,
   generatePdfReport,
-  testTemplate
-} = require('../controllers/reportGenerationController'); // Import generation functions
+  testTemplate,
+  getPublicReportData
+} = require('../controllers/reportGenerationController');
+
+router.get('/public-data/:id', getPublicReportData);
 
 // All routes require authentication
 router.use(protect);

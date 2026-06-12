@@ -257,7 +257,12 @@ export const useReportGenerator = (report) => {
         <div><strong>Age/Gender:</strong> ${currentReport.patientInfo?.age || "N/A"} / ${currentReport.patientInfo?.gender || "N/A"}</div>
         <div><strong>Patient ID:</strong> ${currentReport.patientInfo?.patientId || "N/A"}</div>
       </div>
-      <div style="width: 20mm; height: 20mm; border: 1px dashed #ccc; align-self: center;"></div>
+      <div style="width:20mm;height:20mm;display:flex;align-items:center;justify-content:center;">
+  <img
+    src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=https://labnexus.in/view-report/${currentReport._id}"
+    style="width:20mm;height:20mm;"
+  />
+</div>
       <div style="display: flex; flex-direction: column; gap: 2px;">
         <div><strong>Report Date:</strong> ${new Date(currentReport.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</div>
         <div><strong>Ref. Doctor:</strong> ${currentReport.testInfo?.referenceDoctor || "N/A"}</div>
@@ -325,8 +330,12 @@ export const useReportGenerator = (report) => {
       <div><strong>Patient ID:</strong> ${currentReport.patientInfo?.patientId || "N/A"}</div>
     </div>
 
-    <div style="width:20mm;height:20mm;border:1px dashed #ccc;"></div>
-
+<div style="width:20mm;height:20mm;display:flex;align-items:center;justify-content:center;">
+  <img
+    src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=https://labnexus.in/view-report/${currentReport._id}"
+    style="width:20mm;height:20mm;"
+  />
+</div>
     <div style="display:flex;flex-direction:column;gap:2px;">
       <div><strong>Report Date:</strong> ${new Date(currentReport.createdAt).toLocaleDateString("en-GB")}</div>
       <div><strong>Ref. Doctor:</strong> ${currentReport.testInfo?.referenceDoctor || "N/A"}</div>
