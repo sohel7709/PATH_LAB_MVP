@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 
 // Custom hook to generate the report HTML structure
 // REMOVED hideTableHeadingAndReference parameter
-export const useReportGenerator = (report) => {
+export const useReportGenerator = (report, reportSettings = null) => {
   const [reportHtml, setReportHtml] = useState("");
 
   // Function to check if a value is outside the reference range
@@ -215,6 +215,222 @@ export const useReportGenerator = (report) => {
     };
   };
 
+  const createPatientInfoSection = (currentReport) => {
+    const patientInfoDiv = document.createElement("div");
+
+    patientInfoDiv.style.display = "grid";
+    patientInfoDiv.style.gridTemplateColumns = "1fr auto 1fr";
+    patientInfoDiv.style.columnGap = "5mm";
+    patientInfoDiv.style.padding = "5px 0";
+    patientInfoDiv.style.borderTop = "2px solid black";
+    patientInfoDiv.style.borderBottom = "2px solid black";
+    patientInfoDiv.style.marginBottom = "5mm";
+    
+
+    patientInfoDiv.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:2px;">
+      <div>
+        <strong>Patient Name:</strong>
+        ${currentReport.patientInfo?.designation || ""}
+        ${currentReport.patientInfo?.name || "N/A"}
+      </div>
+
+      <div>
+        <strong>Age/Gender:</strong>
+        ${currentReport.patientInfo?.age || "N/A"}
+        /
+        ${currentReport.patientInfo?.gender || "N/A"}
+      </div>
+
+      <div>
+        <strong>Patient ID:</strong>
+        ${currentReport.patientInfo?.patientId || "N/A"}
+      </div>
+    </div>
+
+    <div style="
+      width:20mm;
+      height:20mm;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    ">
+      <img
+        src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=https://labnexus.in/view-report/${currentReport._id}"
+        style="width:20mm;height:20mm;"
+      />
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:2px;">
+      <div>
+        <strong>Report Date:</strong>
+        ${new Date(currentReport.createdAt).toLocaleDateString("en-GB")}
+      </div>
+
+      <div>
+        <strong>Ref. Doctor:</strong>
+        ${currentReport.testInfo?.referenceDoctor || "N/A"}
+      </div>
+    </div>
+  `;
+
+    return patientInfoDiv;
+  };
+
+  const createHeader = (headerSettings) => {
+    const wrapper = document.createElement("div");
+
+    if (headerSettings.headerMode === "image" && headerSettings.headerImage) {
+      const headerImg = document.createElement("img");
+
+      headerImg.src = headerSettings.headerImage;
+
+      headerImg.style.width = "100%";
+      headerImg.style.marginBottom = "5mm";
+
+      wrapper.appendChild(headerImg);
+    } else if (headerSettings.headerMode !== "none") {
+      const customHeader = document.createElement("div");
+
+      customHeader.style.marginBottom = "10mm";
+      customHeader.style.borderBottom = "2px solid #000";
+      customHeader.style.paddingBottom = "5mm";
+
+      customHeader.innerHTML = `
+      <div style="
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+      ">
+
+        <div>
+
+          <div style="
+            font-size:28px;
+            font-weight:bold;
+            color:#2563eb;
+          ">
+            ${headerSettings.labName || ""}
+          </div>
+
+          <div style="
+            font-size:16px;
+            font-weight:bold;
+          ">
+            ${headerSettings.address || ""}
+          </div>
+
+          <div>
+            ${headerSettings.phone || ""}
+          </div>
+
+          <div>
+            ${headerSettings.email || ""}
+          </div>
+
+        </div>
+
+        <div style="text-align:right">
+
+          <div style="
+            font-size:18px;
+            font-weight:bold;
+          ">
+            ${headerSettings.doctorName || ""}
+          </div>
+
+          <div>
+            ${headerSettings.registrationNo || ""}
+          </div>
+
+          <div>
+            ${headerSettings.technicianName || ""}
+          </div>
+
+          <div>
+            ${headerSettings.website || ""}
+          </div>
+
+        </div>
+
+      </div>
+    `;
+
+      wrapper.appendChild(customHeader);
+    }
+
+    return wrapper;
+  };
+
+  const createFooter = (footerSettings) => {
+    const wrapper = document.createElement("div");
+
+    if (footerSettings.footerMode === "image" && footerSettings.footerImage) {
+      const footerImg = document.createElement("img");
+
+      footerImg.src = footerSettings.footerImage;
+
+      footerImg.style.width = "100%";
+      footerImg.style.marginTop = "10mm";
+
+      wrapper.appendChild(footerImg);
+    } else if (footerSettings.footerMode !== "none") {
+      const footerDiv = document.createElement("div");
+
+      footerDiv.style.marginTop = "25mm";
+      footerDiv.style.borderTop = "1px solid #000";
+      footerDiv.style.paddingTop = "5mm";
+
+      footerDiv.innerHTML = `
+      <div style="
+        display:flex;
+        justify-content:space-between;
+        align-items:flex-end;
+      ">
+
+        <div style="
+          font-size:9pt;
+          max-width:70%;
+        ">
+          These are not diagnostic results.
+          Strictly for medical use only.
+        </div>
+
+        <div style="text-align:center">
+
+          ${
+            footerSettings.signature
+              ? `
+                <img
+                  src="${footerSettings.signature}"
+                  style="
+                    max-width:120px;
+                    max-height:60px;
+                  "
+                />
+              `
+              : ""
+          }
+
+          <div style="font-weight:bold;">
+            ${footerSettings.verifiedBy || ""}
+          </div>
+
+          <div>
+            ${footerSettings.designation || ""}
+          </div>
+
+        </div>
+
+      </div>
+    `;
+
+      wrapper.appendChild(footerDiv);
+    }
+
+    return wrapper;
+  };
+
   // Helper function to build the HTML structure
   // REMOVED hideTableHeadingAndReference parameter
   const buildPrintHtmlStructure = (
@@ -232,6 +448,39 @@ export const useReportGenerator = (report) => {
     if (!currentReport) return null;
 
     const printContainer = document.createElement("div");
+
+    printContainer.style.position = "relative";
+
+    // if (
+    //   reportSettings?.watermark?.enabled &&
+    //   reportSettings?.watermark?.image
+    // ) {
+    //   const watermark = document.createElement("img");
+
+    //   watermark.src = reportSettings.watermark.image;
+
+    //   watermark.style.position = "absolute";
+
+    //   watermark.style.top = "50%";
+
+    //   watermark.style.left = "50%";
+
+    //   watermark.style.transform = "translate(-50%, -50%)";
+
+    //   watermark.style.width = "120mm";
+
+    //   watermark.style.opacity = "0.08";
+
+    //   watermark.style.pointerEvents = "none";
+
+    //   watermark.style.zIndex = "0";
+
+    //   printContainer.appendChild(watermark);
+    // }
+
+    const headerSettings = reportSettings?.header || {};
+    const footerSettings = reportSettings?.footer || {};
+
     // Basic container styling (same as before)
     printContainer.style.width = "210mm";
     printContainer.style.minHeight = "297mm";
@@ -241,34 +490,136 @@ export const useReportGenerator = (report) => {
     printContainer.style.backgroundColor = "white";
     printContainer.style.position = "relative";
     printContainer.style.fontSize = "11pt"; // Base font size
+    printContainer.style.marginTop = "-22mm";
+
+
+    // if (
+    //   reportSettings?.watermark?.enabled &&
+    //   reportSettings?.watermark?.image
+    // ) {
+    //   const watermark = document.createElement("img");
+
+    //   watermark.src = reportSettings.watermark.image;
+
+    //   watermark.style.position = "absolute";
+    //   watermark.style.top = "148.5mm";
+    //   watermark.style.left = "105mm";
+    //   watermark.style.transform = "translate(-50%, -50%)";
+
+    //   watermark.style.width = "120mm";
+    //   watermark.style.opacity = "0.08";
+    //   watermark.style.zIndex = "0";
+    //   watermark.style.pointerEvents = "none";
+
+    //   printContainer.appendChild(watermark);
+    // }
+
+    //   if (headerSettings.headerMode === "image" && headerSettings.headerImage) {
+    //     const headerImg = document.createElement("img");
+
+    //     headerImg.src = headerSettings.headerImage;
+
+    //     headerImg.style.width = "100%";
+    //     headerImg.style.marginBottom = "5mm";
+
+    //     printContainer.appendChild(headerImg);
+    //   } else if (headerSettings.headerMode !== "none") {
+    //     const customHeader = document.createElement("div");
+
+    //     customHeader.style.marginBottom = "10mm";
+    //     customHeader.style.borderBottom = "2px solid #000";
+    //     customHeader.style.paddingBottom = "5mm";
+
+    //     customHeader.innerHTML = `
+    //   <div style="
+    //     display:flex;
+    //     justify-content:space-between;
+    //     align-items:center;
+    //   ">
+
+    //     <div>
+
+    //       <div style="
+    //         font-size:28px;
+    //         font-weight:bold;
+    //         color:#2563eb;
+    //       ">
+    //         ${headerSettings.labName || ""}
+    //       </div>
+
+    //       <div style="
+    //         font-size:16px;
+    //         font-weight:bold;
+    //       ">
+    //         ${headerSettings.address || ""}
+    //       </div>
+
+    //       <div>
+    //         ${headerSettings.phone || ""}
+    //       </div>
+
+    //       <div>
+    //         ${headerSettings.email || ""}
+    //       </div>
+
+    //     </div>
+
+    //     <div style="text-align:right">
+
+    //       <div style="
+    //         font-size:18px;
+    //         font-weight:bold;
+    //       ">
+    //         ${headerSettings.doctorName || ""}
+    //       </div>
+
+    //       <div>
+    //         ${headerSettings.registrationNo || ""}
+    //       </div>
+
+    //       <div>
+    //         ${headerSettings.technicianName || ""}
+    //       </div>
+
+    //       <div>
+    //         ${headerSettings.website || ""}
+    //       </div>
+
+    //     </div>
+
+    //   </div>
+    // `;
+
+    //     printContainer.appendChild(customHeader);
+    //   }
 
     // --- Patient Info Header --- (Simplified for clarity)
-    const patientInfoDiv = document.createElement("div");
-    patientInfoDiv.style.display = "grid";
-    patientInfoDiv.style.gridTemplateColumns = "1fr auto 1fr";
-    patientInfoDiv.style.columnGap = "5mm";
-    patientInfoDiv.style.padding = "5px 0";
-    patientInfoDiv.style.borderTop = "2px solid black";
-    patientInfoDiv.style.borderBottom = "2px solid black";
-    patientInfoDiv.style.marginBottom = "5mm";
-    patientInfoDiv.innerHTML = `
-      <div style="display: flex; flex-direction: column; gap: 2px;">
-        <div><strong>Patient Name:</strong> ${currentReport.patientInfo?.designation || ""} ${currentReport.patientInfo?.name || "N/A"}</div>
-        <div><strong>Age/Gender:</strong> ${currentReport.patientInfo?.age || "N/A"} / ${currentReport.patientInfo?.gender || "N/A"}</div>
-        <div><strong>Patient ID:</strong> ${currentReport.patientInfo?.patientId || "N/A"}</div>
-      </div>
-      <div style="width:20mm;height:20mm;display:flex;align-items:center;justify-content:center;">
-  <img
-    src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=https://labnexus.in/view-report/${currentReport._id}"
-    style="width:20mm;height:20mm;"
-  />
-</div>
-      <div style="display: flex; flex-direction: column; gap: 2px;">
-        <div><strong>Report Date:</strong> ${new Date(currentReport.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</div>
-        <div><strong>Ref. Doctor:</strong> ${currentReport.testInfo?.referenceDoctor || "N/A"}</div>
-      </div>
-    `;
-    printContainer.appendChild(patientInfoDiv);
+    //     const patientInfoDiv = document.createElement("div");
+    //     patientInfoDiv.style.display = "grid";
+    //     patientInfoDiv.style.gridTemplateColumns = "1fr auto 1fr";
+    //     patientInfoDiv.style.columnGap = "5mm";
+    //     patientInfoDiv.style.padding = "5px 0";
+    //     patientInfoDiv.style.borderTop = "2px solid black";
+    //     patientInfoDiv.style.borderBottom = "2px solid black";
+    //     patientInfoDiv.style.marginBottom = "5mm";
+    //     patientInfoDiv.innerHTML = `
+    //       <div style="display: flex; flex-direction: column; gap: 2px;">
+    //         <div><strong>Patient Name:</strong> ${currentReport.patientInfo?.designation || ""} ${currentReport.patientInfo?.name || "N/A"}</div>
+    //         <div><strong>Age/Gender:</strong> ${currentReport.patientInfo?.age || "N/A"} / ${currentReport.patientInfo?.gender || "N/A"}</div>
+    //         <div><strong>Patient ID:</strong> ${currentReport.patientInfo?.patientId || "N/A"}</div>
+    //       </div>
+    //       <div style="width:20mm;height:20mm;display:flex;align-items:center;justify-content:center;">
+    //   <img
+    //     src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=https://labnexus.in/view-report/${currentReport._id}"
+    //     style="width:20mm;height:20mm;"
+    //   />
+    // </div>
+    //       <div style="display: flex; flex-direction: column; gap: 2px;">
+    //         <div><strong>Report Date:</strong> ${new Date(currentReport.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</div>
+    //         <div><strong>Ref. Doctor:</strong> ${currentReport.testInfo?.referenceDoctor || "N/A"}</div>
+    //       </div>
+    //     `;
+    //     printContainer.appendChild(patientInfoDiv);
 
     // List of template names (lowercase) that should hide the HEADER, UNIT, and REFERENCE columns
     const templatesToHideHeaderAndColumns = [
@@ -294,6 +645,52 @@ export const useReportGenerator = (report) => {
     // --- Test Results Section ---
     if (groupedResults && groupedResults.length > 0) {
       groupedResults.forEach((group, index) => {
+        const pageDiv = document.createElement("div");
+        
+        pageDiv.style.width = "100%";
+        pageDiv.style.minHeight = "auto";
+
+        pageDiv.style.position = "relative";
+
+        pageDiv.style.background = "white";
+        pageDiv.style.overflow = "hidden";
+        pageDiv.style.padding = "5mm 10mm";
+        pageDiv.style.boxSizing = "border-box";
+
+        if (index < groupedResults.length - 1) {
+          pageDiv.style.pageBreakAfter = "always";
+        }
+
+        if (
+          reportSettings?.watermark?.enabled &&
+          reportSettings?.watermark?.image
+        ) {
+          const watermark = document.createElement("img");
+
+          watermark.src = reportSettings.watermark.image;
+
+          watermark.style.position = "absolute";
+
+          watermark.style.top = "50%";
+
+          watermark.style.left = "50%";
+
+          watermark.style.transform = "translate(-50%, -50%)";
+
+          watermark.style.width = "120mm";
+
+          watermark.style.opacity = "0.08";
+
+          watermark.style.pointerEvents = "none";
+
+          watermark.style.zIndex = "0";
+
+          pageDiv.appendChild(watermark);
+        }
+
+        pageDiv.appendChild(createHeader(headerSettings));
+
+        pageDiv.appendChild(createPatientInfoSection(report));
         // Determine formatting flags for THIS group
         const lowerCaseTemplateName = (group.templateName || "").toLowerCase();
         const isWidalTest = lowerCaseTemplateName.includes("widal test");
@@ -309,41 +706,41 @@ export const useReportGenerator = (report) => {
         const shouldHideOnlyReference = isThreeColumnTest;
 
         const testGroupDiv = document.createElement("div");
-        testGroupDiv.style.pageBreakInside = "avoid";
+        // testGroupDiv.style.pageBreakInside = "avoid";
         testGroupDiv.style.marginBottom = "10mm";
 
-        if (index > 0) {
-          const repeatedHeader = document.createElement("div");
+        //         if (index > 0) {
+        //           const repeatedHeader = document.createElement("div");
 
-          repeatedHeader.style.display = "grid";
-          repeatedHeader.style.gridTemplateColumns = "1fr auto 1fr";
-          repeatedHeader.style.columnGap = "5mm";
-          repeatedHeader.style.padding = "5px 0";
-          repeatedHeader.style.borderTop = "2px solid black";
-          repeatedHeader.style.borderBottom = "2px solid black";
-          repeatedHeader.style.marginBottom = "5mm";
+        //           repeatedHeader.style.display = "grid";
+        //           repeatedHeader.style.gridTemplateColumns = "1fr auto 1fr";
+        //           repeatedHeader.style.columnGap = "5mm";
+        //           repeatedHeader.style.padding = "5px 0";
+        //           repeatedHeader.style.borderTop = "2px solid black";
+        //           repeatedHeader.style.borderBottom = "2px solid black";
+        //           repeatedHeader.style.marginBottom = "5mm";
 
-          repeatedHeader.innerHTML = `
-    <div style="display:flex;flex-direction:column;gap:2px;">
-      <div><strong>Patient Name:</strong> ${currentReport.patientInfo?.designation || ""} ${currentReport.patientInfo?.name || "N/A"}</div>
-      <div><strong>Age/Gender:</strong> ${currentReport.patientInfo?.age || "N/A"} / ${currentReport.patientInfo?.gender || "N/A"}</div>
-      <div><strong>Patient ID:</strong> ${currentReport.patientInfo?.patientId || "N/A"}</div>
-    </div>
+        //           repeatedHeader.innerHTML = `
+        //     <div style="display:flex;flex-direction:column;gap:2px;">
+        //       <div><strong>Patient Name:</strong> ${currentReport.patientInfo?.designation || ""} ${currentReport.patientInfo?.name || "N/A"}</div>
+        //       <div><strong>Age/Gender:</strong> ${currentReport.patientInfo?.age || "N/A"} / ${currentReport.patientInfo?.gender || "N/A"}</div>
+        //       <div><strong>Patient ID:</strong> ${currentReport.patientInfo?.patientId || "N/A"}</div>
+        //     </div>
 
-<div style="width:20mm;height:20mm;display:flex;align-items:center;justify-content:center;">
-  <img
-    src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=https://labnexus.in/view-report/${currentReport._id}"
-    style="width:20mm;height:20mm;"
-  />
-</div>
-    <div style="display:flex;flex-direction:column;gap:2px;">
-      <div><strong>Report Date:</strong> ${new Date(currentReport.createdAt).toLocaleDateString("en-GB")}</div>
-      <div><strong>Ref. Doctor:</strong> ${currentReport.testInfo?.referenceDoctor || "N/A"}</div>
-    </div>
-  `;
+        // <div style="width:20mm;height:20mm;display:flex;align-items:center;justify-content:center;">
+        //   <img
+        //     src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=https://labnexus.in/view-report/${currentReport._id}"
+        //     style="width:20mm;height:20mm;"
+        //   />
+        // </div>
+        //     <div style="display:flex;flex-direction:column;gap:2px;">
+        //       <div><strong>Report Date:</strong> ${new Date(currentReport.createdAt).toLocaleDateString("en-GB")}</div>
+        //       <div><strong>Ref. Doctor:</strong> ${currentReport.testInfo?.referenceDoctor || "N/A"}</div>
+        //     </div>
+        //   `;
 
-          testGroupDiv.appendChild(repeatedHeader);
-        }
+        //           testGroupDiv.appendChild(repeatedHeader);
+        //         }
 
         // Template Name Header
         const groupHeading = document.createElement("h3");
@@ -613,7 +1010,11 @@ export const useReportGenerator = (report) => {
         }
         // --- End Template-Specific Notes ---
 
-        printContainer.appendChild(testGroupDiv); // Append the whole group div
+        pageDiv.appendChild(testGroupDiv);
+
+        pageDiv.appendChild(createFooter(footerSettings));
+
+        printContainer.appendChild(pageDiv);
       }); // End of groupedResults.forEach loop
 
       // Add GENERAL test notes AFTER all template groups
@@ -633,6 +1034,69 @@ export const useReportGenerator = (report) => {
       noResults.style.marginTop = "20px";
       printContainer.appendChild(noResults);
     }
+
+    //   if (footerSettings.footerMode === "image" && footerSettings.footerImage) {
+    //     const footerImg = document.createElement("img");
+
+    //     footerImg.src = footerSettings.footerImage;
+
+    //     footerImg.style.width = "100%";
+    //     footerImg.style.marginTop = "10mm";
+
+    //     printContainer.appendChild(footerImg);
+    //   } else if (footerSettings.footerMode !== "none") {
+    //     const footerDiv = document.createElement("div");
+
+    //     footerDiv.style.marginTop = "25mm";
+    //     footerDiv.style.borderTop = "1px solid #000";
+    //     footerDiv.style.paddingTop = "5mm";
+
+    //     footerDiv.innerHTML = `
+    //   <div style="
+    //     display:flex;
+    //     justify-content:space-between;
+    //     align-items:flex-end;
+    //   ">
+
+    //     <div style="
+    //       font-size:9pt;
+    //       max-width:70%;
+    //     ">
+    //       These are not diagnostic results.
+    //       Strictly for medical use only.
+    //     </div>
+
+    //     <div style="text-align:center">
+
+    //       ${
+    //         footerSettings.signature
+    //           ? `
+    //           <img
+    //             src="${footerSettings.signature}"
+    //             style="
+    //               max-width:120px;
+    //               max-height:60px;
+    //             "
+    //           />
+    //         `
+    //           : ""
+    //       }
+
+    //       <div style="font-weight:bold;">
+    //         ${footerSettings.verifiedBy || ""}
+    //       </div>
+
+    //       <div>
+    //         ${footerSettings.designation || ""}
+    //       </div>
+
+    //     </div>
+
+    //   </div>
+    // `;
+
+    //     printContainer.appendChild(footerDiv);
+    //   }
 
     return printContainer;
   };
@@ -669,7 +1133,7 @@ export const useReportGenerator = (report) => {
     } else {
       setReportHtml("");
     }
-  }, [report]); // REMOVED hideTableHeadingAndReference from dependency array
+  }, [report, reportSettings]); // REMOVED hideTableHeadingAndReference from dependency array
 
   return reportHtml; // Return the generated HTML string
 };

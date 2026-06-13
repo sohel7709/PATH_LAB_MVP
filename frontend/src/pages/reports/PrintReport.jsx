@@ -1,31 +1,43 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { ExclamationCircleIcon, PrinterIcon, ArrowDownTrayIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
-import { reports as apiReports } from '../../utils/api'; // Removed labReportSettings import
-import { useReportGenerator } from '../../hooks/useReportGenerator'; // Import the generator hook
-import { useReportPdf } from '../../hooks/useReportPdf'; // Import the PDF hook
+import React, { useState, useEffect, useRef } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import "../../styles/report.css";
+import {
+  ExclamationCircleIcon,
+  PrinterIcon,
+  ArrowDownTrayIcon,
+  PencilSquareIcon,
+} from "@heroicons/react/24/outline";
+import { reports as apiReports, labReportSettings } from "../../utils/api";
+import { useReportGenerator } from "../../hooks/useReportGenerator"; // Import the generator hook
+import { useReportPdf } from "../../hooks/useReportPdf"; // Import the PDF hook
 
 export default function PrintReport() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [report, setReport] = useState(null);
+  const [reportSettings, setReportSettings] = useState(null);
   // const [labSettings, setLabSettings] = useState(null); // No longer needed directly here
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const reportRef = useRef(null); // Ref for the container div (keep if needed for other purposes)
 
   // Use the custom hooks
   // REMOVED hideTableHeadingAndReference variable definition
   // console.log('PrintReport.jsx - hideTableHeadingAndReference:', hideTableHeadingAndReference); // REMOVED log
-  const reportHtml = useReportGenerator(report); // REMOVED flag from hook call
-  const { printPdf: originalPrintPdf, downloadPdf, isPrinting, isDownloading } = useReportPdf(report, reportHtml); // Get PDF functions and states
+  const reportHtml = useReportGenerator(report, reportSettings); // REMOVED flag from hook call
+  const {
+    printPdf: originalPrintPdf,
+    downloadPdf,
+    isPrinting,
+    isDownloading,
+  } = useReportPdf(report, reportHtml); // Get PDF functions and states
 
   const printPdf = async () => {
     try {
-      await apiReports.update(id, { status: 'completed' });
-      console.log('Report status updated to completed');
+      await apiReports.update(id, { status: "completed" });
+      console.log("Report status updated to completed");
     } catch (error) {
-      console.error('Error updating report status:', error);
+      console.error("Error updating report status:", error);
     }
     originalPrintPdf();
   };
@@ -34,13 +46,16 @@ export default function PrintReport() {
   const fetchReportData = async () => {
     try {
       setIsLoading(true);
-      setError(''); // Clear previous errors
+      setError(""); // Clear previous errors
 
       // Fetch the report data
       const reportResponse = await apiReports.getById(id);
       console.log("PrintReport - Raw API response:", reportResponse); // DEBUG LOG 1
       const reportData = reportResponse.data || reportResponse;
-      console.log("PrintReport - Extracted reportData:", JSON.stringify(reportData, null, 2)); // DEBUG LOG 2
+      console.log(
+        "PrintReport - Extracted reportData:",
+        JSON.stringify(reportData, null, 2),
+      ); // DEBUG LOG 2
 
       // Fetch the lab settings - STILL NEEDED for useReportGenerator implicitly via report object
       // const labId = reportData.lab; // Assuming reportData contains lab ID
@@ -56,11 +71,28 @@ export default function PrintReport() {
       // }
 
       setReport(reportData);
-      // setLabSettings(settingsData); // No longer needed here
 
+      const labId = reportData.lab?._id || reportData.lab;
+
+      if (labId) {
+        try {
+          const settingsResponse = await labReportSettings.getSettings(labId);
+
+          const settingsData = settingsResponse.data || settingsResponse;
+
+          console.log("Report Settings:", settingsData);
+
+          setReportSettings(settingsData);
+          console.log("HEADER SETTINGS:", settingsData?.header);
+
+          console.log("FOOTER SETTINGS:", settingsData?.footer);
+        } catch (err) {
+          console.error("Error loading report settings:", err);
+        }
+      } // setLabSettings(settingsData); // No longer needed here
     } catch (err) {
-      console.error('Error fetching report:', err); // Updated error message
-      setError(err.message || 'Failed to load report');
+      console.error("Error fetching report:", err); // Updated error message
+      setError(err.message || "Failed to load report");
     } finally {
       setIsLoading(false);
     }
@@ -77,7 +109,6 @@ export default function PrintReport() {
   // REMOVED: useEffect for generating reportHtml (handled by useReportGenerator hook)
   // REMOVED: handlePrint function (moved to useReportPdf hook)
   // REMOVED: handleDownload function (moved to useReportPdf hook)
-
 
   // Render loading state
   if (isLoading) {
@@ -99,7 +130,10 @@ export default function PrintReport() {
       <div className="rounded-md bg-red-50 p-4">
         <div className="flex">
           <div className="flex-shrink-0">
-            <ExclamationCircleIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
+            <ExclamationCircleIcon
+              className="h-5 w-5 text-red-400"
+              aria-hidden="true"
+            />
           </div>
           <div className="ml-3">
             <h3 className="text-sm font-medium text-red-800">{error}</h3>
@@ -111,7 +145,7 @@ export default function PrintReport() {
 
   // Render message if report state is still null after loading
   if (!report) {
-     return <div>Loading report data...</div>;
+    return <div>Loading report data...</div>;
   }
 
   // Main component return statement
@@ -137,47 +171,49 @@ export default function PrintReport() {
             type="button"
             onClick={downloadPdf} // Use function from hook
             disabled={isDownloading}
-            className={`btn-secondary mr-3 flex flex-col items-center ${isDownloading ? 'opacity-75 cursor-not-allowed' : ''}`}
+            className={`btn-secondary mr-3 flex flex-col items-center ${isDownloading ? "opacity-75 cursor-not-allowed" : ""}`}
           >
             <ArrowDownTrayIcon className="h-5 w-5" aria-hidden="true" />
-            {isDownloading ? 'Downloading...' : 'Download PDF'}
+            {isDownloading ? "Downloading..." : "Download PDF"}
           </button>
           <button
             type="button"
             onClick={printPdf} // Use function from hook
             disabled={isPrinting}
-            className={`btn-primary flex flex-col items-center ${isPrinting ? 'opacity-75 cursor-not-allowed' : ''}`}
+            className={`btn-primary flex flex-col items-center ${isPrinting ? "opacity-75 cursor-not-allowed" : ""}`}
           >
             <PrinterIcon className="h-5 w-5" aria-hidden="true" />
-            {isPrinting ? 'Printing...' : 'Print'}
+            {isPrinting ? "Printing..." : "Print"}
           </button>
         </div>
       </div>
 
       {/* Report Options - Hidden when printing */}
       <div className="mt-4 bg-white p-4 rounded-lg shadow-sm print:hidden">
-        <h3 className="text-lg font-medium text-gray-900 mb-3">Report Options</h3>
+        <h3 className="text-lg font-medium text-gray-900 mb-3">
+          Report Options
+        </h3>
         <div className="flex flex-wrap gap-6">
-           {/* Removed Show Header/Footer/Signature options as layout is now fixed */}
-           <div className="text-sm text-gray-500 italic">
-             Print preview below uses the fixed report layout.
-           </div>
+          {/* Removed Show Header/Footer/Signature options as layout is now fixed */}
+          <div className="text-sm text-gray-500 italic">
+            Print preview below uses the fixed report layout.
+          </div>
         </div>
       </div>
 
       {/* Printable Report Preview Area */}
       <div
         ref={reportRef} // Keep ref on the outer container if needed elsewhere
-        className="mt-8 bg-white shadow-sm print:shadow-none print:mt-0" 
+        className="mt-8 bg-white shadow-sm print:shadow-none print:mt-0"
         // Apply A4 dimensions and centering for preview
-        style={{ 
-           width: '210mm', 
-           minHeight: '297mm', // Use minHeight for preview
-           margin: '0 auto' 
-           // overflow: 'hidden' // REMOVED: This can interfere with fixed positioning inside
-         }}
-         // Render the generated HTML string for preview
-        dangerouslySetInnerHTML={{ __html: reportHtml }} 
+        style={{
+          width: "210mm",
+          minHeight: "297mm", // Use minHeight for preview
+          margin: "0 auto",
+          // overflow: 'hidden' // REMOVED: This can interfere with fixed positioning inside
+        }}
+        // Render the generated HTML string for preview
+        dangerouslySetInnerHTML={{ __html: reportHtml }}
       >
         {/* Removed inline style tag and ReportTemplate component */}
       </div>

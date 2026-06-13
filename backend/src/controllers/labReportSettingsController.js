@@ -1,13 +1,13 @@
-const LabReportSettings = require('../models/LabReportSettings');
-const Lab = require('../models/Lab');
-const asyncHandler = require('express-async-handler');
-const fs = require('fs');
-const path = require('path');
-const sharp = require('sharp');
+const LabReportSettings = require("../models/LabReportSettings");
+const Lab = require("../models/Lab");
+const asyncHandler = require("express-async-handler");
+const fs = require("fs");
+const path = require("path");
+const sharp = require("sharp");
 
 // Create uploads directory if it doesn't exist
-const uploadsDir = path.join(__dirname, '../../uploads');
-const reportImagesDir = path.join(uploadsDir, 'report-images');
+const uploadsDir = path.join(__dirname, "../../uploads");
+const reportImagesDir = path.join(uploadsDir, "report-images");
 
 // Ensure directories exist
 if (!fs.existsSync(uploadsDir)) {
@@ -28,34 +28,34 @@ exports.getLabReportSettings = asyncHandler(async (req, res) => {
   if (!lab) {
     return res.status(404).json({
       success: false,
-      message: 'Lab not found'
+      message: "Lab not found",
     });
   }
 
   // Find settings or create default
   let settings = await LabReportSettings.findOne({ lab: labId });
-  
+
   if (!settings) {
     // Create default settings
     settings = await LabReportSettings.create({
       lab: labId,
       header: {
-        labName: lab.name || 'Pathology Lab',
-        doctorName: 'Dr. Consultant',
-        address: lab.address || 'Lab Address',
-        phone: lab.phone || '',
-        email: lab.email || ''
+        labName: lab.name || "Pathology Lab",
+        doctorName: "Dr. Consultant",
+        address: lab.address || "Lab Address",
+        phone: lab.phone || "",
+        email: lab.email || "",
       },
       footer: {
-        verifiedBy: 'Dr. Consultant',
-        designation: 'Consultant Pathologist'
-      }
+        verifiedBy: "Dr. Consultant",
+        designation: "Consultant Pathologist",
+      },
     });
   }
 
   res.status(200).json({
     success: true,
-    data: settings
+    data: settings,
   });
 });
 
@@ -71,31 +71,68 @@ exports.updateLabReportSettings = asyncHandler(async (req, res) => {
     if (!lab) {
       return res.status(404).json({
         success: false,
-        message: 'Lab not found'
+        message: "Lab not found",
       });
     }
 
     // Find settings or create default
     let settings = await LabReportSettings.findOne({ lab: labId });
-    
+
     if (!settings) {
       // Create with provided data
       settings = await LabReportSettings.create({
         lab: labId,
-        ...req.body
+        ...req.body,
       });
     } else {
       // Update only the fields that are provided in the request
       if (req.body.header) {
+        if (req.body.header.headerMode !== undefined) {
+          settings.header.headerMode = req.body.header.headerMode;
+        }
+
+        if (req.body.header.labName !== undefined) {
+          settings.header.labName = req.body.header.labName;
+        }
+
+        if (req.body.header.doctorName !== undefined) {
+          settings.header.doctorName = req.body.header.doctorName;
+        }
+
+        if (req.body.header.registrationNo !== undefined) {
+          settings.header.registrationNo = req.body.header.registrationNo;
+        }
+
+        if (req.body.header.technicianName !== undefined) {
+          settings.header.technicianName = req.body.header.technicianName;
+        }
+
+        if (req.body.header.address !== undefined) {
+          settings.header.address = req.body.header.address;
+        }
+
+        if (req.body.header.phone !== undefined) {
+          settings.header.phone = req.body.header.phone;
+        }
+
+        if (req.body.header.email !== undefined) {
+          settings.header.email = req.body.header.email;
+        }
+
         if (req.body.header.headerImage !== undefined) {
           settings.header.headerImage = req.body.header.headerImage;
         }
+
         if (req.body.header.headerImageType !== undefined) {
           settings.header.headerImageType = req.body.header.headerImageType;
         }
       }
-      
+
       if (req.body.footer) {
+        if (req.body.footer.footerMode !== undefined) {
+          settings.footer.footerMode = req.body.footer.footerMode;
+        }
+
         if (req.body.footer.verifiedBy !== undefined) {
           settings.footer.verifiedBy = req.body.footer.verifiedBy;
         }
@@ -115,7 +152,15 @@ exports.updateLabReportSettings = asyncHandler(async (req, res) => {
           settings.footer.footerImageType = req.body.footer.footerImageType;
         }
       }
-      
+
+      if (req.body.watermark) {
+        settings.watermark.image = req.body.watermark.image;
+
+        settings.watermark.imageType = req.body.watermark.imageType;
+
+        settings.watermark.enabled = req.body.watermark.enabled;
+      }
+
       if (req.body.styling) {
         if (req.body.styling.primaryColor !== undefined) {
           settings.styling.primaryColor = req.body.styling.primaryColor;
@@ -130,20 +175,20 @@ exports.updateLabReportSettings = asyncHandler(async (req, res) => {
           settings.styling.fontSize = req.body.styling.fontSize;
         }
       }
-      
+
       await settings.save();
     }
 
     res.status(200).json({
       success: true,
-      data: settings
+      data: settings,
     });
   } catch (error) {
-    console.error('Error updating lab report settings:', error);
+    console.error("Error updating lab report settings:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to update lab report settings',
-      error: error.message
+      message: "Failed to update lab report settings",
+      error: error.message,
     });
   }
 });
@@ -152,29 +197,29 @@ exports.updateLabReportSettings = asyncHandler(async (req, res) => {
 const validateImageDimensions = async (buffer, type) => {
   try {
     const metadata = await sharp(buffer).metadata();
-    
-    if (type === 'header') {
+
+    if (type === "header") {
       // Header should be 2480x480 pixels @ 300 DPI
       if (metadata.width !== 2480 || metadata.height !== 480) {
         return {
           valid: false,
-          message: `Header image must be exactly 2480x480 pixels. Uploaded image is ${metadata.width}x${metadata.height} pixels.`
+          message: `Header image must be exactly 2480x480 pixels. Uploaded image is ${metadata.width}x${metadata.height} pixels.`,
         };
       }
-    } else if (type === 'footer') {
+    } else if (type === "footer") {
       // Footer should be 2480x200 pixels @ 300 DPI
       if (metadata.width !== 2480 || metadata.height !== 200) {
         return {
           valid: false,
-          message: `Footer image must be exactly 2480x200 pixels. Uploaded image is ${metadata.width}x${metadata.height} pixels.`
+          message: `Footer image must be exactly 2480x200 pixels. Uploaded image is ${metadata.width}x${metadata.height} pixels.`,
         };
       }
     }
-    
+
     return { valid: true };
   } catch (error) {
-    console.error('Error validating image dimensions:', error);
-    return { valid: false, message: 'Error validating image dimensions' };
+    console.error("Error validating image dimensions:", error);
+    return { valid: false, message: "Error validating image dimensions" };
   }
 };
 
@@ -190,15 +235,15 @@ const saveBase64Image = (base64Data, mimeType, labId, type) => {
 
       // Generate a unique filename
       const timestamp = Date.now();
-      const extension = mimeType === 'image/png' ? 'png' : 'jpg';
+      const extension = mimeType === "image/png" ? "png" : "jpg";
       const filename = `${type}_${timestamp}.${extension}`;
       const filePath = path.join(labDir, filename);
 
       // Convert base64 to buffer
-      const buffer = Buffer.from(base64Data, 'base64');
-      
+      const buffer = Buffer.from(base64Data, "base64");
+
       // Validate image dimensions for header and footer
-      if (type === 'header' || type === 'footer') {
+      if (type === "header" || type === "footer") {
         const validation = await validateImageDimensions(buffer, type);
         if (!validation.valid) {
           reject(new Error(validation.message));
@@ -225,74 +270,84 @@ exports.uploadImage = asyncHandler(async (req, res) => {
   const labId = req.params.labId || req.labId;
   const { type } = req.query; // 'logo', 'header', 'footer', or 'signature'
   const { imageData, mimeType } = req.body; // Base64 encoded image data and MIME type
-  
-  if (!type || !['logo', 'header', 'footer', 'signature'].includes(type)) {
-    return res.status(400).json({
-      success: false,
-      message: 'Please specify a valid image type (logo, header, footer, or signature)'
-    });
+
+  if (!["logo", "header", "footer", "signature", "watermark"].includes(type)) {
+    return next(
+      new ErrorResponse(
+        "Please specify a valid image type (logo, header, footer, signature, or watermark)",
+        400,
+      ),
+    );
   }
-  
+
   if (!imageData) {
     return res.status(400).json({
       success: false,
-      message: 'Image data is required'
+      message: "Image data is required",
     });
   }
-  
-  if (!mimeType || !['image/png', 'image/jpeg', 'image/jpg'].includes(mimeType)) {
+
+  if (
+    !mimeType ||
+    !["image/png", "image/jpeg", "image/jpg"].includes(mimeType)
+  ) {
     return res.status(400).json({
       success: false,
-      message: 'Valid image MIME type is required (image/png, image/jpeg, or image/jpg)'
+      message:
+        "Valid image MIME type is required (image/png, image/jpeg, or image/jpg)",
     });
   }
-  
+
   try {
     // Save the image to the file system
     const imageUrl = await saveBase64Image(imageData, mimeType, labId, type);
-    
+
     // Update the settings with the new image URL and type
     let settings = await LabReportSettings.findOne({ lab: labId });
-    
+
     if (!settings) {
       return res.status(404).json({
         success: false,
-        message: 'Lab report settings not found'
+        message: "Lab report settings not found",
       });
     }
-    
-    if (type === 'logo') {
+
+    if (type === "logo") {
       settings.header.logo = imageUrl;
-    } else if (type === 'header') {
+    } else if (type === "header") {
       settings.header.headerImage = imageUrl;
       settings.header.headerImageType = mimeType;
-    } else if (type === 'footer') {
+    } else if (type === "footer") {
       settings.footer.footerImage = imageUrl;
       settings.footer.footerImageType = mimeType;
-    } else if (type === 'signature') {
+    } else if (type === "signature") {
       settings.footer.signature = imageUrl;
       settings.footer.signatureType = mimeType;
+    } else if (type === "watermark") {
+      settings.watermark.image = imageUrl;
+      settings.watermark.imageType = mimeType;
     }
-    
+
+
     await settings.save();
-    
+
     // For the frontend, we need to return the full URL
-    const fullUrl = `${req.protocol}://${req.get('host')}${imageUrl}`;
-    
+    const fullUrl = `${req.protocol}://${req.get("host")}${imageUrl}`;
+
     res.status(200).json({
       success: true,
       data: {
         url: fullUrl,
         type,
-        mimeType
-      }
+        mimeType,
+      },
     });
   } catch (error) {
-    console.error('Error uploading image:', error);
+    console.error("Error uploading image:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to upload image',
-      error: error.message
+      message: "Failed to upload image",
+      error: error.message,
     });
   }
 });
@@ -302,19 +357,19 @@ exports.uploadImage = asyncHandler(async (req, res) => {
 // @access  Private (Admin, Lab Owner, Technician)
 exports.generatePdfReport = asyncHandler(async (req, res) => {
   const reportId = req.params.reportId;
-  
+
   // This would typically:
   // 1. Fetch the report data
   // 2. Fetch the lab report settings
   // 3. Generate a PDF using a library like pdfmake
   // 4. Return the PDF or a URL to download it
-  
+
   // For now, we'll just return a mock response
   res.status(200).json({
     success: true,
     data: {
       pdfUrl: `https://example.com/reports/${reportId}.pdf`,
-      message: 'PDF report generated successfully'
-    }
+      message: "PDF report generated successfully",
+    },
   });
 });
