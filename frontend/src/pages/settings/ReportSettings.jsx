@@ -1,50 +1,55 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext';
-import { labReportSettings } from '../../utils/api';
-import { 
-  DocumentTextIcon, 
-  ArrowUpTrayIcon, 
-  CheckCircleIcon, 
-  ExclamationCircleIcon 
-} from '@heroicons/react/24/outline';
-import ReportPreview from '../../components/reports/ReportPreview';
+import React, { useState, useEffect } from "react";
+import { useAuth } from "../../context/AuthContext";
+import { labReportSettings } from "../../utils/api";
+import {
+  DocumentTextIcon,
+  ArrowUpTrayIcon,
+  CheckCircleIcon,
+  ExclamationCircleIcon,
+} from "@heroicons/react/24/outline";
+import ReportPreview from "../../components/reports/ReportPreview";
 
 const ReportSettings = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [previewMode, setPreviewMode] = useState(false);
-  
+
   // Form state
   const [settings, setSettings] = useState({
     header: {
-      labName: '',
-      doctorName: '',
-      address: '',
-      phone: '',
-      email: '',
-      logo: '',
-      headerImage: '',
-      headerImageType: ''
+      labName: "",
+      doctorName: "",
+      address: "",
+      phone: "",
+      email: "",
+      logo: "",
+      headerImage: "",
+      headerImageType: "",
     },
     footer: {
-      verifiedBy: '',
-      designation: 'Consultant Pathologist',
-      signature: '',
-      signatureType: '',
-      footerImage: '',
-      footerImageType: ''
+      verifiedBy: "",
+      designation: "Consultant Pathologist",
+      signature: "",
+      signatureType: "",
+      footerImage: "",
+      footerImageType: "",
+    },
+    watermark: {
+      image: "",
+      imageType: "",
+      enabled: true,
     },
     styling: {
-      primaryColor: '#3b82f6',
-      secondaryColor: '#1e40af',
-      fontFamily: 'Arial, sans-serif',
-      fontSize: 12
-    }
+      primaryColor: "#3b82f6",
+      secondaryColor: "#1e40af",
+      fontFamily: "Arial, sans-serif",
+      fontSize: 12,
+    },
   });
-  
+
   // File input references
   const headerInputRef = React.useRef(null);
   const footerInputRef = React.useRef(null);
@@ -55,24 +60,24 @@ const ReportSettings = () => {
     const fetchSettings = async () => {
       try {
         setLoading(true);
-        setError('');
-        
+        setError("");
+
         if (!user || !user.lab) {
-          setError('No lab associated with your account');
+          setError("No lab associated with your account");
           setLoading(false);
           return;
         }
-        
+
         const response = await labReportSettings.getSettings(user.lab);
-        
+
         if (response.success) {
           setSettings(response.data);
         } else {
-          setError('Failed to fetch report settings');
+          setError("Failed to fetch report settings");
         }
       } catch (err) {
-        console.error('Error fetching report settings:', err);
-        setError('Failed to load report settings. Please try again later.');
+        console.error("Error fetching report settings:", err);
+        setError("Failed to load report settings. Please try again later.");
       } finally {
         setLoading(false);
       }
@@ -83,23 +88,23 @@ const ReportSettings = () => {
 
   // Handle form input changes
   const handleChange = (section, field, value) => {
-    setSettings(prev => ({
+    setSettings((prev) => ({
       ...prev,
       [section]: {
         ...prev[section],
-        [field]: value
-      }
+        [field]: value,
+      },
     }));
   };
 
   // Handle color changes
   const handleColorChange = (colorField, value) => {
-    setSettings(prev => ({
+    setSettings((prev) => ({
       ...prev,
       styling: {
         ...prev.styling,
-        [colorField]: value
-      }
+        [colorField]: value,
+      },
     }));
   };
 
@@ -109,51 +114,66 @@ const ReportSettings = () => {
       if (!file) {
         return;
       }
-      
+
       // Validate file type
-      const validTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+      const validTypes = ["image/png", "image/jpeg", "image/jpg"];
       if (!validTypes.includes(file.type)) {
         setError(`Invalid file type. Please upload a PNG or JPG image.`);
         return;
       }
-      
-      setError('');
+
+      setError("");
       setSaving(true);
-      
-      const response = await labReportSettings.uploadImage(user.lab, file, type);
-      
+
+      const response = await labReportSettings.uploadImage(
+        user.lab,
+        file,
+        type,
+      );
+
       if (response.success) {
-        if (type === 'header') {
-          setSettings(prev => ({
+        if (type === "header") {
+          setSettings((prev) => ({
             ...prev,
             header: {
               ...prev.header,
               headerImage: response.data.url,
-              headerImageType: response.data.mimeType
-            }
+              headerImageType: response.data.mimeType,
+            },
           }));
-        } else if (type === 'footer') {
-          setSettings(prev => ({
+        } else if (type === "footer") {
+          setSettings((prev) => ({
             ...prev,
             footer: {
               ...prev.footer,
               footerImage: response.data.url,
-              footerImageType: response.data.mimeType
-            }
+              footerImageType: response.data.mimeType,
+            },
           }));
-        } else if (type === 'signature') {
-          setSettings(prev => ({
+        } else if (type === "signature") {
+          setSettings((prev) => ({
             ...prev,
             footer: {
               ...prev.footer,
               signature: response.data.url,
-              signatureType: response.data.mimeType
-            }
+              signatureType: response.data.mimeType,
+            },
+          }));
+        } else if (type === "watermark") {
+          setSettings((prev) => ({
+            ...prev,
+            watermark: {
+              ...prev.watermark,
+              image: response.data.url,
+              imageType: response.data.mimeType,
+            },
           }));
         }
-        
-        setSuccess(`${type.charAt(0).toUpperCase() + type.slice(1)} uploaded successfully`);
-        setTimeout(() => setSuccess(''), 3000);
+
+        setSuccess(
+          `${type.charAt(0).toUpperCase() + type.slice(1)} uploaded successfully`,
+        );
+        setTimeout(() => setSuccess(""), 3000);
       } else {
         setError(`Failed to upload ${type}`);
       }
@@ -168,45 +188,69 @@ const ReportSettings = () => {
   // Save settings
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     try {
-      setError('');
-      setSuccess('');
+      setError("");
+      setSuccess("");
       setSaving(true);
-      
+
       // Create a simplified version of the settings object to avoid potential issues
       const settingsToSave = {
         header: {
+          headerMode: settings.header.headerMode,
+          labName: settings.header.labName,
+          doctorName: settings.header.doctorName,
+          registrationNo: settings.header.registrationNo,
+          technicianName: settings.header.technicianName,
+          address: settings.header.address,
+          phone: settings.header.phone,
+          email: settings.header.email,
+
           headerImage: settings.header.headerImage,
-          headerImageType: settings.header.headerImageType
+          headerImageType: settings.header.headerImageType,
         },
+
         footer: {
+          footerMode: settings.footer.footerMode,
+
           verifiedBy: settings.footer.verifiedBy,
           designation: settings.footer.designation,
+
           signature: settings.footer.signature,
           signatureType: settings.footer.signatureType,
+
           footerImage: settings.footer.footerImage,
-          footerImageType: settings.footer.footerImageType
+          footerImageType: settings.footer.footerImageType,
         },
+
+        watermark: {
+          image: settings.watermark.image,
+          imageType: settings.watermark.imageType,
+          enabled: settings.watermark.enabled,
+        },
+
         styling: {
           primaryColor: settings.styling.primaryColor,
           secondaryColor: settings.styling.secondaryColor,
           fontFamily: settings.styling.fontFamily,
-          fontSize: settings.styling.fontSize
-        }
+          fontSize: settings.styling.fontSize,
+        },
       };
-      
-      const response = await labReportSettings.updateSettings(user.lab, settingsToSave);
-      
+      console.log("Saving settings:", settingsToSave);
+      const response = await labReportSettings.updateSettings(
+        user.lab,
+        settingsToSave,
+      );
+
       if (response.success) {
-        setSuccess('Report settings saved successfully');
-        setTimeout(() => setSuccess(''), 3000);
+        setSuccess("Report settings saved successfully");
+        setTimeout(() => setSuccess(""), 3000);
       } else {
-        setError('Failed to save report settings');
+        setError("Failed to save report settings");
       }
     } catch (err) {
-      console.error('Error saving report settings:', err);
-      setError('Failed to save report settings. Please try again.');
+      console.error("Error saving report settings:", err);
+      setError("Failed to save report settings. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -243,7 +287,7 @@ const ReportSettings = () => {
             onClick={togglePreview}
             className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
-            {previewMode ? 'Edit Settings' : 'Preview Report'}
+            {previewMode ? "Edit Settings" : "Preview Report"}
           </button>
         </div>
       </div>
@@ -252,7 +296,10 @@ const ReportSettings = () => {
         <div className="rounded-md bg-red-50 p-4">
           <div className="flex">
             <div className="flex-shrink-0">
-              <ExclamationCircleIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
+              <ExclamationCircleIcon
+                className="h-5 w-5 text-red-400"
+                aria-hidden="true"
+              />
             </div>
             <div className="ml-3">
               <h3 className="text-sm font-medium text-red-800">{error}</h3>
@@ -265,7 +312,10 @@ const ReportSettings = () => {
         <div className="rounded-md bg-green-50 p-4">
           <div className="flex">
             <div className="flex-shrink-0">
-              <CheckCircleIcon className="h-5 w-5 text-green-400" aria-hidden="true" />
+              <CheckCircleIcon
+                className="h-5 w-5 text-green-400"
+                aria-hidden="true"
+              />
             </div>
             <div className="ml-3">
               <h3 className="text-sm font-medium text-green-800">{success}</h3>
@@ -281,8 +331,134 @@ const ReportSettings = () => {
           {/* Header Settings */}
           <div className="bg-white shadow overflow-hidden sm:rounded-lg">
             <div className="px-4 py-5 sm:p-6">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">Header Settings</h3>
+              <h3 className="text-lg leading-6 font-medium text-gray-900">
+                Header Settings
+              </h3>
+              <div className="sm:col-span-3">
+                <label className="block text-sm font-medium text-gray-700">
+                  Header Type
+                </label>
+
+                <select
+                  value={settings.header.headerMode || "generated"}
+                  onChange={(e) =>
+                    handleChange("header", "headerMode", e.target.value)
+                  }
+                  className="mt-1 block w-full rounded-md border-gray-300"
+                >
+                  <option value="generated">Generated Header</option>
+
+                  <option value="image">Header Image</option>
+
+                  <option value="none">No Header</option>
+                </select>
+              </div>
               <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+                <div className="sm:col-span-3">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Lab Name
+                  </label>
+
+                  <input
+                    type="text"
+                    value={settings.header.labName || ""}
+                    onChange={(e) =>
+                      handleChange("header", "labName", e.target.value)
+                    }
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                  />
+                </div>
+
+                <div className="sm:col-span-3">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Doctor Name
+                  </label>
+
+                  <input
+                    type="text"
+                    value={settings.header.doctorName || ""}
+                    onChange={(e) =>
+                      handleChange("header", "doctorName", e.target.value)
+                    }
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                  />
+                </div>
+
+                <div className="sm:col-span-3">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Registration Number
+                  </label>
+
+                  <input
+                    type="text"
+                    value={settings.header.registrationNo || ""}
+                    onChange={(e) =>
+                      handleChange("header", "registrationNo", e.target.value)
+                    }
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                  />
+                </div>
+
+                <div className="sm:col-span-3">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Technician Name
+                  </label>
+
+                  <input
+                    type="text"
+                    value={settings.header.technicianName || ""}
+                    onChange={(e) =>
+                      handleChange("header", "technicianName", e.target.value)
+                    }
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                  />
+                </div>
+
+                <div className="sm:col-span-6">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Address
+                  </label>
+
+                  <textarea
+                    rows="2"
+                    value={settings.header.address || ""}
+                    onChange={(e) =>
+                      handleChange("header", "address", e.target.value)
+                    }
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                  />
+                </div>
+
+                <div className="sm:col-span-3">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Phone
+                  </label>
+
+                  <input
+                    type="text"
+                    value={settings.header.phone || ""}
+                    onChange={(e) =>
+                      handleChange("header", "phone", e.target.value)
+                    }
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                  />
+                </div>
+
+                <div className="sm:col-span-3">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Email
+                  </label>
+
+                  <input
+                    type="text"
+                    value={settings.header.email || ""}
+                    onChange={(e) =>
+                      handleChange("header", "email", e.target.value)
+                    }
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                  />
+                </div>
+
                 <div className="sm:col-span-6">
                   <label className="block text-sm font-medium text-gray-700">
                     Header Image
@@ -290,21 +466,30 @@ const ReportSettings = () => {
                   <div className="mt-1 flex items-center">
                     {settings.header.headerImage ? (
                       <div className="relative">
-                        <img 
-                          src={settings.header.headerImage} 
-                          alt="Header Image" 
-                          className="h-16 w-auto object-contain" 
+                        <img
+                          src={settings.header.headerImage}
+                          alt="Header Image"
+                          className="h-16 w-auto object-contain"
                         />
                         <button
                           type="button"
                           onClick={() => {
-                            handleChange('header', 'headerImage', '');
-                            handleChange('header', 'headerImageType', '');
+                            handleChange("header", "headerImage", "");
+                            handleChange("header", "headerImageType", "");
                           }}
                           className="absolute -top-2 -right-2 bg-red-100 rounded-full p-1 text-red-600 hover:bg-red-200"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-4 w-4"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                              clipRule="evenodd"
+                            />
                           </svg>
                         </button>
                       </div>
@@ -318,7 +503,9 @@ const ReportSettings = () => {
                       ref={headerInputRef}
                       className="hidden"
                       accept="image/png,image/jpeg,image/jpg"
-                      onChange={(e) => handleFileUpload('header', e.target.files[0])}
+                      onChange={(e) =>
+                        handleFileUpload("header", e.target.files[0])
+                      }
                     />
                     <button
                       type="button"
@@ -330,8 +517,12 @@ const ReportSettings = () => {
                     </button>
                   </div>
                   <p className="mt-2 text-sm text-gray-500">
-                    <span className="font-semibold text-blue-600">Required size: 2480x480 pixels @ 300 DPI</span>, PNG or JPEG format. 
-                    This image will be displayed at the top of the report. The header area is fixed and will be reserved even if no image is provided.
+                    <span className="font-semibold text-blue-600">
+                      Required size: 2480x480 pixels @ 300 DPI
+                    </span>
+                    , PNG or JPEG format. This image will be displayed at the
+                    top of the report. The header area is fixed and will be
+                    reserved even if no image is provided.
                   </p>
                 </div>
               </div>
@@ -341,10 +532,34 @@ const ReportSettings = () => {
           {/* Footer Settings */}
           <div className="bg-white shadow overflow-hidden sm:rounded-lg">
             <div className="px-4 py-5 sm:p-6">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">Footer Settings</h3>
+              <h3 className="text-lg leading-6 font-medium text-gray-900">
+                Footer Settings
+              </h3>
+              <div className="sm:col-span-3">
+                <label className="block text-sm font-medium text-gray-700">
+                  Footer Type
+                </label>
+
+                <select
+                  value={settings.footer.footerMode || "generated"}
+                  onChange={(e) =>
+                    handleChange("footer", "footerMode", e.target.value)
+                  }
+                  className="mt-1 block w-full rounded-md border-gray-300"
+                >
+                  <option value="generated">Generated Footer</option>
+
+                  <option value="image">Footer Image</option>
+
+                  <option value="none">No Footer</option>
+                </select>
+              </div>
               <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
                 <div className="sm:col-span-3">
-                  <label htmlFor="verifiedBy" className="block text-sm font-medium text-gray-700">
+                  <label
+                    htmlFor="verifiedBy"
+                    className="block text-sm font-medium text-gray-700"
+                  >
                     Verified By
                   </label>
                   <div className="mt-1">
@@ -353,14 +568,19 @@ const ReportSettings = () => {
                       name="verifiedBy"
                       id="verifiedBy"
                       value={settings.footer.verifiedBy}
-                      onChange={(e) => handleChange('footer', 'verifiedBy', e.target.value)}
+                      onChange={(e) =>
+                        handleChange("footer", "verifiedBy", e.target.value)
+                      }
                       className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                     />
                   </div>
                 </div>
 
                 <div className="sm:col-span-3">
-                  <label htmlFor="designation" className="block text-sm font-medium text-gray-700">
+                  <label
+                    htmlFor="designation"
+                    className="block text-sm font-medium text-gray-700"
+                  >
                     Designation
                   </label>
                   <div className="mt-1">
@@ -369,7 +589,9 @@ const ReportSettings = () => {
                       name="designation"
                       id="designation"
                       value={settings.footer.designation}
-                      onChange={(e) => handleChange('footer', 'designation', e.target.value)}
+                      onChange={(e) =>
+                        handleChange("footer", "designation", e.target.value)
+                      }
                       className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                     />
                   </div>
@@ -382,18 +604,29 @@ const ReportSettings = () => {
                   <div className="mt-1 flex items-center">
                     {settings.footer.signature ? (
                       <div className="relative">
-                        <img 
-                          src={settings.footer.signature} 
-                          alt="Signature" 
-                          className="h-16 w-auto object-contain" 
+                        <img
+                          src={settings.footer.signature}
+                          alt="Signature"
+                          className="h-16 w-auto object-contain"
                         />
                         <button
                           type="button"
-                          onClick={() => handleChange('footer', 'signature', '')}
+                          onClick={() =>
+                            handleChange("footer", "signature", "")
+                          }
                           className="absolute -top-2 -right-2 bg-red-100 rounded-full p-1 text-red-600 hover:bg-red-200"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-4 w-4"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                              clipRule="evenodd"
+                            />
                           </svg>
                         </button>
                       </div>
@@ -407,7 +640,9 @@ const ReportSettings = () => {
                       ref={signatureInputRef}
                       className="hidden"
                       accept="image/png,image/jpeg,image/jpg"
-                      onChange={(e) => handleFileUpload('signature', e.target.files[0])}
+                      onChange={(e) =>
+                        handleFileUpload("signature", e.target.files[0])
+                      }
                     />
                     <button
                       type="button"
@@ -419,7 +654,8 @@ const ReportSettings = () => {
                     </button>
                   </div>
                   <p className="mt-2 text-sm text-gray-500">
-                    Recommended size: 200x100 pixels, PNG or JPEG format with transparent background.
+                    Recommended size: 200x100 pixels, PNG or JPEG format with
+                    transparent background.
                   </p>
                 </div>
 
@@ -430,21 +666,30 @@ const ReportSettings = () => {
                   <div className="mt-1 flex items-center">
                     {settings.footer.footerImage ? (
                       <div className="relative">
-                        <img 
-                          src={settings.footer.footerImage} 
-                          alt="Footer Image" 
-                          className="h-16 w-auto object-contain" 
+                        <img
+                          src={settings.footer.footerImage}
+                          alt="Footer Image"
+                          className="h-16 w-auto object-contain"
                         />
                         <button
                           type="button"
                           onClick={() => {
-                            handleChange('footer', 'footerImage', '');
-                            handleChange('footer', 'footerImageType', '');
+                            handleChange("footer", "footerImage", "");
+                            handleChange("footer", "footerImageType", "");
                           }}
                           className="absolute -top-2 -right-2 bg-red-100 rounded-full p-1 text-red-600 hover:bg-red-200"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-4 w-4"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                              clipRule="evenodd"
+                            />
                           </svg>
                         </button>
                       </div>
@@ -458,7 +703,9 @@ const ReportSettings = () => {
                       ref={footerInputRef}
                       className="hidden"
                       accept="image/png,image/jpeg,image/jpg"
-                      onChange={(e) => handleFileUpload('footer', e.target.files[0])}
+                      onChange={(e) =>
+                        handleFileUpload("footer", e.target.files[0])
+                      }
                     />
                     <button
                       type="button"
@@ -470,21 +717,66 @@ const ReportSettings = () => {
                     </button>
                   </div>
                   <p className="mt-2 text-sm text-gray-500">
-                    <span className="font-semibold text-blue-600">Required size: 2480x200 pixels @ 300 DPI</span>, PNG or JPEG format.
-                    This image will be displayed at the bottom of the report. The footer area is fixed and will be reserved even if no image is provided.
+                    <span className="font-semibold text-blue-600">
+                      Required size: 2480x200 pixels @ 300 DPI
+                    </span>
+                    , PNG or JPEG format. This image will be displayed at the
+                    bottom of the report. The footer area is fixed and will be
+                    reserved even if no image is provided.
                   </p>
                 </div>
               </div>
             </div>
           </div>
 
+          {/* Watermark Settings */}
+          <div className="bg-white rounded-lg shadow p-6 mt-6">
+            <h3 className="text-lg font-semibold mb-4">Watermark Settings</h3>
+
+            <label className="flex items-center gap-2 mb-4">
+              <input
+                type="checkbox"
+                checked={settings.watermark.enabled}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    watermark: {
+                      ...settings.watermark,
+                      enabled: e.target.checked,
+                    },
+                  })
+                }
+              />
+              Enable Watermark
+            </label>
+
+            {settings.watermark.image && (
+              <img
+                src={settings.watermark.image}
+                alt="Watermark"
+                className="h-32 object-contain mb-4"
+              />
+            )}
+
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => handleFileUpload("watermark", e.target.files[0])}
+            />
+          </div>
+
           {/* Styling Settings */}
           <div className="bg-white shadow overflow-hidden sm:rounded-lg">
             <div className="px-4 py-5 sm:p-6">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">Styling Settings</h3>
+              <h3 className="text-lg leading-6 font-medium text-gray-900">
+                Styling Settings
+              </h3>
               <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
                 <div className="sm:col-span-3">
-                  <label htmlFor="primaryColor" className="block text-sm font-medium text-gray-700">
+                  <label
+                    htmlFor="primaryColor"
+                    className="block text-sm font-medium text-gray-700"
+                  >
                     Primary Color
                   </label>
                   <div className="mt-1 flex items-center">
@@ -493,15 +785,22 @@ const ReportSettings = () => {
                       name="primaryColor"
                       id="primaryColor"
                       value={settings.styling.primaryColor}
-                      onChange={(e) => handleColorChange('primaryColor', e.target.value)}
+                      onChange={(e) =>
+                        handleColorChange("primaryColor", e.target.value)
+                      }
                       className="h-8 w-8 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                     />
-                    <span className="ml-2 text-sm text-gray-500">{settings.styling.primaryColor}</span>
+                    <span className="ml-2 text-sm text-gray-500">
+                      {settings.styling.primaryColor}
+                    </span>
                   </div>
                 </div>
 
                 <div className="sm:col-span-3">
-                  <label htmlFor="secondaryColor" className="block text-sm font-medium text-gray-700">
+                  <label
+                    htmlFor="secondaryColor"
+                    className="block text-sm font-medium text-gray-700"
+                  >
                     Secondary Color
                   </label>
                   <div className="mt-1 flex items-center">
@@ -510,10 +809,14 @@ const ReportSettings = () => {
                       name="secondaryColor"
                       id="secondaryColor"
                       value={settings.styling.secondaryColor}
-                      onChange={(e) => handleColorChange('secondaryColor', e.target.value)}
+                      onChange={(e) =>
+                        handleColorChange("secondaryColor", e.target.value)
+                      }
                       className="h-8 w-8 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                     />
-                    <span className="ml-2 text-sm text-gray-500">{settings.styling.secondaryColor}</span>
+                    <span className="ml-2 text-sm text-gray-500">
+                      {settings.styling.secondaryColor}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -526,7 +829,7 @@ const ReportSettings = () => {
               disabled={saving}
               className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
-              {saving ? 'Saving...' : 'Save Settings'}
+              {saving ? "Saving..." : "Save Settings"}
             </button>
           </div>
         </form>
