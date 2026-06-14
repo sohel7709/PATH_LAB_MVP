@@ -8,6 +8,7 @@ import { KeyIcon } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 
 const ForgotPasswordPage = () => {
+  conlog("ForgotPasswordPage rendered");
   const navigate = useNavigate();
   const [mounted, setMounted] = useState(false);
   
