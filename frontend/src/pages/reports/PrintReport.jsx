@@ -15,6 +15,7 @@ export default function PrintReport() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [report, setReport] = useState(null);
+  const [printMode, setPrintMode] = useState("official");
   const [reportSettings, setReportSettings] = useState(null);
   // const [labSettings, setLabSettings] = useState(null); // No longer needed directly here
   const [isLoading, setIsLoading] = useState(true);
@@ -24,7 +25,7 @@ export default function PrintReport() {
   // Use the custom hooks
   // REMOVED hideTableHeadingAndReference variable definition
   // console.log('PrintReport.jsx - hideTableHeadingAndReference:', hideTableHeadingAndReference); // REMOVED log
-  const reportHtml = useReportGenerator(report, reportSettings); // REMOVED flag from hook call
+  const reportHtml = useReportGenerator(report, reportSettings, printMode); // REMOVED flag from hook call
   const {
     printPdf: originalPrintPdf,
     downloadPdf,
@@ -197,6 +198,31 @@ export default function PrintReport() {
           {/* Removed Show Header/Footer/Signature options as layout is now fixed */}
           <div className="text-sm text-gray-500 italic">
             Print preview below uses the fixed report layout.
+          </div>
+        </div>
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-2">Print Style</label>
+
+          <div className="flex gap-6">
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                value="official"
+                checked={printMode === "official"}
+                onChange={() => setPrintMode("official")}
+              />
+              Official Report
+            </label>
+
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                value="plain"
+                checked={printMode === "plain"}
+                onChange={() => setPrintMode("plain")}
+              />
+              Plain Report
+            </label>
           </div>
         </div>
       </div>
