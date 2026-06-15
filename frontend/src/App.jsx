@@ -33,12 +33,12 @@ const AuthLayout = lazy(() => import("./components/layouts/AuthLayout"));
 // Auth Pages
 const Login = lazy(() => import("./pages/auth/ImprovedLogin"));
 const ForgotPassword = lazy(() => import("./pages/auth/ForgotPasswordWrapper"));
-const ResetPassword = lazy(() => import("./pages/auth/ResetPasswordWrapper"));
+const ResetPassword = lazy(() => import("./pages/auth/ResetPasswordPage"));
 
 import ComingSoon from "./pages/ComingSoon";
 import UserIntelligence from "./pages/UserIntelligence";
 
-// Dashboard Pages
+// Dashboard Page
 const SuperAdminDashboard = lazy(
   () => import("./pages/dashboard/SuperAdminDashboard"),
 );

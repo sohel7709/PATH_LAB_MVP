@@ -2,7 +2,11 @@ import { useState, useEffect } from "react";
 
 // Custom hook to generate the report HTML structure
 // REMOVED hideTableHeadingAndReference parameter
-export const useReportGenerator = (report, reportSettings = null) => {
+export const useReportGenerator = (
+  report,
+  reportSettings = null,
+  printMode = "official",
+) => {
   const [reportHtml, setReportHtml] = useState("");
 
   // Function to check if a value is outside the reference range
@@ -225,7 +229,6 @@ export const useReportGenerator = (report, reportSettings = null) => {
     patientInfoDiv.style.borderTop = "2px solid black";
     patientInfoDiv.style.borderBottom = "2px solid black";
     patientInfoDiv.style.marginBottom = "5mm";
-    
 
     patientInfoDiv.innerHTML = `
     <div style="display:flex;flex-direction:column;gap:2px;">
@@ -362,26 +365,29 @@ export const useReportGenerator = (report, reportSettings = null) => {
     return wrapper;
   };
 
-  const createFooter = (footerSettings) => {
-    const wrapper = document.createElement("div");
+const createFooter = (footerSettings) => {
+  const wrapper = document.createElement("div");
 
-    if (footerSettings.footerMode === "image" && footerSettings.footerImage) {
-      const footerImg = document.createElement("img");
+  if (footerSettings.footerMode === "image" &&
+      footerSettings.footerImage) {
 
-      footerImg.src = footerSettings.footerImage;
+    const footerImg = document.createElement("img");
 
-      footerImg.style.width = "100%";
-      footerImg.style.marginTop = "10mm";
+    footerImg.src = footerSettings.footerImage;
+    footerImg.style.width = "100%";
+    footerImg.style.marginTop = "10mm";
 
-      wrapper.appendChild(footerImg);
-    } else if (footerSettings.footerMode !== "none") {
-      const footerDiv = document.createElement("div");
+    wrapper.appendChild(footerImg);
 
-      footerDiv.style.marginTop = "25mm";
-      footerDiv.style.borderTop = "1px solid #000";
-      footerDiv.style.paddingTop = "5mm";
+  } else if (footerSettings.footerMode !== "none") {
 
-      footerDiv.innerHTML = `
+    const footerDiv = document.createElement("div");
+
+    footerDiv.style.marginTop = "25mm";
+    footerDiv.style.borderTop = "1px solid #000";
+    footerDiv.style.paddingTop = "5mm";
+
+    footerDiv.innerHTML = `
       <div style="
         display:flex;
         justify-content:space-between;
@@ -425,11 +431,82 @@ export const useReportGenerator = (report, reportSettings = null) => {
       </div>
     `;
 
-      wrapper.appendChild(footerDiv);
-    }
+    wrapper.appendChild(footerDiv);
+  }
 
-    return wrapper;
-  };
+  return wrapper;
+};
+
+  // if (printMode === "official") {
+  //   const createFooter = (footerSettings) => {
+  //     const wrapper = document.createElement("div");
+
+  //     if (footerSettings.footerMode === "image" && footerSettings.footerImage) {
+  //       const footerImg = document.createElement("img");
+
+  //       footerImg.src = footerSettings.footerImage;
+
+  //       footerImg.style.width = "100%";
+  //       footerImg.style.marginTop = "10mm";
+
+  //       wrapper.appendChild(footerImg);
+  //     } else if (footerSettings.footerMode !== "none") {
+  //       const footerDiv = document.createElement("div");
+
+  //       footerDiv.style.marginTop = "25mm";
+  //       footerDiv.style.borderTop = "1px solid #000";
+  //       footerDiv.style.paddingTop = "5mm";
+
+  //       footerDiv.innerHTML = `
+  //     <div style="
+  //       display:flex;
+  //       justify-content:space-between;
+  //       align-items:flex-end;
+  //     ">
+
+  //       <div style="
+  //         font-size:9pt;
+  //         max-width:70%;
+  //       ">
+  //         These are not diagnostic results.
+  //         Strictly for medical use only.
+  //       </div>
+
+  //       <div style="text-align:center">
+
+  //         ${
+  //           footerSettings.signature
+  //             ? `
+  //               <img
+  //                 src="${footerSettings.signature}"
+  //                 style="
+  //                   max-width:120px;
+  //                   max-height:60px;
+  //                 "
+  //               />
+  //             `
+  //             : ""
+  //         }
+
+  //         <div style="font-weight:bold;">
+  //           ${footerSettings.verifiedBy || ""}
+  //         </div>
+
+  //         <div>
+  //           ${footerSettings.designation || ""}
+  //         </div>
+
+  //       </div>
+
+  //     </div>
+  //   `;
+
+  //       wrapper.appendChild(footerDiv);
+  //     }
+
+  //     return wrapper;
+  //   };
+  // }
 
   // Helper function to build the HTML structure
   // REMOVED hideTableHeadingAndReference parameter
@@ -491,7 +568,6 @@ export const useReportGenerator = (report, reportSettings = null) => {
     printContainer.style.position = "relative";
     printContainer.style.fontSize = "11pt"; // Base font size
     printContainer.style.marginTop = "-22mm";
-
 
     // if (
     //   reportSettings?.watermark?.enabled &&
@@ -646,7 +722,7 @@ export const useReportGenerator = (report, reportSettings = null) => {
     if (groupedResults && groupedResults.length > 0) {
       groupedResults.forEach((group, index) => {
         const pageDiv = document.createElement("div");
-        
+
         pageDiv.style.width = "100%";
         pageDiv.style.minHeight = "auto";
 
@@ -662,6 +738,7 @@ export const useReportGenerator = (report, reportSettings = null) => {
         }
 
         if (
+          printMode === "official" &&
           reportSettings?.watermark?.enabled &&
           reportSettings?.watermark?.image
         ) {
@@ -688,8 +765,9 @@ export const useReportGenerator = (report, reportSettings = null) => {
           pageDiv.appendChild(watermark);
         }
 
-        pageDiv.appendChild(createHeader(headerSettings));
-
+        if (printMode === "official") {
+          pageDiv.appendChild(createHeader(headerSettings));
+        }
         pageDiv.appendChild(createPatientInfoSection(report));
         // Determine formatting flags for THIS group
         const lowerCaseTemplateName = (group.templateName || "").toLowerCase();
@@ -1012,8 +1090,9 @@ export const useReportGenerator = (report, reportSettings = null) => {
 
         pageDiv.appendChild(testGroupDiv);
 
-        pageDiv.appendChild(createFooter(footerSettings));
-
+        if (printMode === "official") {
+          pageDiv.appendChild(createFooter(footerSettings));
+        }
         printContainer.appendChild(pageDiv);
       }); // End of groupedResults.forEach loop
 
@@ -1133,7 +1212,7 @@ export const useReportGenerator = (report, reportSettings = null) => {
     } else {
       setReportHtml("");
     }
-  }, [report, reportSettings]); // REMOVED hideTableHeadingAndReference from dependency array
+  }, [report, reportSettings, printMode]); // REMOVED hideTableHeadingAndReference from dependency array
 
   return reportHtml; // Return the generated HTML string
 };

@@ -104,6 +104,21 @@ export const auth = {
     return handleResponse(response);
   },
 
+  resetPassword: async (token, password) => {
+  const response = await fetch(
+    `${import.meta.env.VITE_API_BASE_URL}/auth/reset-password/${token}`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ password })
+    }
+  );
+
+  return handleResponse(response);
+},
+
   verifyToken: async () => {
     const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/verify`, {
       headers: getAuthHeaders(),
@@ -135,6 +150,8 @@ export const auth = {
     });
     return handleResponse(response);
   },
+
+
 };
 
 // Reports API calls

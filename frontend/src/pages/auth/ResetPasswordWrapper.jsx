@@ -4,6 +4,14 @@ import { KeyIcon } from '@heroicons/react/24/outline';
 import ResetPasswordPage from './ResetPasswordPage';
 import '../../styles/AuthPage.css';
 
+import {useParams} from 'react-router-dom';
+
+// const ResetPasswordWrapper = () => {
+//   console.log("ResetPasswordWrapper rendered");
+//   const{token} = useParams();
+//   console.log("TOKEN:", token);
+// }
+
 const ResetPasswordWrapper = () => {
   const navigate = useNavigate();
   const [mounted, setMounted] = useState(false);
