@@ -38,7 +38,7 @@ const ResetPassword = lazy(() => import("./pages/auth/ResetPasswordPage"));
 import ComingSoon from "./pages/ComingSoon";
 import UserIntelligence from "./pages/UserIntelligence";
 
-// Dashboard Pages
+// Dashboard Page
 const SuperAdminDashboard = lazy(
   () => import("./pages/dashboard/SuperAdminDashboard"),
 );
