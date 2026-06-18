@@ -430,15 +430,11 @@ exports.forgotPassword = async (req, res, next) => {
         );
 
         // In development mode, just log the reset URL and return success
-        console.log("Reset token:", resetToken);
-        console.log("Reset URL:", resetUrl);
+        if (process.env.NODE_ENV !== "production") {
+  console.log("Reset URL:", resetUrl);
+}
 
-        return res.status(200).json({
-          success: true,
-          message:
-            "Password reset link generated (email not sent in development mode)",
-          resetUrl, // Only include this in development mode
-        });
+        
       }
 
       // Create a transporter
@@ -528,20 +524,20 @@ exports.resetPassword = async (req, res, next) => {
 
     // Find user by token and check if token is still valid
 
-    console.log("RAW TOKEN:", token);
+    // console.log("RAW TOKEN:", token);
 
-    // const resetPasswordToken = crypto
-    //   .createHash("sha256")
-    //   .update(token)
-    //   .digest("hex");
+    // // const resetPasswordToken = crypto
+    // //   .createHash("sha256")
+    // //   .update(token)
+    // //   .digest("hex");
 
-    console.log("HASHED TOKEN:", resetPasswordToken);
+    // console.log("HASHED TOKEN:", resetPasswordToken);
 
-    const userCheck = await User.findOne({
-      resetPasswordToken,
-    });
+    // const userCheck = await User.findOne({
+    //   resetPasswordToken,
+    // });
 
-    console.log("USER FOUND BY TOKEN:", userCheck ? userCheck.email : "NO");
+    // console.log("USER FOUND BY TOKEN:", userCheck ? userCheck.email : "NO");
 
     const user = await User.findOne({
       resetPasswordToken,

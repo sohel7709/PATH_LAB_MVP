@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import "../../styles/report.css";
 import {
   ExclamationCircleIcon,
   PrinterIcon,
@@ -153,7 +152,7 @@ export default function PrintReport() {
   return (
     <div>
       {/* Header - Hidden when printing */}
-      <div className="md:flex md:items-center md:justify-between print:hidden">
+      <div className="md:flex md:items-center md:justify-between print:hidden ">
         <div className="min-w-0 flex-1">
           <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
             Print Report

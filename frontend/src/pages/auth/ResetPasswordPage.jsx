@@ -14,7 +14,11 @@ import "../../styles/AuthPage.css";
 const ResetPasswordPage = () => {
   const navigate = useNavigate();
   const { token } = useParams();
-  console.log("TOKEN:", token);
+  useEffect(() => {
+    if (!token) {
+      setError("Invalid reset link");
+    }
+  }, [token]);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
@@ -37,6 +41,10 @@ const ResetPasswordPage = () => {
 
   // Handle form submission
   const handleSubmit = async (e) => {
+    if (!token) {
+      setError("Invalid or expired reset link");
+      return;
+    }
     e.preventDefault();
     setError("");
     setSuccess("");
@@ -52,8 +60,8 @@ const ResetPasswordPage = () => {
       return;
     }
 
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters");
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters");
       return;
     }
 
