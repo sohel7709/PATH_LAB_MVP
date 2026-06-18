@@ -228,7 +228,8 @@ export const useReportGenerator = (
     patientInfoDiv.style.padding = "5px 0";
     patientInfoDiv.style.borderTop = "2px solid black";
     patientInfoDiv.style.borderBottom = "2px solid black";
-    patientInfoDiv.style.marginBottom = "5mm";
+    // patientInfoDiv.style.marginBottom = "5mm";
+    // patientInfoDiv.style.marginTop = "-5mm";
 
     patientInfoDiv.innerHTML = `
     <div style="display:flex;flex-direction:column;gap:2px;">
@@ -289,15 +290,15 @@ export const useReportGenerator = (
       headerImg.src = headerSettings.headerImage;
 
       headerImg.style.width = "100%";
-      headerImg.style.marginBottom = "5mm";
+      // headerImg.style.marginBottom = "5mm";
 
       wrapper.appendChild(headerImg);
     } else if (headerSettings.headerMode !== "none") {
       const customHeader = document.createElement("div");
 
-      customHeader.style.marginBottom = "10mm";
+      customHeader.style.marginBottom = "5mm";
       customHeader.style.borderBottom = "2px solid #000";
-      customHeader.style.paddingBottom = "5mm";
+      // customHeader.style.paddingBottom = "5mm";
 
       customHeader.innerHTML = `
       <div style="
@@ -365,29 +366,25 @@ export const useReportGenerator = (
     return wrapper;
   };
 
-const createFooter = (footerSettings) => {
-  const wrapper = document.createElement("div");
+  const createFooter = (footerSettings) => {
+    const wrapper = document.createElement("div");
 
-  if (footerSettings.footerMode === "image" &&
-      footerSettings.footerImage) {
+    if (footerSettings.footerMode === "image" && footerSettings.footerImage) {
+      const footerImg = document.createElement("img");
 
-    const footerImg = document.createElement("img");
+      footerImg.src = footerSettings.footerImage;
+      footerImg.style.width = "100%";
+      // footerImg.style.marginTop = "10mm";
 
-    footerImg.src = footerSettings.footerImage;
-    footerImg.style.width = "100%";
-    footerImg.style.marginTop = "10mm";
+      wrapper.appendChild(footerImg);
+    } else if (footerSettings.footerMode !== "none") {
+      const footerDiv = document.createElement("div");
 
-    wrapper.appendChild(footerImg);
+      footerDiv.style.marginTop = "5mm";
+      footerDiv.style.borderTop = "1px solid #000";
+      // footerDiv.style.paddingTop = "5mm";
 
-  } else if (footerSettings.footerMode !== "none") {
-
-    const footerDiv = document.createElement("div");
-
-    footerDiv.style.marginTop = "25mm";
-    footerDiv.style.borderTop = "1px solid #000";
-    footerDiv.style.paddingTop = "5mm";
-
-    footerDiv.innerHTML = `
+      footerDiv.innerHTML = `
       <div style="
         display:flex;
         justify-content:space-between;
@@ -431,11 +428,11 @@ const createFooter = (footerSettings) => {
       </div>
     `;
 
-    wrapper.appendChild(footerDiv);
-  }
+      wrapper.appendChild(footerDiv);
+    }
 
-  return wrapper;
-};
+    return wrapper;
+  };
 
   // if (printMode === "official") {
   //   const createFooter = (footerSettings) => {
@@ -527,6 +524,7 @@ const createFooter = (footerSettings) => {
     const printContainer = document.createElement("div");
 
     printContainer.style.position = "relative";
+    // printContainer.style.padding = "10mm";
 
     // if (
     //   reportSettings?.watermark?.enabled &&
@@ -561,13 +559,13 @@ const createFooter = (footerSettings) => {
     // Basic container styling (same as before)
     printContainer.style.width = "210mm";
     printContainer.style.minHeight = "297mm";
-    printContainer.style.padding = "15mm";
+    // printContainer.style.padding = "15mm";
     printContainer.style.boxSizing = "border-box";
     printContainer.style.fontFamily = "Arial, sans-serif";
     printContainer.style.backgroundColor = "white";
     printContainer.style.position = "relative";
     printContainer.style.fontSize = "11pt"; // Base font size
-    printContainer.style.marginTop = "-22mm";
+    printContainer.style.marginTop = "-7mm";
 
     // if (
     //   reportSettings?.watermark?.enabled &&
@@ -731,7 +729,7 @@ const createFooter = (footerSettings) => {
         pageDiv.style.background = "white";
         pageDiv.style.overflow = "hidden";
         pageDiv.style.padding = "5mm 10mm";
-        pageDiv.style.boxSizing = "border-box";
+        // pageDiv.style.boxSizing = "border-box";
 
         if (index < groupedResults.length - 1) {
           pageDiv.style.pageBreakAfter = "always";
@@ -825,7 +823,7 @@ const createFooter = (footerSettings) => {
         groupHeading.textContent = group.templateName;
         groupHeading.style.textAlign = "center";
         groupHeading.style.fontWeight = "bold";
-        groupHeading.style.margin = "10px 0 8px 0";
+        // groupHeading.style.margin = "10px 0 8px 0";
         groupHeading.style.fontSize = "13pt";
         testGroupDiv.appendChild(groupHeading);
 

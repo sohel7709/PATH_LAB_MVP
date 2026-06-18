@@ -50,22 +50,12 @@ export default function ForgotPassword() {
       );
 
       const data = await response.json();
-      console.log("forgot password response:", data);
 
       if (!response.ok) {
         throw new Error(data.message || "Failed to send reset email");
       }
 
-      // Check if we're in development mode (resetUrl is returned)
-      if (data.resetUrl) {
-        console.log("resetUrl:", data.resetUrl);
-
-        window.open(data.resetUrl, "_blank");
-
-        setSuccess("Development mode: Reset link generated and opened.");
-      } else {
-        setSuccess("Password reset instructions have been sent to your email.");
-      }
+      setSuccess("Password reset instructions have been sent to your email.");
 
       setEmail(""); // Clear the form
     } catch (err) {
@@ -138,28 +128,9 @@ export default function ForgotPassword() {
                 />
               </div>
               <div className="ml-3">
-                {success.includes("Development mode") ? (
-                  <div>
-                    <h3 className="text-sm font-medium text-green-800">
-                      Development Mode
-                    </h3>
-                    <p className="mt-1 text-sm text-green-700">
-                      Password reset link generated.
-                    </p>
-                    <div className="mt-2 p-2 bg-green-100 rounded-lg overflow-auto">
-                      <code className="text-xs text-green-800 break-all">
-                        {success.split("Reset URL: ")[1]}
-                      </code>
-                    </div>
-                    <p className="mt-2 text-xs text-green-700">
-                      In production, this link would be sent via email.
-                    </p>
-                  </div>
-                ) : (
-                  <h3 className="text-sm font-medium text-green-800">
-                    {success}
-                  </h3>
-                )}
+                <h3 className="text-sm font-medium text-green-800">
+                  {success}
+                </h3>
               </div>
             </div>
           </div>
