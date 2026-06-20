@@ -3,6 +3,8 @@ const Lab = require('../models/Lab');
 const User = require('../models/User'); // Needed for population/modification tracking
 const Doctor = require('../models/Doctor'); // Needed for doctor notification
 const TestTemplate = require('../models/TestTemplate'); // Needed for populating template names
+const Patient = require('../models/Patient'); // Needed to check patient's WhatsApp preference
+const WhatsAppSettings = require('../models/WhatsAppSettings'); // Needed for custom message template
 const whatsappService = require('../utils/whatsappService');
 const { getAbnormalFlag } = require('../utils/reportUtils'); // Import from the new utility file
 
@@ -110,38 +112,73 @@ exports.createReport = async (req, res, next) => {
 
     // Send WhatsApp notification logic...
     try {
-      if (report.patientInfo && report.patientInfo.contact && report.patientInfo.contact.phone) {
-        const baseUrl = `${req.protocol}://${req.get('host')}`;
-        const reportLink = `${baseUrl}/reports/view/${report._id}`;
-        await whatsappService.sendReportNotification(
-          report.patientInfo.contact.phone,
-          report.patientInfo.name,
-          report.testInfo.name,
-          reportLink,
-          lab.name
-        );
-        // Update delivery status (needs report object after creation)
-        const createdReport = await Report.findById(report._id); // Re-fetch to update
-        if (createdReport) {
-            createdReport.reportMeta.deliveryStatus = {
-                ...(createdReport.reportMeta.deliveryStatus || {}),
-                whatsapp: {
-                    sent: true,
-                    sentAt: Date.now(),
-                    recipient: report.patientInfo.contact.phone
-                }
-            };
-            await createdReport.save();
-            console.log('WhatsApp notification sent to patient and status updated.');
+      // Load WhatsApp settings for this lab to get custom message template
+      const whatsAppSettings = await WhatsAppSettings.findOne({ lab: req.user.lab });
+      const isWhatsAppEnabled = whatsAppSettings && whatsAppSettings.enabled === true;
+
+      // Check the patient's phone from the report's patientInfo
+      const patientPhone = report.patientInfo?.contact?.phone;
+      
+      if (patientPhone && isWhatsAppEnabled) {
+        // Find the patient record to check their notification preference
+        const patientRecord = await Patient.findOne({ 
+          patientId: report.patientInfo.patientId,
+          labId: req.user.lab
+        });
+
+        // Only send if patient has enabled WhatsApp notifications
+        const shouldNotifyPatient = patientRecord && patientRecord.whatsappNotificationEnabled === true;
+
+        if (shouldNotifyPatient) {
+          const baseUrl = process.env.CLIENT_URL || `${req.protocol}://${req.get('host')}`;
+          const reportLink = `${baseUrl}/view-report/${report._id}`;
+          
+          const customMessage = whatsAppSettings.messageTemplate || '';
+          
+          await whatsappService.sendReportNotification(
+            patientPhone,
+            report.patientInfo.name,
+            report.testInfo.name,
+            reportLink,
+            lab.name,
+            customMessage
+          );
+          // Update delivery status
+          const createdReport = await Report.findById(report._id);
+          if (createdReport) {
+              createdReport.reportMeta.deliveryStatus = {
+                  ...(createdReport.reportMeta.deliveryStatus || {}),
+                  whatsapp: {
+                      sent: true,
+                      sentAt: Date.now(),
+                      recipient: patientPhone
+                  }
+              };
+              await createdReport.save();
+              console.log('WhatsApp notification sent to patient and status updated.');
+          }
+        } else {
+          console.log(`Patient ${report.patientInfo.name} has not enabled WhatsApp notifications. Skipping.`);
         }
       }
-      if (report.testInfo && report.testInfo.referenceDoctor) {
+
+      // Doctor notification logic
+      if (report.testInfo && report.testInfo.referenceDoctor && isWhatsAppEnabled) {
         const doctor = await Doctor.findOne({ name: report.testInfo.referenceDoctor, lab: req.user.lab });
         if (doctor && doctor.phone) {
-          const baseUrl = `${req.protocol}://${req.get('host')}`;
-          const reportLink = `${baseUrl}/reports/view/${report._id}`;
+          const baseUrl = process.env.CLIENT_URL || `${req.protocol}://${req.get('host')}`;
+          const reportLink = `${baseUrl}/view-report/${report._id}`;
+          
+          const customMessage = whatsAppSettings.messageTemplate || '';
+          
           await whatsappService.sendDoctorNotification(
-            doctor.phone, doctor.name, report.patientInfo.name, report.testInfo.name, reportLink, lab.name
+            doctor.phone, 
+            doctor.name, 
+            report.patientInfo.name, 
+            report.testInfo.name, 
+            reportLink, 
+            lab.name,
+            customMessage
           );
           console.log('WhatsApp notification sent to doctor.');
         }

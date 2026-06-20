@@ -53,6 +53,10 @@ const PatientSchema = new mongoose.Schema({
     ref: 'Lab',
     required: [true, 'Please add a lab ID']
   },
+  whatsappNotificationEnabled: {
+    type: Boolean,
+    default: false
+  },
   lastTestType: {
     type: String,
     trim: true

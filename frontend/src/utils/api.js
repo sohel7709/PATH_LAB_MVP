@@ -768,18 +768,22 @@ export const plans = {
 
 // WhatsApp Notification Settings API calls
 export const whatsappSettings = {
-  getSettings: async () => {
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/settings/whatsapp`, {
+  getSettings: async (labId) => {
+    const url = labId 
+      ? `${import.meta.env.VITE_API_BASE_URL}/settings/whatsapp?lab=${labId}`
+      : `${import.meta.env.VITE_API_BASE_URL}/settings/whatsapp`;
+    const response = await fetch(url, {
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
   },
 
-  updateSettings: async (settings) => {
+  updateSettings: async (settings, labId) => {
+    const body = labId ? { ...settings, labId } : settings;
     const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/settings/whatsapp`, {
       method: 'POST',
       headers: getAuthHeaders(),
-      body: JSON.stringify(settings),
+      body: JSON.stringify(body),
     });
     return handleResponse(response);
   }

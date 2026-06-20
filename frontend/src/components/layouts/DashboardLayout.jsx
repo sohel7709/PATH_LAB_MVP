@@ -46,6 +46,7 @@ const getNavigationItems = (role) => {
     { name: 'Reference Doctors', href: '/doctors', icon: UserGroupIcon },
     { name: 'Test Templates', href: '/templates', icon: DocumentDuplicateIcon },
     { name: 'Report Settings', href: '/settings/reports', icon: DocumentTextIcon },
+    { name: 'Notification Settings', href: '/settings/notifications', icon: CogIcon },
     { name: 'Inventory', href: '/inventory', icon: BeakerIcon },
     { name: 'Revenue Dashboard', href: '/finance/revenue', icon: DocumentTextIcon },
   ];

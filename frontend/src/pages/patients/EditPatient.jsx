@@ -22,6 +22,7 @@ export default function EditPatient() {
     email: '',
     address: '',
     labId: user?.lab || '',
+    whatsappNotificationEnabled: false,
   });
 
   useEffect(() => {
@@ -49,6 +50,7 @@ export default function EditPatient() {
         email: data.email || '',
         address: data.address || '',
         labId: data.labId || user?.lab || '',
+        whatsappNotificationEnabled: data.whatsappNotificationEnabled || false,
       });
       setError('');
     } catch (err) {
@@ -352,6 +354,33 @@ export default function EditPatient() {
                     onChange={handleChange}
                     className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
                   />
+                </div>
+              </div>
+
+              {/* WhatsApp Notification Toggle */}
+              <div className="sm:col-span-6">
+                <div className="relative flex items-start">
+                  <div className="flex h-6 items-center">
+                    <input
+                      id="whatsappNotificationEnabled"
+                      name="whatsappNotificationEnabled"
+                      type="checkbox"
+                      checked={formData.whatsappNotificationEnabled}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        whatsappNotificationEnabled: e.target.checked
+                      }))}
+                      className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    />
+                  </div>
+                  <div className="ml-3 text-sm leading-6">
+                    <label htmlFor="whatsappNotificationEnabled" className="font-medium text-gray-700 cursor-pointer">
+                      Send WhatsApp Notifications
+                    </label>
+                    <p className="text-gray-500 text-xs">
+                      When enabled, the patient will receive report links via WhatsApp when reports are created.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>

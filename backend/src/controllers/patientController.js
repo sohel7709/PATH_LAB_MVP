@@ -49,7 +49,7 @@ exports.createPatient = asyncHandler(async (req, res) => {
 
   // Destructure all necessary fields from req.body at a higher scope
   // Renamed 'fullName' from destructuring to 'originalFullName' to avoid confusion
-  let { fullName: originalFullName, phone, age, gender, email, designation, address, lastTestType } = req.body;
+  let { fullName: originalFullName, phone, age, gender, email, designation, address, lastTestType, whatsappNotificationEnabled } = req.body;
   let processedFullName = originalFullName; // Initialize processedFullName
 
   // Format fullName: Capitalize the first letter (if it exists)
@@ -116,6 +116,7 @@ exports.createPatient = asyncHandler(async (req, res) => {
         email: (email && email.trim() !== "") ? email.trim().toLowerCase() : null,
         address: (address && address.trim() !== "") ? address.trim() : null,
         lastTestType: (lastTestType && lastTestType.trim() !== "") ? lastTestType.trim() : null,
+        whatsappNotificationEnabled: whatsappNotificationEnabled === true || whatsappNotificationEnabled === 'true',
     };
     
     // Create patient
