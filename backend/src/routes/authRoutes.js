@@ -1,13 +1,7 @@
 const express = require('express');
-const cors = require('cors');
 const router = express.Router();
+const rateLimit = require('express-rate-limit');
 const { protect, verifyToken } = require('../middleware/auth');
-
-const corsOptions = {
-  origin: '*',
-  methods: ['POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-};
 
 const {
   register,
@@ -20,11 +14,17 @@ const {
   resetPassword
 } = require('../controllers/authController');
 
+// Forgot-password: max 3 requests per 15 min per IP (stops email bombing)
+const forgotPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 3,
+  message: { success: false, message: 'Too many password reset requests. Try again in 15 minutes.' },
+});
+
 // Public routes
-// In your authRoutes.js
 router.post('/register', register);
 router.post('/login', login);
-router.post('/forgot-password', forgotPassword);
+router.post('/forgot-password', forgotPasswordLimiter, forgotPassword);
 router.post('/reset-password/:token', resetPassword);
 
 // Protected routes

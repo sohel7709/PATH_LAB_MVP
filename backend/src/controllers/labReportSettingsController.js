@@ -221,24 +221,43 @@ const validateImageDimensions = async (buffer, type) => {
   }
 };
 
+// Verify real file type via magic bytes (not client-declared mimeType)
+const verifyImageMagicBytes = (buffer) => {
+  if (buffer.length < 4) return null;
+  const hex = buffer.slice(0, 4).toString('hex');
+  if (hex.startsWith('89504e47')) return 'image/png';
+  if (hex.startsWith('ffd8ff')) return 'image/jpeg';
+  return null;
+};
+
 // Helper function to save base64 image to file
 const saveBase64Image = (base64Data, mimeType, labId, type) => {
   return new Promise(async (resolve, reject) => {
     try {
+      // Sanitize labId to prevent path traversal
+      const safeLabId = labId.toString().replace(/[^a-zA-Z0-9]/g, '');
+
       // Create directory for this lab if it doesn't exist
-      const labDir = path.join(reportImagesDir, labId.toString());
+      const labDir = path.join(reportImagesDir, safeLabId);
       if (!fs.existsSync(labDir)) {
         fs.mkdirSync(labDir);
       }
 
-      // Generate a unique filename
+      // Convert base64 to buffer first so we can verify magic bytes
+      const buffer = Buffer.from(base64Data, "base64");
+
+      // Verify actual file type via magic bytes — client can lie about mimeType
+      const actualType = verifyImageMagicBytes(buffer);
+      if (!actualType) {
+        reject(new Error('Invalid image file: not a recognized PNG or JPEG'));
+        return;
+      }
+
+      // Generate a unique filename using verified extension
       const timestamp = Date.now();
-      const extension = mimeType === "image/png" ? "png" : "jpg";
+      const extension = actualType === "image/png" ? "png" : "jpg";
       const filename = `${type}_${timestamp}.${extension}`;
       const filePath = path.join(labDir, filename);
-
-      // Convert base64 to buffer
-      const buffer = Buffer.from(base64Data, "base64");
 
       // Validate image dimensions for header and footer
       if (type === "header" || type === "footer") {
@@ -253,7 +272,7 @@ const saveBase64Image = (base64Data, mimeType, labId, type) => {
       fs.writeFileSync(filePath, buffer);
 
       // Return the relative URL path
-      const relativePath = `/uploads/report-images/${labId}/${filename}`;
+      const relativePath = `/uploads/report-images/${safeLabId}/${filename}`;
       resolve(relativePath);
     } catch (error) {
       reject(error);

@@ -105,7 +105,7 @@ exports.login = async (req, res, next) => {
     }
 
     // Check for user
-    const user = await User.findOne({ email }).select("+password");
+    const user = await User.findOne({ email }).select("+password +loginAttempts +lockUntil");
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -113,23 +113,39 @@ exports.login = async (req, res, next) => {
       });
     }
 
+    // Account lockout check (5 failed attempts = 15 min lock)
+    if (user.lockUntil && user.lockUntil > Date.now()) {
+      const minutesLeft = Math.ceil((user.lockUntil - Date.now()) / 60000);
+      return res.status(423).json({
+        success: false,
+        message: `Account temporarily locked due to too many failed attempts. Try again in ${minutesLeft} minute(s).`,
+      });
+    }
+
     // Check if password matches
     const isMatch = await user.matchPassword(password);
     if (!isMatch) {
+      user.loginAttempts = (user.loginAttempts || 0) + 1;
+      if (user.loginAttempts >= 5) {
+        user.lockUntil = new Date(Date.now() + 15 * 60 * 1000);
+        user.loginAttempts = 0;
+      }
+      await user.save({ validateBeforeSave: false });
       return res.status(401).json({
         success: false,
         message: "Invalid credentials",
       });
     }
 
+    // Reset on successful login
+    if (user.loginAttempts > 0 || user.lockUntil) {
+      user.loginAttempts = 0;
+      user.lockUntil = undefined;
+      await user.save({ validateBeforeSave: false });
+    }
+
     // If user is admin or technician, check if they have a lab assigned
     if (user.role !== "super-admin") {
-      // Log the user's lab information for debugging
-        userId: user._id,
-        userEmail: user.email,
-        userRole: user.role,
-        userLab: user.lab,
-      });
 
       if (!user.lab) {
         return res.status(403).json({
@@ -141,11 +157,6 @@ exports.login = async (req, res, next) => {
       // Check if their lab is active
       try {
         const lab = await Lab.findById(user.lab);
-          "Found lab:",
-          lab
-            ? { id: lab._id, name: lab.name, status: lab.status }
-            : "No lab found",
-        );
 
         if (!lab) {
           return res.status(403).json({
@@ -216,8 +227,6 @@ exports.getMe = async (req, res, next) => {
         if (lab) {
           user.lab = lab;
         } else {
-            `Lab with ID ${userWithLab.lab} not found for user ${user._id}`,
-          );
         }
       } else {
       }
@@ -346,8 +355,6 @@ exports.verifyToken = async (req, res, next) => {
         if (lab) {
           user.lab = lab;
         } else {
-            `Lab with ID ${userWithLab.lab} not found for user ${user._id}`,
-          );
         }
       } else {
       }
@@ -427,8 +434,6 @@ exports.forgotPassword = async (req, res, next) => {
         !process.env.EMAIL_PASSWORD ||
         process.env.EMAIL_PASSWORD.includes("your_gmail")
       ) {
-          "Email credentials not properly configured. Using development mode.",
-        );
 
         // In development mode, just log the reset URL and return success
         if (process.env.NODE_ENV !== "production") {

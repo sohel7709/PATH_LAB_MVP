@@ -46,7 +46,13 @@ const userSchema = new mongoose.Schema({
     default: Date.now
   },
   resetPasswordToken: String,
-  resetPasswordExpire: Date
+  resetPasswordExpire: Date,
+  loginAttempts: { type: Number, default: 0 },
+  lockUntil: { type: Date }
+});
+
+userSchema.virtual('isLocked').get(function () {
+  return this.lockUntil && this.lockUntil > Date.now();
 });
 
 // Encrypt password before saving

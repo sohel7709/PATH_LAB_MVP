@@ -55,10 +55,8 @@ app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use(express.json({ limit: '5mb' }));
+app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
 mongoose.connect(process.env.MONGODB_URI, {
   maxPoolSize: 20,
@@ -88,17 +86,45 @@ app.use(helmet({
 app.use(xssClean());
 app.use(hpp());
 
+// Global rate limiter — 300 req/min per user (or IP before auth)
 const limiter = rateLimit({
   windowMs: 60 * 1000,
   max: 300,
   keyGenerator: (req) => req.user?.id || req.ip,
   skip: (req) => req.path === '/health',
-  message: {
-    success: false,
-    message: 'Too many requests, please slow down and try again in a minute'
-  }
+  message: { success: false, message: 'Too many requests, please slow down and try again in a minute' }
 });
 app.use(limiter);
+
+// Strict auth limiter — 10 attempts per 15 min per IP (brute-force protection)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  keyGenerator: (req) => req.ip,
+  message: { success: false, message: 'Too many login attempts. Please try again after 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// NoSQL injection sanitizer — strips $ and . from req.body/params/query
+const sanitizeNoSQL = (req, res, next) => {
+  const sanitize = (obj) => {
+    if (obj && typeof obj === 'object') {
+      for (const key of Object.keys(obj)) {
+        if (key.startsWith('$') || key.includes('.')) {
+          delete obj[key];
+        } else {
+          sanitize(obj[key]);
+        }
+      }
+    }
+  };
+  sanitize(req.body);
+  sanitize(req.query);
+  sanitize(req.params);
+  next();
+};
+app.use(sanitizeNoSQL);
 
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -112,8 +138,11 @@ app.use((req, res, next) => {
 const { protect, authorize } = require('./middleware/auth');
 const { getLabSettings, updateLabSettings } = require('./controllers/labController');
 
+// Serve uploaded files only to authenticated users (prevents enumeration of patient/lab data)
+app.use('/uploads', protect, express.static(path.join(__dirname, '../uploads')));
+
 // Mount routes
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authLimiter, authRoutes);  // strict rate limit on all auth endpoints
 app.use('/api/lab-management', labManagementRoutes);
 app.use('/api/labs', labRoutes);
 app.use('/api/user-management', userManagementRoutes);
@@ -166,7 +195,8 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5001;
 
-app.listen(PORT, () => {
-});
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {});
+}
 
 module.exports = app;
