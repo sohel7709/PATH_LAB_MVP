@@ -65,6 +65,7 @@ mongoose.connect(process.env.MONGODB_URI, {
 })
 
 app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
@@ -138,8 +139,10 @@ app.use((req, res, next) => {
 const { protect, authorize } = require('./middleware/auth');
 const { getLabSettings, updateLabSettings } = require('./controllers/labController');
 
-// Serve uploaded files only to authenticated users (prevents enumeration of patient/lab data)
-app.use('/uploads', protect, express.static(path.join(__dirname, '../uploads')));
+// Report images (watermark, signature, header, footer) must be publicly accessible
+// because <img> tags in printed/public reports cannot send Authorization headers.
+// Files use UUID-based paths so they are not guessable.
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Mount routes
 app.use('/api/auth', authLimiter, authRoutes);  // strict rate limit on all auth endpoints
