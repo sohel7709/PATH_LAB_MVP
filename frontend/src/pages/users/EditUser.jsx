@@ -266,7 +266,7 @@ const EditUser = () => {
                     Lab
                   </label>
                   <div className="mt-1">
-                    {formData.labId ? (
+                  {formData.labId ? (
                       <div>
                         <select
                           id="labId"
@@ -276,11 +276,14 @@ const EditUser = () => {
                           className="block w-full rounded-lg border border-blue-300 px-4 py-2 bg-gray-100 cursor-not-allowed"
                         >
                           <option value="">No Lab</option>
-                          {labs.map((lab) => (
-                            <option key={lab._id} value={lab._id}>
-                              {lab.name}
-                            </option>
-                          ))}
+                          {labs.map((lab) => {
+                            const hasOtherAdmin = formData.role === 'admin' && lab.users?.some(u => u.role === 'admin' && u._id !== id);
+                            return (
+                              <option key={lab._id} value={lab._id} disabled={hasOtherAdmin}>
+                                {lab.name}{hasOtherAdmin ? ' (Admin Assigned)' : ''}
+                              </option>
+                            );
+                          })}
                         </select>
                         <p className="mt-1 text-xs text-gray-500">
                           {formData.labId ? 
@@ -298,11 +301,14 @@ const EditUser = () => {
                         className="block w-full rounded-lg border border-blue-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
                       >
                         <option value="">No Lab</option>
-                        {labs.map((lab) => (
-                          <option key={lab._id} value={lab._id}>
-                            {lab.name}
-                          </option>
-                        ))}
+                        {labs.map((lab) => {
+                          const hasOtherAdmin = formData.role === 'admin' && lab.users?.some(u => u.role === 'admin');
+                          return (
+                            <option key={lab._id} value={lab._id} disabled={hasOtherAdmin}>
+                              {lab.name}{hasOtherAdmin ? ' (Admin Assigned)' : ''}
+                            </option>
+                          );
+                        })}
                       </select>
                     )}
                   </div>

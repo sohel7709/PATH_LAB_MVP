@@ -22,11 +22,12 @@ const testTemplateRoutes = require('./routes/testTemplateRoutes');
 const labReportSettingsRoutes = require('./routes/labReportSettingsRoutes');
 const doctorRoutes = require('./routes/doctorRoutes');
 const testRoutes = require('./routes/testRoutes');
-const planRoutes = require('./routes/planRoutes'); // Import plan routes
-const settingsRoutes = require('./routes/settingsRoutes'); // Import settings routes
-const superAdminRoutes = require('./routes/superAdminRoutes'); // Import super admin routes
-const revenueRoutes = require('./routes/revenueRoutes'); // Import revenue routes
-// const groupTestTemplateRoutes = require('./routes/groupTestTemplateRoutes');
+const planRoutes = require('./routes/planRoutes');
+const settingsRoutes = require('./routes/settingsRoutes');
+const superAdminRoutes = require('./routes/superAdminRoutes');
+const revenueRoutes = require('./routes/revenueRoutes');
+const subscriptionRoutes = require('./routes/subscriptionRoutes');
+const superAdminRevenueRoutes = require('./routes/superAdminRevenueRoutes');
 
 const app = express();
 
@@ -47,28 +48,22 @@ const corsOptions = {
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
-  maxAge: 86400 // 24 hours
+  maxAge: 86400
 };
 app.use(cors(corsOptions));
 
-// Allow OPTIONS requests to pass through without authentication
 app.options('*', cors(corsOptions));
-
-// Use morgan in development mode only
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
-app.use(express.json({ limit: '50mb' })); // Increased limit for base64 images
+app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Serve static files from the uploads directory
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('Connected to MongoDB'))
   .catch((err) => console.error('MongoDB connection error:', err));
 
-// Security middleware
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -88,16 +83,12 @@ app.use(helmet({
   referrerPolicy: { policy: 'same-origin' }
 }));
 
-// Prevent XSS attacks
 app.use(xssClean());
-
-// Prevent parameter pollution
 app.use(hpp());
 
-// Rate limiting
 const limiter = rateLimit({
-  windowMs: 10 * 60 * 1000, // 10 minutes
-  max: 500, // limit each IP to 500 requests per windowMs
+  windowMs: 10 * 60 * 1000,
+  max: 500,
   message: {
     success: false,
     message: 'Too many requests from this IP, please try again after 10 minutes'
@@ -105,7 +96,6 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// Add security headers
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
@@ -127,13 +117,13 @@ app.use('/api', testTemplateRoutes);
 app.use('/api', labReportSettingsRoutes);
 app.use('/api/doctors', doctorRoutes);
 app.use('/api/test', testRoutes);
-app.use('/api/plans', planRoutes); // Mount plan routes
-app.use('/api/settings', settingsRoutes); // Mount settings routes
-app.use('/api/superadmin', superAdminRoutes); // Mount super admin routes
-app.use('/api/revenue', revenueRoutes); // Mount revenue routes
-// app.use('/api/group-test-templates', groupTestTemplateRoutes);
+app.use('/api/plans', planRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/superadmin', superAdminRoutes);
+app.use('/api/revenue', revenueRoutes);
+app.use('/api/subscriptions', subscriptionRoutes);
+app.use('/api/super-admin/revenue', superAdminRevenueRoutes);
 
-// Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({
     success: true,
@@ -149,7 +139,6 @@ app.get('/', (req, res) => {
   });
 });
 
-// 404 handler
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -157,7 +146,6 @@ app.use((req, res) => {
   });
 });
 
-// Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({

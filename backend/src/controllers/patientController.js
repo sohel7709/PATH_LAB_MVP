@@ -121,6 +121,12 @@ exports.createPatient = asyncHandler(async (req, res) => {
     
     // Create patient
     const patient = await Patient.create(patientDataForCreation);
+
+    // Increment total patients count on lab
+    await Lab.findByIdAndUpdate(req.body.labId, {
+      $inc: { 'totalPatientsCreated': 1, 'stats.totalPatients': 1 }
+    });
+
     res.status(201).json(patient);
   } catch (error) {
     console.error('Detailed error creating patient:', error); // Log the full error

@@ -3,9 +3,9 @@ const mongoose = require('mongoose');
 const labSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: [true, 'Lab name is required.'], // Updated message
+    required: [true, 'Lab name is required.'],
     trim: true,
-    unique: true, // Added unique constraint as it's usually desired for lab names
+    unique: true,
     maxlength: [100, 'Lab name cannot be more than 100 characters']
   },
   address: {
@@ -30,19 +30,40 @@ const labSchema = new mongoose.Schema({
     plan: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Plan',
-      // required: true // Might not be required immediately upon lab creation
     },
-    startDate: { // Start date of the current subscription period
+    startDate: {
       type: Date,
-      // default: Date.now // Set when a plan is assigned
     },
-    endDate: Date, // End date of the current subscription period
+    endDate: Date,
+  },
+  // Subscription status fields
+  subscriptionStatus: {
+    type: String,
+    enum: ['active', 'expired', 'cancelled', 'pending', 'trial'],
+    default: 'pending',
+  },
+  subscriptionExpiry: {
+    type: Date,
+    default: null,
+  },
+  subscriptionPlan: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Plan',
+    default: null,
+  },
+  totalPatientsCreated: {
+    type: Number,
+    default: 0,
+  },
+  totalReportsCreated: {
+    type: Number,
+    default: 0,
   },
   // Overall status of the lab account
   status: {
     type: String,
     enum: ['active', 'inactive', 'pending_approval', 'suspended'],
-    default: 'pending_approval', // Default to pending until approved/plan assigned
+    default: 'pending_approval',
     required: true,
   },
   settings: {
@@ -108,9 +129,12 @@ labSchema.pre('save', function(next) {
 
 // Index for faster queries
 labSchema.index({ name: 1 });
-labSchema.index({ status: 1 }); // Index the new top-level status
-labSchema.index({ 'subscription.plan': 1 }); // Index the plan reference
-labSchema.index({ 'subscription.endDate': 1 }); // Index the subscription end date
+labSchema.index({ status: 1 });
+labSchema.index({ subscriptionStatus: 1 });
+labSchema.index({ subscriptionExpiry: 1 });
+labSchema.index({ subscriptionPlan: 1 });
+labSchema.index({ 'subscription.plan': 1 });
+labSchema.index({ 'subscription.endDate': 1 });
 labSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model('Lab', labSchema);

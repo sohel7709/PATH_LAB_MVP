@@ -5,6 +5,7 @@ import { reports, patients, doctors } from '../../utils/api';
 import { REPORT_STATUS } from '../../utils/constants';
 import { useAuth } from '../../context/AuthContext';
 import TestParametersForm from './TestParametersForm';
+import SubscriptionRequiredModal from '../../components/subscription/SubscriptionRequiredModal';
 
 export default function CreateReportForm() {
   const navigate = useNavigate();
@@ -13,6 +14,8 @@ export default function CreateReportForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [subscriptionModal, setSubscriptionModal] = useState(false);
+  const [subscriptionErrorData, setSubscriptionErrorData] = useState(null);
   const [patientList, setPatientList] = useState([]);
   const [doctorList, setDoctorList] = useState([]);
   const [patientSearchTerm, setPatientSearchTerm] = useState('');
@@ -335,7 +338,15 @@ export default function CreateReportForm() {
       navigate('/reports');
     } catch (err) {
       console.error('Error creating report:', err);
-      setError(err.message || 'Failed to create report. Please try again.');
+
+      // Check for subscription errors
+      if (err.response?.data?.code === 'SUBSCRIPTION_REQUIRED' ||
+          err.response?.data?.code === 'MAX_REPORTS_REACHED') {
+        setSubscriptionErrorData(err.response.data);
+        setSubscriptionModal(true);
+      } else {
+        setError(err.message || 'Failed to create report. Please try again.');
+      }
       setIsLoading(false);
     }
   };
@@ -675,6 +686,13 @@ export default function CreateReportForm() {
           </div>
         </form>
       </div>
+
+      {/* Subscription Required Modal */}
+      <SubscriptionRequiredModal
+        isOpen={subscriptionModal}
+        onClose={() => setSubscriptionModal(false)}
+        errorData={subscriptionErrorData}
+      />
     </div>
   );
 }

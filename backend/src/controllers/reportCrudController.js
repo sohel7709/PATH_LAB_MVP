@@ -101,9 +101,9 @@ exports.createReport = async (req, res, next) => {
 
     const report = await Report.create(reportDataToCreate);
 
-    // Update lab statistics
+    // Update lab statistics and totalReportsCreated counter
     await Lab.findByIdAndUpdate(req.user.lab, {
-      $inc: { 'stats.totalReports': 1 },
+      $inc: { 'stats.totalReports': 1, 'totalReportsCreated': 1 },
       $set: { 'stats.lastReportDate': Date.now() }
     });
 

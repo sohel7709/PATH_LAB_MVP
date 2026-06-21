@@ -143,22 +143,7 @@ const SuperAdminDashboard = () => {
                   Welcome, {user?.name || 'Super Admin'}! | Role: {user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Super Admin'}
                 </p>
               </div>
-              <div className="bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2">
-                <label htmlFor="view-switcher" className="text-sm font-medium text-white mr-2">
-                  Switch View:
-                </label>
-                <select
-                  id="view-switcher"
-                  value={selectedView}
-                  onChange={(e) => handleViewChange(e.target.value)}
-                  className="rounded-md border-transparent bg-white/80 py-1 pl-3 pr-10 text-sm font-medium text-blue-800 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
-                >
-                  <option value="super-admin">Super Admin View</option>
-                  <option value="admin">Admin View</option>
-                  <option value="technician">Technician View</option>
-                </select>
               </div>
-            </div>
           </div>
         </div>
 
@@ -253,7 +238,7 @@ const SuperAdminDashboard = () => {
                 <dl>
                   <dt className="truncate text-sm font-medium text-gray-500">Revenue This Month</dt>
                   <dd>
-                    <div className="text-2xl font-bold text-gray-900">${stats.revenueThisMonth}</div>
+                    <div className="text-2xl font-bold text-gray-900">₹{stats.revenueThisMonth}</div>
                   </dd>
                 </dl>
               </div>

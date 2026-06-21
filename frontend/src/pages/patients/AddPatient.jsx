@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ExclamationCircleIcon, UserPlusIcon } from '@heroicons/react/20/solid';
 import { useAuth } from '../../context/AuthContext';
+import SubscriptionRequiredModal from '../../components/subscription/SubscriptionRequiredModal';
 
 export default function AddPatient() {
   const navigate = useNavigate();
@@ -12,6 +13,8 @@ export default function AddPatient() {
   const [validationErrors, setValidationErrors] = useState({
     phone: ''
   });
+  const [subscriptionModal, setSubscriptionModal] = useState(false);
+  const [subscriptionErrorData, setSubscriptionErrorData] = useState(null);
   
   const [formData, setFormData] = useState({
     designation: '', // Added designation field
@@ -111,8 +114,12 @@ export default function AddPatient() {
     } catch (err) {
       console.error('Error creating patient:', err);
       
-      // Check if this is a duplicate patient error
-      if (err.response && err.response.data && err.response.data.duplicate) {
+      // Check if this is a subscription error
+      if (err.response?.data?.code === 'SUBSCRIPTION_REQUIRED' || 
+          err.response?.data?.code === 'MAX_PATIENTS_REACHED') {
+        setSubscriptionErrorData(err.response.data);
+        setSubscriptionModal(true);
+      } else if (err.response && err.response.data && err.response.data.duplicate) {
         setDuplicatePatient(err.response.data.patient);
         setError('Patient already exists in the system');
       } else if (err.response && err.response.data && err.response.data.message) {
@@ -417,6 +424,13 @@ export default function AddPatient() {
           </p>
         </form>
       </div>
+
+      {/* Subscription Required Modal */}
+      <SubscriptionRequiredModal
+        isOpen={subscriptionModal}
+        onClose={() => setSubscriptionModal(false)}
+        errorData={subscriptionErrorData}
+      />
     </div>
   );
 }
