@@ -108,105 +108,57 @@ router.get('/stats', protect, async (req, res) => {
 // @access  Private/Super Admin
 router.get('/system-stats', protect, authorize('super-admin'), async (req, res) => {
   try {
-    const totalLabs = await Lab.countDocuments();
-    const totalUsers = await User.countDocuments();
-    const totalReports = await Report.countDocuments();
-
-    const activeSubscriptions = await Subscription.countDocuments({ status: 'active' });
-
-    // Calculate revenue from RevenueTransaction collection
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const revenueThisMonthResult = await RevenueTransaction.aggregate([
-      { $match: { status: 'active', activatedAt: { $gte: startOfMonth } } },
-      { $group: { _id: null, total: { $sum: '$amount' } } },
+
+    const [
+      totalLabs,
+      totalUsers,
+      totalReports,
+      activeSubscriptions,
+      revenueThisMonthResult,
+      recentLabs,
+      recentUsers,
+      labsBySubscription,
+      usersByRole,
+      monthlyReports,
+      monthlyNewLabs,
+    ] = await Promise.all([
+      Lab.countDocuments(),
+      User.countDocuments(),
+      Report.countDocuments(),
+      Subscription.countDocuments({ status: 'active' }),
+      RevenueTransaction.aggregate([
+        { $match: { status: 'active', activatedAt: { $gte: startOfMonth } } },
+        { $group: { _id: null, total: { $sum: '$amount' } } },
+      ]),
+      Lab.find().sort({ createdAt: -1 }).limit(5)
+        .populate({ path: 'subscription.plan', select: 'planName' })
+        .select('name subscription createdAt status'),
+      User.find().sort({ createdAt: -1 }).limit(5)
+        .populate('lab', 'name')
+        .select('name email role lab'),
+      Lab.aggregate([
+        { $match: { 'subscription.plan': { $ne: null } } },
+        { $lookup: { from: 'plans', localField: 'subscription.plan', foreignField: '_id', as: 'planDetails' } },
+        { $unwind: { path: '$planDetails', preserveNullAndEmptyArrays: true } },
+        { $group: { _id: '$planDetails.planName', count: { $sum: 1 } } },
+        { $project: { _id: 0, planName: '$_id', count: 1 } },
+      ]),
+      User.aggregate([{ $group: { _id: '$role', count: { $sum: 1 } } }]),
+      Report.aggregate([
+        { $group: { _id: { month: { $month: '$createdAt' }, year: { $year: '$createdAt' } }, count: { $sum: 1 } } },
+        { $sort: { '_id.year': -1, '_id.month': -1 } },
+        { $limit: 12 },
+      ]),
+      Lab.aggregate([
+        { $group: { _id: { month: { $month: '$createdAt' }, year: { $year: '$createdAt' } }, count: { $sum: 1 } } },
+        { $sort: { '_id.year': -1, '_id.month': -1 } },
+        { $limit: 12 },
+      ]),
     ]);
+
     const systemRevenueThisMonth = revenueThisMonthResult.length > 0 ? revenueThisMonthResult[0].total : 0;
-
-    const recentLabs = await Lab.find()
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .populate({
-          path: 'subscription.plan',
-          select: 'planName'
-      })
-      .select('name subscription createdAt status');
-
-    const recentUsers = await User.find()
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .populate('lab', 'name')
-      .select('name email role lab');
-
-    const labsBySubscription = await Lab.aggregate([
-        {
-            $match: { 'subscription.plan': { $ne: null } }
-        },
-        {
-            $lookup: {
-                from: 'plans',
-                localField: 'subscription.plan',
-                foreignField: '_id',
-                as: 'planDetails'
-            }
-        },
-        {
-            $unwind: {
-                path: '$planDetails',
-                preserveNullAndEmptyArrays: true
-            }
-        },
-        {
-            $group: {
-                _id: '$planDetails.planName',
-                count: { $sum: 1 }
-            }
-        },
-        {
-             $project: {
-                 _id: 0,
-                 planName: '$_id',
-                 count: 1
-             }
-        }
-    ]);
-
-    const usersByRole = await User.aggregate([
-      {
-        $group: {
-          _id: '$role',
-          count: { $sum: 1 }
-        }
-      }
-    ]);
-
-    const monthlyReports = await Report.aggregate([
-      {
-        $group: {
-          _id: {
-            month: { $month: '$createdAt' },
-            year: { $year: '$createdAt' }
-          },
-          count: { $sum: 1 }
-        }
-      },
-      { $sort: { '_id.year': -1, '_id.month': -1 } },
-      { $limit: 12 }
-    ]);
-
-    const monthlyNewLabs = await Lab.aggregate([
-      {
-        $group: {
-          _id: {
-            month: { $month: '$createdAt' },
-            year: { $year: '$createdAt' }
-          },
-          count: { $sum: 1 }
-        }
-      },
-      { $sort: { '_id.year': -1, '_id.month': -1 } },
-      { $limit: 12 }
-    ]);
 
     res.status(200).json({
       success: true,
