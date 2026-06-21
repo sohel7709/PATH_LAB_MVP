@@ -7,21 +7,14 @@ import {
   PencilSquareIcon,
   TrashIcon,
   MagnifyingGlassIcon,
-  FunnelIcon,
-  ArrowPathIcon,
   BeakerIcon,
+  ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
 
-const getTypeBadge = (template) => {
-  if (template.isDefault || template.templateType === 'default') {
-    return <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 ml-2">Default</span>;
-  }
-  if (template.templateType === 'global') {
-    return <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 ml-2">Global</span>;
-  }
-  if (template.templateType === 'local') {
-    return <span className="inline-flex items-center rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-medium text-orange-800 ml-2">Local</span>;
-  }
+const typeBadge = (template) => {
+  if (template.isDefault || template.templateType === 'default') return <span className="badge badge-blue">Default</span>;
+  if (template.templateType === 'global') return <span className="badge badge-green">Global</span>;
+  if (template.templateType === 'local') return <span className="badge badge-yellow">Local</span>;
   return null;
 };
 
@@ -60,8 +53,7 @@ const TestTemplateList = () => {
       } else {
         setError('Failed to fetch test templates');
       }
-    } catch (err) {
-      console.error('Error fetching test templates:', err);
+    } catch {
       setError('Failed to load test templates. Please try again later.');
     } finally {
       setLoading(false);
@@ -74,18 +66,13 @@ const TestTemplateList = () => {
   const handleSearch = (e) => { e.preventDefault(); fetchTemplates(); };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this template?')) {
-      try {
-        const response = await testTemplates.delete(id);
-        if (response.success) {
-          setTemplates(templates.filter(t => t._id !== id));
-        } else {
-          setError('Failed to delete template');
-        }
-      } catch (err) {
-        console.error('Error deleting template:', err);
-        setError('Failed to delete template. Please try again later.');
-      }
+    if (!window.confirm('Are you sure you want to delete this template?')) return;
+    try {
+      const response = await testTemplates.delete(id);
+      if (response.success) setTemplates(templates.filter(t => t._id !== id));
+      else setError('Failed to delete template');
+    } catch {
+      setError('Failed to delete template. Please try again later.');
     }
   };
 
@@ -97,159 +84,142 @@ const TestTemplateList = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-7xl mx-auto bg-white rounded-2xl shadow-xl border border-blue-100 overflow-hidden">
-        <div className="px-8 py-6 bg-gradient-to-r from-blue-700 to-blue-500">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-extrabold text-white">Test Templates</h1>
-              <p className="text-base text-blue-100 mt-1">
-                Manage test templates for your lab reports
-              </p>
-            </div>
-            {(user?.role === 'super-admin' || user?.role === 'admin') && (
-              <Link
-                to="/templates/create"
-                className="inline-flex items-center justify-center rounded-lg border border-transparent bg-white/20 backdrop-blur-sm px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-blue-600"
-              >
-                <PlusIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+    <div className="page-enter space-y-5">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Test Templates</h1>
+          <p className="text-sm text-slate-500 mt-0.5">Manage test templates for your lab reports</p>
+        </div>
+        {(user?.role === 'super-admin' || user?.role === 'admin') && (
+          <Link to="/templates/create" className="btn btn-primary">
+            <PlusIcon className="h-4 w-4" />
+            Create Template
+          </Link>
+        )}
+      </div>
+
+      {/* Error */}
+      {error && (
+        <div className="flex items-center gap-3 rounded-lg bg-red-50 border border-red-200 px-4 py-3">
+          <ExclamationTriangleIcon className="h-5 w-5 text-red-500 shrink-0" />
+          <p className="text-sm text-red-800">{error}</p>
+        </div>
+      )}
+
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="sm:w-52">
+          <select
+            value={selectedCategory}
+            onChange={e => setSelectedCategory(e.target.value)}
+            className="input select"
+          >
+            {categories.map(cat => (
+              <option key={cat.value} value={cat.value}>{cat.label}</option>
+            ))}
+          </select>
+        </div>
+        <form onSubmit={handleSearch} className="flex flex-1 gap-2">
+          <div className="relative flex-1">
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              placeholder="Search by template name..."
+              className="input pl-9"
+            />
+          </div>
+          <button type="submit" className="btn btn-secondary">Search</button>
+        </form>
+      </div>
+
+      {/* Table */}
+      {loading ? (
+        <div className="card p-5 space-y-3">
+          {[...Array(5)].map((_, i) => <div key={i} className="h-12 skeleton" />)}
+        </div>
+      ) : templates.length === 0 ? (
+        <div className="card">
+          <div className="empty-state">
+            <BeakerIcon className="h-12 w-12 text-slate-300 mb-3" />
+            <p className="text-base font-medium text-slate-600">No test templates found</p>
+            <p className="text-sm text-slate-400 mt-1">
+              {searchTerm || selectedCategory ? 'Try different filters' : 'Create your first template to get started'}
+            </p>
+            {!searchTerm && !selectedCategory && (user?.role === 'super-admin' || user?.role === 'admin') && (
+              <Link to="/templates/create" className="btn btn-primary mt-4">
+                <PlusIcon className="h-4 w-4" />
                 Create Template
               </Link>
             )}
           </div>
         </div>
-        
-        <div className="p-6 space-y-6">
-          <div className="bg-white shadow-md rounded-lg border border-blue-100">
-            <div className="p-6 border-b border-blue-100">
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="sm:w-1/3">
-                  <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                  <select id="category" name="category" value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="block w-full rounded-lg border border-blue-300 bg-blue-50 h-10 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm font-medium text-blue-700 transition-colors">
-                    {categories.map((cat) => (
-                      <option key={cat.value} value={cat.value}>{cat.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="sm:w-2/3">
-                  <form onSubmit={handleSearch}>
-                    <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">Search Templates</label>
-                    <div className="flex">
-                      <div className="relative flex-grow">
-                        <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                          <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
-                        </span>
-                        <input type="text" id="search" value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="block w-full rounded-l-lg border border-blue-300 pl-10 focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10"
-                          placeholder="Search by template name" />
+      ) : (
+        <div className="table-wrapper overflow-x-auto">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Template Name</th>
+                <th>Category</th>
+                <th>Type</th>
+                <th>Parameters</th>
+                <th>Created By</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {templates.map(template => (
+                <tr key={template._id}>
+                  <td>
+                    <div className="flex items-center gap-3">
+                      <div className="h-9 w-9 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
+                        <BeakerIcon className="h-5 w-5 text-blue-600" />
                       </div>
-                      <button type="submit"
-                        className="inline-flex items-center rounded-r-lg border border-l-0 border-blue-300 bg-blue-50 px-4 h-10 text-sm font-medium text-blue-700 shadow-sm hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                        Search
-                      </button>
+                      <Link to={`/templates/${template._id}`} className="font-medium text-slate-900 hover:text-blue-600 transition-colors">
+                        {template.templateName || template.name}
+                      </Link>
                     </div>
-                  </form>
-                </div>
-              </div>
-            </div>
-
-            <div className="overflow-x-auto">
-              {loading ? (
-                <div className="flex justify-center items-center p-12">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-                </div>
-              ) : error ? (
-                <div className="p-6 text-center text-red-500 bg-red-50 rounded-lg border-l-4 border-red-500">{error}</div>
-              ) : templates.length === 0 ? (
-                <div className="p-12 text-center">
-                  <BeakerIcon className="mx-auto h-16 w-16 text-blue-200 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-1">No test templates found</h3>
-                  <p className="text-gray-500 mb-6">Create your first template to get started</p>
-                  {(user?.role === 'super-admin' || user?.role === 'admin') && (
-                    <Link to="/templates/create"
-                      className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2">
-                      <PlusIcon className="-ml-1 mr-2 h-5 w-5" />
-                      Create Template
-                    </Link>
-                  )}
-                </div>
-              ) : (
-                <table className="min-w-full divide-y divide-blue-200">
-                  <thead className="bg-blue-50">
-                    <tr>
-                      <th className="py-3.5 pl-4 pr-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">Template Name</th>
-                      <th className="px-3 py-3.5 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">Category</th>
-                      <th className="px-3 py-3.5 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">Type</th>
-                      <th className="px-3 py-3.5 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">Parameters</th>
-                      <th className="px-3 py-3.5 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">Created By</th>
-                      <th className="relative py-3.5 pl-3 pr-4"><span className="sr-only">Actions</span></th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-blue-100 bg-white">
-                    {templates.map((template) => (
-                      <tr key={template._id}>
-                        <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                              <BeakerIcon className="h-5 w-5 text-blue-600" />
-                            </div>
-                            <div className="ml-4">
-                              <Link to={`/templates/${template._id}`} className="hover:text-blue-600 font-medium">
-                                {template.templateName || template.name}
-                              </Link>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-                            {template.category ? (template.category.charAt(0).toUpperCase() + template.category.slice(1)) : 'General'}
-                          </span>
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm">
-                          {getTypeBadge(template)}
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          {Array.isArray(template.sections)
-                            ? template.sections.reduce((acc, s) => acc + (s.parameters?.length || 0), 0)
-                            : 0} parameters
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          {template.createdBy?.name || 'System'}
-                        </td>
-                        <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium">
-                          <div className="flex justify-end space-x-3">
-                            <Link to={`/templates/${template._id}`} className="text-blue-600 hover:text-blue-900 p-1 rounded-full hover:bg-blue-50" title="View Template">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                              </svg>
-                            </Link>
-                            {canEditDelete(template) && (
-                              <>
-                                <Link to={`/templates/${template._id}/edit`}
-                                  className="text-green-600 hover:text-green-900 p-1 rounded-full hover:bg-green-50" title="Edit Template">
-                                  <PencilSquareIcon className="h-5 w-5" />
-                                </Link>
-                                <button onClick={() => handleDelete(template._id)}
-                                  className="text-red-600 hover:text-red-900 p-1 rounded-full hover:bg-red-50" title="Delete Template">
-                                  <TrashIcon className="h-5 w-5" />
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          </div>
+                  </td>
+                  <td>
+                    <span className="badge badge-blue">
+                      {template.category ? (template.category.charAt(0).toUpperCase() + template.category.slice(1)) : 'General'}
+                    </span>
+                  </td>
+                  <td>{typeBadge(template)}</td>
+                  <td className="text-slate-500 text-sm">
+                    {Array.isArray(template.sections)
+                      ? template.sections.reduce((acc, s) => acc + (s.parameters?.length || 0), 0)
+                      : 0} params
+                  </td>
+                  <td className="text-slate-500 text-sm">{template.createdBy?.name || 'System'}</td>
+                  <td>
+                    <div className="flex gap-1">
+                      <Link to={`/templates/${template._id}`} className="p-1.5 rounded hover:bg-blue-50 text-blue-600 transition-colors" title="View">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      </Link>
+                      {canEditDelete(template) && (
+                        <>
+                          <Link to={`/templates/${template._id}/edit`} className="p-1.5 rounded hover:bg-green-50 text-green-600 transition-colors" title="Edit">
+                            <PencilSquareIcon className="h-4 w-4" />
+                          </Link>
+                          <button onClick={() => handleDelete(template._id)} className="p-1.5 rounded hover:bg-red-50 text-red-600 transition-colors" title="Delete">
+                            <TrashIcon className="h-4 w-4" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      </div>
+      )}
     </div>
   );
 };

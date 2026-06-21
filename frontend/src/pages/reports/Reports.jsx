@@ -1,19 +1,31 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  PlusIcon, 
+import {
+  PlusIcon,
   MagnifyingGlassIcon,
   FunnelIcon,
   ArrowUpIcon,
   ArrowDownIcon,
   ArrowPathIcon,
-  TrashIcon
+  TrashIcon,
+  DocumentTextIcon,
+  ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
-import LoadingSpinner, { SkeletonLoader, ButtonLoader } from '../../components/common/LoadingSpinner';
+import LoadingSpinner, { SkeletonLoader } from '../../components/common/LoadingSpinner';
 import { reports } from '../../utils/api';
 import { formatDate, getStatusColor } from '../../utils/helpers';
 import { REPORT_STATUS } from '../../utils/constants';
 import { useAuth } from '../../context/AuthContext';
+
+const statusBadge = (status) => {
+  const map = {
+    completed: 'badge badge-green',
+    pending: 'badge badge-yellow',
+    processing: 'badge badge-blue',
+    cancelled: 'badge badge-red',
+  };
+  return map[status] || 'badge badge-gray';
+};
 
 export default function Reports() {
   const [reportsData, setReportsData] = useState([]);
@@ -31,44 +43,23 @@ export default function Reports() {
 
   useEffect(() => {
     fetchReports();
-    // Scroll to top when component mounts
-    window.scrollTo(0, 0); 
+    window.scrollTo(0, 0);
   }, []);
 
   const fetchReports = async (isRefresh = false) => {
     try {
-      if (isRefresh) {
-        setIsRefreshing(true);
-      } else {
-        setIsLoading(true);
-      }
-      console.log('Fetching reports from API with high limit...');
-      // Pass a large limit to fetch all reports, bypassing default pagination
-      const response = await reports.getAll({ limit: 10000 }); 
-      console.log('Reports response received:', response);
-      
-      // Handle different response formats
-      let reportsArray = [];
-      
-      if (response && response.data && Array.isArray(response.data)) {
-        // New API format with { success, data, pagination }
-        reportsArray = response.data;
-      } else if (Array.isArray(response)) {
-        // Old API format with direct array
-        reportsArray = response;
-      } else if (response && response.success && Array.isArray(response.data)) {
-        // Another possible format
-        reportsArray = response.data;
-      } else if (response && Array.isArray(response.data)) {
-        // Yet another format
-        reportsArray = response.data;
-      }
-      
-      console.log('Processed reports array:', reportsArray);
-      setReportsData(reportsArray || []);
+      if (isRefresh) setIsRefreshing(true);
+      else setIsLoading(true);
+
+      const response = await reports.getAll({ limit: 10000 });
+      let arr = [];
+      if (response?.data && Array.isArray(response.data)) arr = response.data;
+      else if (Array.isArray(response)) arr = response;
+      else if (response?.success && Array.isArray(response.data)) arr = response.data;
+
+      setReportsData(arr || []);
       setError(null);
     } catch (err) {
-      console.error('Error fetching reports:', err);
       setError(`Failed to load reports: ${err.message}`);
       setReportsData([]);
     } finally {
@@ -76,8 +67,6 @@ export default function Reports() {
       setIsRefreshing(false);
     }
   };
-
-
 
   const cancelDelete = () => {
     setShowDeleteConfirm(false);
@@ -93,7 +82,6 @@ export default function Reports() {
       setReportToDelete(null);
       fetchReports(true);
     } catch (err) {
-      console.error('Error deleting report:', err);
       setError(err.message || 'Failed to delete report');
       setShowDeleteConfirm(false);
       setReportToDelete(null);
@@ -103,329 +91,215 @@ export default function Reports() {
   };
 
   const handleSort = (key) => {
-    setSortConfig((prevConfig) => ({
-      key,
-      direction:
-        prevConfig.key === key && prevConfig.direction === 'asc' ? 'desc' : 'asc',
-    }));
+    setSortConfig(prev => ({ key, direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc' }));
   };
 
   const sortedReports = [...reportsData].sort((a, b) => {
-    if (sortConfig.direction === 'asc') {
-      return a[sortConfig.key] > b[sortConfig.key] ? 1 : -1;
-    }
+    if (sortConfig.direction === 'asc') return a[sortConfig.key] > b[sortConfig.key] ? 1 : -1;
     return a[sortConfig.key] < b[sortConfig.key] ? 1 : -1;
   });
 
-  const filteredReports = sortedReports.filter((report) => {
-    // Handle both old and new report data structures
-    const patientName = report.patientInfo?.name || report.patientName || '';
-    const testName = report.testInfo?.name || report.testName || '';
-    
+  const filteredReports = sortedReports.filter(r => {
+    const patientName = r.patientInfo?.name || r.patientName || '';
+    const testName = r.testInfo?.name || r.testName || '';
     const matchesSearch = patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         testName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterStatus === 'all' || report.status === filterStatus;
+      testName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter = filterStatus === 'all' || r.status === filterStatus;
     return matchesSearch && matchesFilter;
   });
 
   const SortIcon = ({ columnKey }) => {
-    if (sortConfig.key !== columnKey) {
-      return null;
-    }
-    return sortConfig.direction === 'asc' ? (
-      <ArrowUpIcon className="h-4 w-4 inline-block ml-1" />
-    ) : (
-      <ArrowDownIcon className="h-4 w-4 inline-block ml-1" />
-    );
+    if (sortConfig.key !== columnKey) return null;
+    return sortConfig.direction === 'asc'
+      ? <ArrowUpIcon className="h-3 w-3 inline ml-1" />
+      : <ArrowDownIcon className="h-3 w-3 inline ml-1" />;
   };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 py-8 px-4 sm:px-6 lg:px-8">
-        <div className="w-full max-w-7xl mx-auto bg-white rounded-2xl shadow-xl border border-blue-100 overflow-hidden">
-          <div className="px-8 py-6 bg-gradient-to-r from-blue-700 to-blue-500">
-            <div className="animate-pulse">
-              <div className="h-8 bg-white/30 rounded w-1/4 mb-4"></div>
-              <div className="h-4 bg-white/20 rounded w-1/2"></div>
-            </div>
+      <div className="page-enter space-y-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="h-7 skeleton w-32 mb-2" />
+            <div className="h-4 skeleton w-56" />
           </div>
-          
-          <div className="p-6">
-            <div className="flex justify-center py-12">
-              <LoadingSpinner size="lg" text="Loading reports..." />
-            </div>
-            
-            <SkeletonLoader type="table-row" count={5} />
-          </div>
+        </div>
+        <div className="card p-5 space-y-3">
+          {[...Array(5)].map((_, i) => <div key={i} className="h-12 skeleton" />)}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-7xl mx-auto bg-white rounded-2xl shadow-xl border border-blue-100 overflow-hidden">
-        <div className="px-8 py-6 bg-gradient-to-r from-blue-700 to-blue-500">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-extrabold text-white">Reports</h1>
-              <p className="text-base text-blue-100 mt-1">
-                A list of all laboratory reports including patient details and status
-              </p>
-            </div>
-            <div className="flex space-x-3">
-              <button
-                onClick={() => {
-                  setSearchTerm('');
-                  setFilterStatus('all');
-                  setSortConfig({ key: 'createdAt', direction: 'desc' });
-                  fetchReports(true);
-                }}
-                className="inline-flex items-center justify-center rounded-lg border border-transparent bg-white/20 backdrop-blur-sm px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-blue-600 transition-all duration-300"
-                disabled={isRefreshing}
-              >
-                {isRefreshing ? (
-                  <ButtonLoader text="Refreshing..." />
-                ) : (
-                  <>
-                    <ArrowPathIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-                    Refresh
-                  </>
-                )}
-              </button>
-              <Link
-                to="/reports/create"
-                className="inline-flex items-center justify-center rounded-lg border border-transparent bg-white/20 backdrop-blur-sm px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-blue-600 transition-all duration-300"
-              >
-                <PlusIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-                New Report
-              </Link>
-            </div>
-          </div>
+    <div className="page-enter space-y-5">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Reports</h1>
+          <p className="text-sm text-slate-500 mt-0.5">All laboratory reports</p>
         </div>
-        
-        <div className="p-6">
-          {error && (
-            <div className="mb-6 rounded-lg bg-red-100 border-l-4 border-red-500 text-red-700 p-4">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <TrashIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
-                </div>
-                <div className="ml-3">
-                  <h3 className="text-sm font-medium text-red-800">{error}</h3>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="flex flex-col">
-            <div className="mb-6 flex flex-col sm:flex-row gap-4">
-              {/* Search */}
-              <div className="relative flex-1">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <MagnifyingGlassIcon className="h-5 w-5 text-blue-400" aria-hidden="true" />
-                </div>
-                <input
-                  type="text"
-                  className="block w-full rounded-lg border border-blue-300 pl-10 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-300"
-                  placeholder="Search reports..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-
-              {/* Filter */}
-              <div className="sm:w-64">
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FunnelIcon className="h-5 w-5 text-blue-400" aria-hidden="true" />
-                  </div>
-                  <select
-                    className="block w-full rounded-lg border border-blue-300 pl-10 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-300"
-                    value={filterStatus}
-                    onChange={(e) => setFilterStatus(e.target.value)}
-                  >
-                    <option value="all">All Status</option>
-                    {Object.values(REPORT_STATUS).map((status) => (
-                      <option key={status} value={status}>
-                        {status.charAt(0).toUpperCase() + status.slice(1)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {isRefreshing && (
-              <div className="mb-4 flex justify-center">
-                <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-lg">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Refreshing data...
-                </div>
-              </div>
-            )}
-            
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-blue-200">
-                <thead className="bg-blue-50">
-                  <tr>
-                    <th
-                      scope="col"
-                      className="py-3.5 pl-4 pr-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider cursor-pointer transition-colors duration-300 hover:bg-blue-100"
-                      onClick={() => handleSort('patientName')}
-                    >
-                      Patient Name
-                      <SortIcon columnKey="patientName" />
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-3 py-3.5 text-left text-xs font-medium text-blue-700 uppercase tracking-wider cursor-pointer transition-colors duration-300 hover:bg-blue-100"
-                      onClick={() => handleSort('testName')}
-                    >
-                      Test Name
-                      <SortIcon columnKey="testName" />
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-3 py-3.5 text-left text-xs font-medium text-blue-700 uppercase tracking-wider cursor-pointer transition-colors duration-300 hover:bg-blue-100"
-                      onClick={() => handleSort('createdAt')}
-                    >
-                      Date
-                      <SortIcon columnKey="createdAt" />
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-3 py-3.5 text-left text-xs font-medium text-blue-700 uppercase tracking-wider cursor-pointer transition-colors duration-300 hover:bg-blue-100"
-                      onClick={() => handleSort('status')}
-                    >
-                      Status
-                      <SortIcon columnKey="status" />
-                    </th>
-                    <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6 lg:pr-8">
-                      <span className="sr-only">Actions</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-blue-100">
-                  {filteredReports.length === 0 ? (
-                    <tr>
-                      <td colSpan="5" className="py-4 text-center text-sm text-gray-500">
-                        No reports found
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredReports.map((report) => {
-                      // Handle both old and new report data structures
-                      const patientName = report.patientInfo?.name || report.patientName || 'N/A';
-                      const testName = report.testInfo?.name || report.testName || 'N/A';
-                      const reportId = report._id || report.id;
-                      
-                      return (
-                        <tr key={reportId} className="hover:bg-blue-50 transition-colors duration-150">
-                          <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6 lg:pl-8">
-                            {patientName}
-                          </td>
-                          <td className="px-3 py-4 text-sm text-gray-500 truncate max-w-sm" title={testName}>
-                            {testName}
-                          </td>
-                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                            {formatDate(report.createdAt || report.reportMeta?.generatedAt)}
-                          </td>
-                          <td className="whitespace-nowrap px-3 py-4 text-sm">
-                            <span className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${getStatusColor(report.status)}`}>
-                              {report.status}
-                            </span>
-                          </td>
-                          <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6 lg:pr-8">
-                            <div className="flex space-x-3">
-                              <Link
-                                to={`/reports/${reportId}/print`}
-                                className="text-blue-600 hover:text-blue-900 p-1 rounded-full hover:bg-blue-50 transition-colors"
-                                title="View Report"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                </svg>
-                              </Link>
-                              <Link
-                                to={`/reports/${reportId}/edit`}
-                                className="text-green-600 hover:text-green-900 p-1 rounded-full hover:bg-green-50 transition-colors"
-                                title="Edit Report"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                </svg>
-                              </Link>
-                             <Link
-                                to={`/reports/${reportId}/print`}
-                                className="text-gray-600 hover:text-gray-900 p-1 rounded-full hover:bg-gray-100 transition-colors"
-                                title="Print Report"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                                </svg>
-                            </Link>
-                            {isAdmin && (
-                              <button
-                                onClick={() => {
-                                  setReportToDelete(reportId);
-                                  setShowDeleteConfirm(true);
-                                }}
-                                className="text-red-600 hover:text-red-900 p-1 rounded-full hover:bg-red-50 transition-colors"
-                                title="Delete Report"
-                              >
-                                <TrashIcon className="h-5 w-5" />
-                              </button>
-                            )}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              setSearchTerm('');
+              setFilterStatus('all');
+              setSortConfig({ key: 'createdAt', direction: 'desc' });
+              fetchReports(true);
+            }}
+            disabled={isRefreshing}
+            className="btn btn-secondary"
+          >
+            <ArrowPathIcon className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {isRefreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+          <Link to="/reports/create" className="btn btn-primary">
+            <PlusIcon className="h-4 w-4" />
+            New Report
+          </Link>
         </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
+      {/* Error */}
+      {error && (
+        <div className="flex items-center gap-3 rounded-lg bg-red-50 border border-red-200 px-4 py-3">
+          <ExclamationTriangleIcon className="h-5 w-5 text-red-500 shrink-0" />
+          <p className="text-sm text-red-800">{error}</p>
+        </div>
+      )}
+
+      {/* Search + Filter */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            placeholder="Search by patient or test name..."
+            className="input pl-9"
+          />
+        </div>
+        <div className="relative sm:w-52">
+          <FunnelIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <select
+            value={filterStatus}
+            onChange={e => setFilterStatus(e.target.value)}
+            className="input select pl-9"
+          >
+            <option value="all">All Status</option>
+            {Object.values(REPORT_STATUS).map(s => (
+              <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="table-wrapper overflow-x-auto">
+        <table className="table">
+          <thead>
+            <tr>
+              <th className="cursor-pointer hover:text-slate-800" onClick={() => handleSort('patientName')}>
+                Patient <SortIcon columnKey="patientName" />
+              </th>
+              <th className="cursor-pointer hover:text-slate-800" onClick={() => handleSort('testName')}>
+                Test <SortIcon columnKey="testName" />
+              </th>
+              <th className="cursor-pointer hover:text-slate-800" onClick={() => handleSort('createdAt')}>
+                Date <SortIcon columnKey="createdAt" />
+              </th>
+              <th className="cursor-pointer hover:text-slate-800" onClick={() => handleSort('status')}>
+                Status <SortIcon columnKey="status" />
+              </th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredReports.length === 0 ? (
+              <tr>
+                <td colSpan={5}>
+                  <div className="empty-state">
+                    <DocumentTextIcon className="h-12 w-12 text-slate-300 mb-3" />
+                    <p className="text-base font-medium text-slate-600">No reports found</p>
+                    <p className="text-sm text-slate-400 mt-1">
+                      {searchTerm || filterStatus !== 'all' ? 'Try adjusting your search or filters' : 'Create your first report to get started'}
+                    </p>
+                    <Link to="/reports/create" className="btn btn-primary mt-4">
+                      <PlusIcon className="h-4 w-4" />
+                      Create Report
+                    </Link>
+                  </div>
+                </td>
+              </tr>
+            ) : filteredReports.map(report => {
+              const patientName = report.patientInfo?.name || report.patientName || 'N/A';
+              const testName = report.testInfo?.name || report.testName || 'N/A';
+              const reportId = report._id || report.id;
+              return (
+                <tr key={reportId}>
+                  <td className="font-medium text-slate-900">{patientName}</td>
+                  <td className="text-slate-500 max-w-[200px] truncate" title={testName}>{testName}</td>
+                  <td className="text-slate-500">{formatDate(report.createdAt || report.reportMeta?.generatedAt)}</td>
+                  <td>
+                    <span className={statusBadge(report.status)}>
+                      {report.status?.charAt(0).toUpperCase() + report.status?.slice(1)}
+                    </span>
+                  </td>
+                  <td>
+                    <div className="flex gap-1">
+                      <Link to={`/reports/${reportId}/print`} className="p-1.5 rounded hover:bg-blue-50 text-blue-600 transition-colors" title="View">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      </Link>
+                      <Link to={`/reports/${reportId}/edit`} className="p-1.5 rounded hover:bg-green-50 text-green-600 transition-colors" title="Edit">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </Link>
+                      <Link to={`/reports/${reportId}/print`} className="p-1.5 rounded hover:bg-slate-100 text-slate-500 transition-colors" title="Print">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                        </svg>
+                      </Link>
+                      {isAdmin && (
+                        <button
+                          onClick={() => { setReportToDelete(reportId); setShowDeleteConfirm(true); }}
+                          className="p-1.5 rounded hover:bg-red-50 text-red-600 transition-colors"
+                          title="Delete"
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Delete modal */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-xl shadow-xl max-w-md w-full">
-            <div className="sm:flex sm:items-start">
-              <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-                <TrashIcon className="h-6 w-6 text-red-600" aria-hidden="true" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={cancelDelete} />
+          <div className="relative bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-start gap-4">
+              <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                <TrashIcon className="h-5 w-5 text-red-600" />
               </div>
-              <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                <h3 className="text-lg leading-6 font-medium text-gray-900">Delete Report</h3>
-                <div className="mt-2">
-                  <p className="text-sm text-gray-500">
-                    Are you sure you want to delete this report? This action cannot be undone.
-                  </p>
-                </div>
+              <div>
+                <h3 className="text-base font-semibold text-slate-900">Delete Report</h3>
+                <p className="text-sm text-slate-500 mt-1">Are you sure you want to delete this report? This action cannot be undone.</p>
               </div>
             </div>
-            <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
-              <button
-               type="button"
-               className="mt-3 w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:w-auto sm:text-sm transition-colors duration-300"
-               onClick={cancelDelete}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="mt-3 w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm transition-colors duration-300"
-                onClick={handleDelete}
-                disabled={isDeleting}
-              >
-                {isDeleting ? 'Deleting...' : 'Delete'}
+            <div className="flex justify-end gap-3 mt-6">
+              <button onClick={cancelDelete} className="btn btn-secondary">Cancel</button>
+              <button onClick={handleDelete} disabled={isDeleting} className="btn btn-danger">
+                {isDeleting ? 'Deleting...' : 'Delete Report'}
               </button>
             </div>
           </div>

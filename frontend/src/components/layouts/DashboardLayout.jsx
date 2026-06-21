@@ -11,10 +11,6 @@ import {
   BeakerIcon,
   ClipboardDocumentCheckIcon,
   DocumentDuplicateIcon,
-  ArrowLeftIcon,
-  UserIcon,
-  ChevronDoubleLeftIcon,
-  ChevronDoubleRightIcon,
   ChartBarIcon,
   CreditCardIcon,
 } from '@heroicons/react/24/outline';
@@ -77,9 +73,8 @@ export default function DashboardLayout() {
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [labName, setLabName] = useState('PathLab');
   const location = useLocation();
-  const navigate = useNavigate();
   const { user, logout } = useAuth();
-  
+
   const navigation = getNavigationItems(user?.role || 'admin');
 
   useEffect(() => {
@@ -103,55 +98,95 @@ export default function DashboardLayout() {
       if (response && response.data) {
         setLabName(response.data.name);
       }
-    } catch (error) {
-      console.error('Error fetching lab name:', error);
+    } catch {
       setLabName('PathLab');
     }
   };
 
   const handleLogout = () => { logout(); };
 
+  const NavItem = ({ item, collapsed }) => {
+    const isActive = location.pathname === item.href;
+    return (
+      <li>
+        <Link
+          to={item.href}
+          title={item.name}
+          className={classNames(
+            isActive
+              ? 'bg-blue-600 text-white'
+              : 'text-slate-300 hover:bg-slate-700 hover:text-white',
+            'group flex items-center gap-x-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150',
+            collapsed ? 'justify-center' : ''
+          )}
+        >
+          <item.icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+          {!collapsed && <span className="truncate">{item.name}</span>}
+        </Link>
+      </li>
+    );
+  };
+
   return (
-    <div>
+    <div className="min-h-screen bg-slate-50">
+      {/* Mobile sidebar overlay */}
       <Transition.Root show={sidebarOpen} as={Fragment}>
         <Dialog as="div" className="relative z-50 lg:hidden" onClose={setSidebarOpen}>
-          <Transition.Child as={Fragment} enter="transition-opacity ease-linear duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="transition-opacity ease-linear duration-300" leaveFrom="opacity-100" leaveTo="opacity-0">
-            <div className="fixed inset-0 bg-gray-900/80" />
+          <Transition.Child
+            as={Fragment}
+            enter="transition-opacity ease-linear duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="transition-opacity ease-linear duration-300"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm" />
           </Transition.Child>
           <div className="fixed inset-0 flex">
-            <Transition.Child as={Fragment} enter="transition ease-in-out duration-300 transform" enterFrom="-translate-x-full" enterTo="translate-x-0" leave="transition ease-in-out duration-300 transform" leaveFrom="translate-x-0" leaveTo="-translate-x-full">
-              <Dialog.Panel className="relative mr-16 flex w-full max-w-xs flex-1">
-                <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-blue-800 px-6 pb-4">
-                  <div className="flex h-16 shrink-0 items-center justify-between">
-                    <div className="flex items-center">
-                      <span className="text-white font-semibold text-lg whitespace-nowrap overflow-hidden text-ellipsis">{labName}</span>
+            <Transition.Child
+              as={Fragment}
+              enter="transition ease-in-out duration-300 transform"
+              enterFrom="-translate-x-full"
+              enterTo="translate-x-0"
+              leave="transition ease-in-out duration-300 transform"
+              leaveFrom="translate-x-0"
+              leaveTo="-translate-x-full"
+            >
+              <Dialog.Panel className="relative flex w-full max-w-xs flex-1">
+                <div className="flex grow flex-col bg-slate-900 overflow-hidden">
+                  <div className="flex h-16 shrink-0 items-center justify-between px-4 border-b border-slate-700/50">
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-sm">
+                        {labName.charAt(0)}
+                      </div>
+                      <span className="text-white font-semibold text-base truncate">{labName}</span>
                     </div>
-                    <button onClick={() => setSidebarOpen(false)} className="text-white hover:text-blue-200 transition-colors duration-200">
-                      <XMarkIcon className="h-6 w-6" />
+                    <button
+                      onClick={() => setSidebarOpen(false)}
+                      className="text-slate-400 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-slate-700"
+                    >
+                      <XMarkIcon className="h-5 w-5" />
                     </button>
                   </div>
-                  <nav className="flex flex-1 flex-col">
-                    <ul role="list" className="flex flex-1 flex-col gap-y-7">
-                      <li>
-                        <ul role="list" className="-mx-2 space-y-1">
-                          {navigation.map((item) => (
-                            <li key={item.name}>
-                              <Link to={item.href} className={classNames(
-                                location.pathname === item.href ? 'bg-blue-900 text-white' : 'text-white hover:text-white hover:bg-blue-700',
-                                'group flex gap-x-3 rounded-md p-3 text-base leading-6 font-semibold transition-all duration-200'
-                              )}>
-                                <item.icon className={classNames(
-                                  location.pathname === item.href ? 'text-white' : 'text-white group-hover:text-white',
-                                  'h-6 w-6 shrink-0'
-                                )} aria-hidden="true" />
-                                {item.name}
-                              </Link>
-                            </li>
-                          ))}
-                        </ul>
-                      </li>
+                  <nav className="flex-1 overflow-y-auto px-3 py-4">
+                    <ul role="list" className="space-y-1">
+                      {navigation.map((item) => (
+                        <NavItem key={item.name} item={item} collapsed={false} />
+                      ))}
                     </ul>
                   </nav>
+                  <div className="border-t border-slate-700/50 p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-semibold shrink-0">
+                        {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-white truncate">{user?.name || 'User'}</p>
+                        <p className="text-xs text-slate-400 truncate capitalize">{user?.role?.replace('-', ' ')}</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </Dialog.Panel>
             </Transition.Child>
@@ -159,85 +194,114 @@ export default function DashboardLayout() {
         </Dialog>
       </Transition.Root>
 
-      <div className={classNames("hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:flex-col transition-[width] duration-1000 ease-in-out", isCollapsed ? "lg:w-20" : "lg:w-72")} style={{ transitionProperty: 'width' }} onMouseEnter={() => setIsCollapsed(false)} onMouseLeave={() => setIsCollapsed(true)}>
-        <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-blue-800 px-6 pb-4">
-          <div className="flex h-16 shrink-0 items-center justify-between">
-            <div className="flex items-center">
-              {isCollapsed ? (
-                <div className="h-8 w-8 flex items-center justify-center text-white font-bold text-lg bg-blue-700 rounded-md">{labName.charAt(0)}</div>
-              ) : (
-                <span className="text-white font-semibold text-lg whitespace-nowrap overflow-hidden text-ellipsis">{labName}</span>
+      {/* Desktop sidebar */}
+      <div
+        className={classNames(
+          'hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:flex-col transition-all duration-300 ease-in-out',
+          isCollapsed ? 'lg:w-16' : 'lg:w-64'
+        )}
+        onMouseEnter={() => setIsCollapsed(false)}
+        onMouseLeave={() => setIsCollapsed(true)}
+      >
+        <div className="flex grow flex-col bg-slate-900 overflow-hidden">
+          <div className="flex h-16 shrink-0 items-center px-3 border-b border-slate-700/50">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
+                {labName.charAt(0)}
+              </div>
+              {!isCollapsed && (
+                <span className="text-white font-semibold text-base truncate">{labName}</span>
               )}
             </div>
           </div>
-          <nav className="flex flex-1 flex-col">
-            <ul role="list" className="flex flex-1 flex-col gap-y-7">
-              <li>
-                <ul role="list" className="-mx-2 space-y-1">
-                  {navigation.map((item) => (
-                    <li key={item.name}>
-                      <Link to={item.href} className={classNames(
-                        location.pathname === item.href ? 'bg-blue-900 text-white' : 'text-white hover:text-white hover:bg-blue-700',
-                        'group flex gap-x-3 rounded-md p-3 text-base leading-6 font-semibold transition-all duration-200',
-                        isCollapsed ? 'justify-center' : ''
-                      )} title={item.name}>
-                        <item.icon className={classNames(
-                          location.pathname === item.href ? 'text-white' : 'text-white group-hover:text-white',
-                          'h-6 w-6 shrink-0'
-                        )} aria-hidden="true" />
-                        {!isCollapsed && item.name}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </li>
+          <nav className="flex-1 overflow-y-auto px-3 py-4">
+            <ul role="list" className="space-y-1">
+              {navigation.map((item) => (
+                <NavItem key={item.name} item={item} collapsed={isCollapsed} />
+              ))}
             </ul>
           </nav>
-        </div>
-      </div>
-
-      <div className={classNames("transition-all duration-300 ease-in-out", isCollapsed ? "lg:pl-20" : "lg:pl-72")}>
-        <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-white px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
-          <button type="button" className="-m-2.5 p-2.5 text-gray-700 hover:text-gray-900 flex items-center" onClick={() => navigate(-1)} aria-label="Go back" title="Go back to previous page">
-            <ArrowLeftIcon className="h-5 w-5 mr-1" aria-hidden="true" />
-            <span className="text-sm font-medium">Back</span>
-          </button>
-          <button type="button" className="-m-2.5 p-2.5 text-gray-700 lg:hidden" onClick={() => setSidebarOpen(true)}>
-            <span className="sr-only">Open sidebar</span>
-            <Bars3Icon className="h-6 w-6" aria-hidden="true" />
-          </button>
-          <div className="h-6 w-px bg-gray-200" aria-hidden="true" />
-          <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
-            <div className="flex flex-1" />
-            <div className="flex items-center gap-x-4 lg:gap-x-6">
-              <Menu as="div" className="relative">
-                <Menu.Button className="-m-1.5 flex items-center p-1.5">
-                  <span className="sr-only">Open user menu</span>
-                  <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                    <UserIcon className="h-5 w-5 text-blue-600" aria-hidden="true" />
-                  </div>
-                  <span className="hidden lg:flex lg:items-center">
-                    <span className="ml-4 text-sm font-semibold leading-6 text-gray-900" aria-hidden="true">{user?.name || 'User'}</span>
-                    <ChevronDownIcon className="ml-2 h-5 w-5 text-gray-400" aria-hidden="true" />
-                  </span>
-                </Menu.Button>
-                <Transition as={Fragment} enter="transition ease-out duration-100" enterFrom="transform opacity-0 scale-95" enterTo="transform opacity-100 scale-100" leave="transition ease-in duration-75" leaveFrom="transform opacity-100 scale-100" leaveTo="transform opacity-0 scale-95">
-                  <Menu.Items className="absolute right-0 z-10 mt-2.5 w-32 origin-top-right rounded-md bg-white py-2 shadow-lg ring-1 ring-gray-900/5 focus:outline-none">
-                    <Menu.Item>
-                      {({ active }) => (<Link to="/profile" className={classNames(active ? 'bg-gray-50' : '', 'block w-full px-3 py-1 text-sm leading-6 text-gray-900 text-left')}>Profile</Link>)}
-                    </Menu.Item>
-                    <Menu.Item>
-                      {({ active }) => (<button onClick={handleLogout} className={classNames(active ? 'bg-gray-50' : '', 'block w-full px-3 py-1 text-sm leading-6 text-gray-900 text-left')}>Sign out</button>)}
-                    </Menu.Item>
-                  </Menu.Items>
-                </Transition>
-              </Menu>
+          <div className="border-t border-slate-700/50 p-3">
+            <div className={classNames('flex items-center gap-3', isCollapsed ? 'justify-center' : '')}>
+              <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-semibold shrink-0">
+                {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+              </div>
+              {!isCollapsed && (
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-white truncate">{user?.name || 'User'}</p>
+                  <p className="text-xs text-slate-400 truncate capitalize">{user?.role?.replace('-', ' ')}</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
-        <main className="py-10">
+      </div>
+
+      {/* Main content area */}
+      <div className={classNames('transition-all duration-300 ease-in-out', isCollapsed ? 'lg:pl-16' : 'lg:pl-64')}>
+        {/* Top bar */}
+        <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-slate-200 bg-white px-4 shadow-sm sm:gap-x-6 sm:px-6">
+          <button
+            type="button"
+            className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors lg:hidden"
+            onClick={() => setSidebarOpen(true)}
+          >
+            <span className="sr-only">Open sidebar</span>
+            <Bars3Icon className="h-5 w-5" aria-hidden="true" />
+          </button>
+          <div className="flex flex-1 items-center">
+            <div className="flex-1" />
+            <Menu as="div" className="relative">
+              <Menu.Button className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-slate-100 transition-colors">
+                <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                  <span className="text-blue-700 text-sm font-semibold">
+                    {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                  </span>
+                </div>
+                <span className="hidden lg:block text-sm font-medium text-slate-700">{user?.name || 'User'}</span>
+                <ChevronDownIcon className="hidden lg:block h-4 w-4 text-slate-400" aria-hidden="true" />
+              </Menu.Button>
+              <Transition
+                as={Fragment}
+                enter="transition ease-out duration-100"
+                enterFrom="transform opacity-0 scale-95"
+                enterTo="transform opacity-100 scale-100"
+                leave="transition ease-in duration-75"
+                leaveFrom="transform opacity-100 scale-100"
+                leaveTo="transform opacity-0 scale-95"
+              >
+                <Menu.Items className="absolute right-0 z-10 mt-2 w-40 origin-top-right rounded-xl bg-white py-1 shadow-lg ring-1 ring-slate-200 focus:outline-none">
+                  <Menu.Item>
+                    {({ active }) => (
+                      <Link
+                        to="/profile"
+                        className={classNames(active ? 'bg-slate-50' : '', 'block px-4 py-2 text-sm text-slate-700')}
+                      >
+                        Profile
+                      </Link>
+                    )}
+                  </Menu.Item>
+                  <Menu.Item>
+                    {({ active }) => (
+                      <button
+                        onClick={handleLogout}
+                        className={classNames(active ? 'bg-slate-50' : '', 'block w-full text-left px-4 py-2 text-sm text-slate-700')}
+                      >
+                        Sign out
+                      </button>
+                    )}
+                  </Menu.Item>
+                </Menu.Items>
+              </Transition>
+            </Menu>
+          </div>
+        </div>
+
+        <main className="py-6">
           <div className="px-4 sm:px-6 lg:px-8">
-            <Outlet />
+            <div className="page-enter">
+              <Outlet />
+            </div>
           </div>
         </main>
       </div>

@@ -7,437 +7,297 @@ import {
   UserIcon,
   CurrencyDollarIcon,
   BeakerIcon,
-  ClipboardDocumentCheckIcon,
-  ArrowPathIcon,
-  ChartBarIcon,
   PlusIcon,
   PencilSquareIcon,
+  ChartBarIcon,
 } from '@heroicons/react/24/outline';
-import { formatDate, truncateText } from '../../utils/helpers'; // Added truncateText
+import { formatDate, truncateText } from '../../utils/helpers';
 import { DATE_FORMATS } from '../../utils/constants';
 
+const getGreeting = () => {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+};
+
+const statusBadge = (status) => {
+  const map = {
+    completed: 'badge badge-green',
+    pending: 'badge badge-yellow',
+    processing: 'badge badge-blue',
+  };
+  return map[status] || 'badge badge-gray';
+};
+
 const AdminDashboard = () => {
-  const [stats, setStats] = useState({
-    totalReports: 0,
-    totalPatients: 0,
-    revenueThisMonth: 0,
-    inventoryItems: 0,
-  });
+  const [stats, setStats] = useState({ totalReports: 0, totalPatients: 0, revenueThisMonth: 0, inventoryItems: 0 });
   const [recentReports, setRecentReports] = useState([]);
   const [recentPatients, setRecentPatients] = useState([]);
   const [labDetails, setLabDetails] = useState(null);
-  
   const { user } = useAuth();
 
-  // Fetch data from API
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        // Import API utilities
         const apiModules = await import('../../utils/api');
         const { dashboard, superAdmin, reports, patients } = apiModules;
-        
-        try {
-          // Fetch lab details if user has a lab ID
-          if (user?.lab) {
-            try {
-              const labResponse = await superAdmin.getLab(user.lab);
-              if (labResponse.success) {
-                setLabDetails(labResponse.data);
-                
-                // Fetch lab statistics
-                try {
-                  const statsData = await dashboard.getStats(user.lab);
-                  // Make sure we're getting the actual patient count
-                  const patientCount = statsData.totalPatients !== undefined ? statsData.totalPatients : 0;
-                  
-                  setStats({
-                    totalReports: statsData.totalReports || 0,
-                    revenueThisMonth: statsData.revenueThisMonth || 0,
-                    inventoryItems: statsData.inventoryItems || 0,
-                  });
-                } catch (statsErr) {
-                }
-                
-                // Fetch patients for this lab
-                try {
-                  if (!user.lab) {
-                  }
-                  const patientsData = await patients.getAll(user.lab);
-                  
-                  // Update totalPatients count based on patientsData length
-                  if (patientsData && Array.isArray(patientsData)) {
-                    setStats(prevStats => ({
-                      ...prevStats,
-                      totalPatients: patientsData.length,
-                    }));
-                    setRecentPatients(patientsData.slice(0, 5).map(patient => ({
-                      id: patient._id || patient.id,
-                      name: patient.fullName,
-                      age: patient.age,
-                      gender: patient.gender,
-                      contact: patient.phone,
-                    })));
-                  } else {
-                  }
-                } catch (patientsErr) {
-                }
-                
-                // Fetch lab reports
-                try {
-                  const reportsResponse = await reports.getAll({ lab: user.lab });
-                  
-                  // Handle different response formats
-                  let reportsArray = [];
-                  
-                  if (reportsResponse && reportsResponse.data && Array.isArray(reportsResponse.data)) {
-                    // New API format with { success, data, pagination }
-                    reportsArray = reportsResponse.data;
-                  } else if (Array.isArray(reportsResponse)) {
-                    // Old API format with direct array
-                    reportsArray = reportsResponse;
-                  } else if (reportsResponse && reportsResponse.success && Array.isArray(reportsResponse.data)) {
-                    // Another possible format
-                    reportsArray = reportsResponse.data;
-                  }
-                  
-                  setRecentReports(reportsArray.slice(0, 3).map(report => ({
-                    id: report._id || report.id,
-                    patientName: report.patientName || (report.patientInfo ? report.patientInfo.name : 'Unknown'),
-                    testName: report.testName || (report.testInfo ? report.testInfo.name : 'Unknown'),
-                    status: report.status || 'pending',
-                    date: report.createdAt || report.reportMeta?.generatedAt || new Date().toISOString(),
+
+        if (user?.lab) {
+          try {
+            const labResponse = await superAdmin.getLab(user.lab);
+            if (labResponse.success) {
+              setLabDetails(labResponse.data);
+
+              try {
+                const statsData = await dashboard.getStats(user.lab);
+                setStats(prev => ({
+                  ...prev,
+                  totalReports: statsData.totalReports || 0,
+                  revenueThisMonth: statsData.revenueThisMonth || 0,
+                  inventoryItems: statsData.inventoryItems || 0,
+                }));
+              } catch {}
+
+              try {
+                const patientsData = await patients.getAll(user.lab);
+                if (patientsData && Array.isArray(patientsData)) {
+                  setStats(prev => ({ ...prev, totalPatients: patientsData.length }));
+                  setRecentPatients(patientsData.slice(0, 5).map(p => ({
+                    id: p._id || p.id, name: p.fullName, age: p.age, gender: p.gender, contact: p.phone,
                   })));
-                } catch (reportsErr) {
                 }
-                
-                // Fetch patients for this lab
-                try {
-                  const patientsData = await patients.getAll(user.lab);
-                } catch (patientsErr) {
-                }
-              } else {
-              }
-            } catch (labErr) {
+              } catch {}
+
+              try {
+                const reportsResponse = await reports.getAll({ lab: user.lab });
+                let arr = [];
+                if (reportsResponse?.data && Array.isArray(reportsResponse.data)) arr = reportsResponse.data;
+                else if (Array.isArray(reportsResponse)) arr = reportsResponse;
+                setRecentReports(arr.slice(0, 5).map(r => ({
+                  id: r._id || r.id,
+                  patientName: r.patientName || r.patientInfo?.name || 'Unknown',
+                  testName: r.testName || r.testInfo?.name || 'Unknown',
+                  status: r.status || 'pending',
+                  date: r.createdAt || r.reportMeta?.generatedAt || new Date().toISOString(),
+                })));
+              } catch {}
             }
-          }
-        } catch (error) {
+          } catch {}
         }
-        
-      } catch (error) {
-      }
+      } catch {}
     };
-    
     fetchDashboardData();
   }, [user]);
 
+  const statCards = [
+    {
+      label: 'Total Patients', value: stats.totalPatients,
+      icon: UserGroupIcon, iconBg: 'bg-blue-100', iconColor: 'text-blue-600',
+      link: '/patients', linkLabel: 'View patients',
+    },
+    {
+      label: 'Total Reports', value: stats.totalReports,
+      icon: DocumentTextIcon, iconBg: 'bg-purple-100', iconColor: 'text-purple-600',
+      link: '/reports', linkLabel: 'View reports',
+    },
+    {
+      label: 'Revenue This Month', value: `₹${stats.revenueThisMonth}`,
+      icon: CurrencyDollarIcon, iconBg: 'bg-amber-100', iconColor: 'text-amber-600',
+      link: '/finance/revenue', linkLabel: 'View revenue',
+    },
+    {
+      label: 'Inventory Items', value: stats.inventoryItems,
+      icon: BeakerIcon, iconBg: 'bg-green-100', iconColor: 'text-green-600',
+      link: '/inventory', linkLabel: 'View inventory',
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-7xl mx-auto space-y-6">
-        {/* Header with view switcher */}
-        <div className="bg-white rounded-2xl shadow-xl border border-blue-100 overflow-hidden">
-          <div className="px-8 py-6 bg-gradient-to-r from-blue-700 to-blue-500">
-            <div className="flex justify-between items-center">
-              <div>
-                <h1 className="text-3xl font-extrabold text-white">Admin Dashboard</h1>
-                <p className="text-base text-blue-100 mt-1">
-                  Welcome, {user?.name || 'Admin'}! | Role: {user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Admin'}
-                </p>
-              </div>
-              
-            </div>
-          </div>
-      
-          {/* Lab Name */}
+    <div className="page-enter space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">
+            {getGreeting()}, {user?.name || 'Admin'}
+          </h1>
           {labDetails?.name && (
-            <div className="py-4 text-center bg-blue-50 border-b border-blue-100">
-              <h2 className="text-xl font-bold text-blue-800">{labDetails.name}</h2>
-            </div>
+            <p className="text-sm text-slate-500 mt-0.5">{labDetails.name}</p>
           )}
         </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {/* Reports Card */}
-        <div className="overflow-hidden rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow duration-300">
-          <div className="p-5 border-b-4 border-blue-500">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 bg-blue-100 p-3 rounded-full">
-                <DocumentTextIcon className="h-6 w-6 text-blue-600" aria-hidden="true" />
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="truncate text-sm font-medium text-gray-500">Total Reports</dt>
-                  <dd>
-                    <div className="text-2xl font-bold text-gray-900">{stats.totalReports}</div>
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-          <div className="bg-gray-50 px-5 py-3">
-            <div className="text-sm">
-              <Link to="/reports" className="font-medium text-blue-700 hover:text-blue-900 transition duration-200">
-                View all reports
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        {/* Patients Card */}
-        <div className="overflow-hidden rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow duration-300">
-          <div className="p-5 border-b-4 border-green-500">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 bg-green-100 p-3 rounded-full">
-                <UserIcon className="h-6 w-6 text-green-600" aria-hidden="true" />
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="truncate text-sm font-medium text-gray-500">Total Patients</dt>
-                  <dd>
-                    <div className="text-2xl font-bold text-gray-900">{stats.totalPatients}</div>
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-          <div className="bg-gray-50 px-5 py-3">
-            <div className="text-sm">
-              <Link to="/patients" className="font-medium text-blue-700 hover:text-blue-900 transition duration-200">
-                View all patients
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        {/* Revenue Card */}
-        <div className="overflow-hidden rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow duration-300">
-          <div className="p-5 border-b-4 border-yellow-500">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 bg-yellow-100 p-3 rounded-full">
-                <CurrencyDollarIcon className="h-6 w-6 text-yellow-600" aria-hidden="true" />
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="truncate text-sm font-medium text-gray-500">Monthly Revenue</dt>
-                  <dd>
-                    <div className="text-2xl font-bold text-gray-900">₹{stats.revenueThisMonth}</div>
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-          <div className="bg-gray-50 px-5 py-3">
-            <div className="text-sm">
-              <Link to="/finance/revenue" className="font-medium text-blue-700 hover:text-blue-900 transition duration-200">
-                View financial reports
-              </Link>
-            </div>
-          </div>
+        <div className="flex gap-2">
+          <Link to="/reports/create" className="btn btn-primary">
+            <PlusIcon className="h-4 w-4" />
+            New Report
+          </Link>
+          <Link to="/patients/add" className="btn btn-secondary">
+            <UserIcon className="h-4 w-4" />
+            Add Patient
+          </Link>
         </div>
       </div>
 
-        {/* Quick Actions */}
-        <div className="overflow-hidden rounded-2xl bg-white shadow-xl border border-blue-100">
-        <div className="p-6">
-          <h3 className="text-lg font-semibold text-blue-800 mb-4">Quick Actions</h3>
-          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
-            <Link
-              to="/patients/add"
-              className="flex items-center justify-center px-4 py-3 bg-white rounded-lg shadow-sm border border-blue-200 text-blue-700 font-medium hover:bg-blue-50 transition-all duration-200"
-            >
-              <UserIcon className="h-5 w-5 mr-2" aria-hidden="true" />
-              Add Patient
-            </Link>
-            <Link
-              to="/reports/create"
-              className="flex items-center justify-center px-4 py-3 bg-white rounded-lg shadow-sm border border-blue-200 text-blue-700 font-medium hover:bg-blue-50 transition-all duration-200"
-            >
-              <DocumentTextIcon className="h-5 w-5 mr-2" aria-hidden="true" />
-              Create Report
-            </Link>
-            <Link
-              to="/doctors"
-              className="flex items-center justify-center px-4 py-3 bg-white rounded-lg shadow-sm border border-blue-200 text-blue-700 font-medium hover:bg-blue-50 transition-all duration-200"
-            >
-              <UserIcon className="h-5 w-5 mr-2" aria-hidden="true" />
-              Manage Doctors
-            </Link>
-            <Link
-              to="/finance/revenue"
-              className="flex items-center justify-center px-4 py-3 bg-white rounded-lg shadow-sm border border-blue-200 text-blue-700 font-medium hover:bg-blue-50 transition-all duration-200"
-            >
-              <ChartBarIcon className="h-5 w-5 mr-2" aria-hidden="true" />
-              Financial Report
-            </Link>
+      {/* Stat cards */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {statCards.map((s) => (
+          <div key={s.label} className="stat-card card-hover">
+            <div className={`stat-icon ${s.iconBg}`}>
+              <s.icon className={`h-5 w-5 ${s.iconColor}`} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-slate-500 font-medium">{s.label}</p>
+              <p className="text-2xl font-bold text-slate-900 mt-0.5">{s.value}</p>
+              <Link to={s.link} className="text-xs text-blue-600 hover:text-blue-700 mt-1 inline-block">
+                {s.linkLabel} &rarr;
+              </Link>
+            </div>
           </div>
+        ))}
+      </div>
+
+      {/* Quick actions */}
+      <div className="card p-5">
+        <h2 className="text-lg font-semibold text-slate-800 mb-4">Quick Actions</h2>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[
+            { to: '/patients/add', label: 'Add Patient', icon: UserIcon },
+            { to: '/reports/create', label: 'Create Report', icon: DocumentTextIcon },
+            { to: '/doctors', label: 'Manage Doctors', icon: UserGroupIcon },
+            { to: '/finance/revenue', label: 'Financial Report', icon: ChartBarIcon },
+          ].map(action => (
+            <Link key={action.to} to={action.to} className="flex flex-col items-center gap-2 p-3 rounded-lg border border-slate-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-200 text-center">
+              <action.icon className="h-6 w-6 text-blue-600" />
+              <span className="text-xs font-medium text-slate-700">{action.label}</span>
+            </Link>
+          ))}
         </div>
       </div>
 
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Recent Reports */}
-        <div className="overflow-hidden rounded-2xl bg-white shadow-xl border border-blue-100">
-          <div className="px-6 py-5 border-b border-blue-100 bg-blue-50">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-blue-800">Recent Reports</h3>
-              <Link to="/reports/create" className="text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center bg-white px-3 py-1 rounded-lg shadow-sm border border-blue-200 transition-colors">
-                <PlusIcon className="h-5 w-5 mr-1" />
-                New Report
-              </Link>
-            </div>
+        <div className="card">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+            <h2 className="text-lg font-semibold text-slate-800">Recent Reports</h2>
+            <Link to="/reports/create" className="btn btn-sm btn-primary">
+              <PlusIcon className="h-3.5 w-3.5" />
+              New
+            </Link>
           </div>
-        <div className="p-6">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-blue-50">
+            <table className="table">
+              <thead>
                 <tr>
-                  <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
-                    Patient
-                  </th>
-                  <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
-                    Test
-                  </th>
-                  <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
-                    Actions
-                  </th>
+                  <th>Patient</th>
+                  <th>Test</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                  <th></th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-blue-100">
-                {recentReports.length > 0 ? (
-                  recentReports.map((report, index) => (
-                    <tr key={report.id || index} className="hover:bg-blue-50 transition-colors duration-150">
-                      <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {report.patientName}
-                      </td>
-                      <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500" title={report.testName}>
-                        {truncateText(report.testName, 40)}
-                      </td>
-                      <td className="px-3 py-4 whitespace-nowrap">
-                        <span
-                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                            report.status === 'completed' ? 'bg-green-100 text-green-800' : 
-                            report.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'
-                          }`}
-                        >
-                          {report.status?.charAt(0).toUpperCase() + report.status?.slice(1)}
-                        </span>
-                      </td>
-                      <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatDate(report.date, DATE_FORMATS.DD_MM_YYYY)}
-                      </td>
-                      <td className="px-3 py-4 whitespace-nowrap text-sm">
-                        <div className="flex space-x-3">
-                          <Link to={`/reports/${report.id}/print`} className="text-blue-600 hover:text-blue-900 p-1 rounded-full hover:bg-blue-50 transition-colors" title="View Report">
-                            <DocumentTextIcon className="h-5 w-5" aria-hidden="true" />
-                          </Link>
-                          <Link to={`/reports/${report.id}/edit`} className="text-green-600 hover:text-green-900 p-1 rounded-full hover:bg-green-50 transition-colors" title="Edit Report">
-                            <PencilSquareIcon className="h-5 w-5" aria-hidden="true" />
-                          </Link>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
+              <tbody>
+                {recentReports.length > 0 ? recentReports.map((report, i) => (
+                  <tr key={report.id || i}>
+                    <td className="font-medium text-slate-900">{report.patientName}</td>
+                    <td className="text-slate-500 max-w-[140px] truncate" title={report.testName}>
+                      {truncateText(report.testName, 30)}
+                    </td>
+                    <td>
+                      <span className={statusBadge(report.status)}>
+                        {report.status?.charAt(0).toUpperCase() + report.status?.slice(1)}
+                      </span>
+                    </td>
+                    <td className="text-slate-500">{formatDate(report.date, DATE_FORMATS.DD_MM_YYYY)}</td>
+                    <td>
+                      <div className="flex gap-1">
+                        <Link to={`/reports/${report.id}/print`} className="p-1 rounded hover:bg-blue-50 text-blue-600 hover:text-blue-800 transition-colors">
+                          <DocumentTextIcon className="h-4 w-4" />
+                        </Link>
+                        <Link to={`/reports/${report.id}/edit`} className="p-1 rounded hover:bg-green-50 text-green-600 hover:text-green-800 transition-colors">
+                          <PencilSquareIcon className="h-4 w-4" />
+                        </Link>
+                      </div>
+                    </td>
+                  </tr>
+                )) : (
                   <tr>
-                    <td colSpan="5" className="px-3 py-4 text-center text-sm text-gray-500">
-                      No reports found
+                    <td colSpan={5}>
+                      <div className="empty-state py-8">
+                        <DocumentTextIcon className="h-10 w-10 text-slate-300 mb-2" />
+                        <p className="text-sm">No reports yet</p>
+                      </div>
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
-          <div className="mt-6">
-            <Link
-              to="/reports"
-              className="flex w-full items-center justify-center rounded-lg border border-blue-300 bg-white px-4 py-2 text-sm font-medium text-blue-700 shadow-sm hover:bg-blue-50 transition-all duration-200"
-            >
-              View all reports
-            </Link>
+          <div className="px-5 py-3 border-t border-slate-100">
+            <Link to="/reports" className="text-sm text-blue-600 hover:text-blue-700 font-medium">View all reports &rarr;</Link>
           </div>
         </div>
-      </div>
 
         {/* Recent Patients */}
-        <div className="overflow-hidden rounded-2xl bg-white shadow-xl border border-blue-100 mt-6">
-          <div className="px-6 py-5 border-b border-blue-100 bg-blue-50">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-blue-800">Recent Patients</h3>
-              <Link to="/patients/add" className="text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center bg-white px-3 py-1 rounded-lg shadow-sm border border-blue-200 transition-colors">
-                <PlusIcon className="h-5 w-5 mr-1" />
-                Add Patient
-              </Link>
-            </div>
+        <div className="card">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+            <h2 className="text-lg font-semibold text-slate-800">Recent Patients</h2>
+            <Link to="/patients/add" className="btn btn-sm btn-primary">
+              <PlusIcon className="h-3.5 w-3.5" />
+              Add
+            </Link>
           </div>
-        <div className="p-6">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-blue-50">
+            <table className="table">
+              <thead>
                 <tr>
-                  <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
-                    Name
-                  </th>
-                  <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
-                    Age/Gender
-                  </th>
-                  <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
-                    Contact
-                  </th>
-                  <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
-                    Actions
-                  </th>
+                  <th>Name</th>
+                  <th>Age/Gender</th>
+                  <th>Contact</th>
+                  <th></th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-blue-100">
-                {recentPatients.length > 0 ? (
-                  recentPatients.map((patient) => (
-                    <tr key={patient.id} className="hover:bg-blue-50 transition-colors duration-150">
-                      <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {patient.name}
-                      </td>
-                      <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {patient.age} / {patient.gender?.charAt(0).toUpperCase() + patient.gender?.slice(1)}
-                      </td>
-                      <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{patient.contact}</td>
-                      <td className="px-3 py-4 whitespace-nowrap text-sm">
-                        <div className="flex space-x-3">
-                          <Link to={`/patients/${patient.id}/edit`} className="text-green-600 hover:text-green-900 p-1 rounded-full hover:bg-green-50 transition-colors" title="Edit Patient">
-                            <PencilSquareIcon className="h-5 w-5" aria-hidden="true" />
-                          </Link>
-                          <Link to={`/reports/create?patientId=${patient.id}`} className="text-blue-600 hover:text-blue-900 p-1 rounded-full hover:bg-blue-50 transition-colors" title="Create Report">
-                            <DocumentTextIcon className="h-5 w-5 mr-2" aria-hidden="true" />
-                          </Link>
+              <tbody>
+                {recentPatients.length > 0 ? recentPatients.map(patient => (
+                  <tr key={patient.id}>
+                    <td>
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 text-xs font-bold shrink-0">
+                          {patient.name?.charAt(0)?.toUpperCase()}
                         </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
+                        <span className="font-medium text-slate-900">{patient.name}</span>
+                      </div>
+                    </td>
+                    <td className="text-slate-500">
+                      {patient.age} / {patient.gender?.charAt(0).toUpperCase() + patient.gender?.slice(1)}
+                    </td>
+                    <td className="text-slate-500">{patient.contact}</td>
+                    <td>
+                      <div className="flex gap-1">
+                        <Link to={`/patients/${patient.id}/edit`} className="p-1 rounded hover:bg-green-50 text-green-600 hover:text-green-800 transition-colors">
+                          <PencilSquareIcon className="h-4 w-4" />
+                        </Link>
+                        <Link to={`/reports/create?patientId=${patient.id}`} className="p-1 rounded hover:bg-blue-50 text-blue-600 hover:text-blue-800 transition-colors">
+                          <DocumentTextIcon className="h-4 w-4" />
+                        </Link>
+                      </div>
+                    </td>
+                  </tr>
+                )) : (
                   <tr>
-                    <td colSpan="4" className="px-3 py-4 text-center text-sm text-gray-500">
-                      No patients found
+                    <td colSpan={4}>
+                      <div className="empty-state py-8">
+                        <UserGroupIcon className="h-10 w-10 text-slate-300 mb-2" />
+                        <p className="text-sm">No patients yet</p>
+                      </div>
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
-          <div className="mt-6">
-            <Link
-              to="/patients"
-              className="flex w-full items-center justify-center rounded-lg border border-blue-300 bg-white px-4 py-2 text-sm font-medium text-blue-700 shadow-sm hover:bg-blue-50 transition-all duration-200"
-            >
-              View all patients
-            </Link>
+          <div className="px-5 py-3 border-t border-slate-100">
+            <Link to="/patients" className="text-sm text-blue-600 hover:text-blue-700 font-medium">View all patients &rarr;</Link>
           </div>
         </div>
-      </div>
-
-        {/* No Financial Overview or Inventory Status sections as requested */}
       </div>
     </div>
   );
