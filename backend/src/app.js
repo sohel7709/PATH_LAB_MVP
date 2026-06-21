@@ -102,6 +102,10 @@ app.use((req, res, next) => {
   next();
 });
 
+// Inline lab settings routes (no separate router needed)
+const { protect, authorize } = require('./middleware/auth');
+const { getLabSettings, updateLabSettings } = require('./controllers/labController');
+
 // Mount routes
 app.use('/api/auth', authRoutes);
 app.use('/api/lab-management', labManagementRoutes);
@@ -121,6 +125,8 @@ app.use('/api/superadmin', superAdminRoutes);
 app.use('/api/revenue', revenueRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/super-admin/revenue', superAdminRevenueRoutes);
+app.get('/api/lab/settings', protect, authorize('admin', 'super-admin'), getLabSettings);
+app.put('/api/lab/settings', protect, authorize('admin', 'super-admin'), updateLabSettings);
 
 app.get('/health', (req, res) => {
   res.status(200).json({

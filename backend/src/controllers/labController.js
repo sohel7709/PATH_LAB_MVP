@@ -401,3 +401,42 @@ exports.getSubscriptionHistoryForLab = async (req, res, next) => {
         next(error);
     }
 };
+
+// @desc    Get current lab's settings
+// @route   GET /api/lab/settings
+// @access  Private/Admin
+exports.getLabSettings = async (req, res, next) => {
+  try {
+    if (!req.user.lab) {
+      return res.status(404).json({ success: false, message: 'No lab associated with this account' });
+    }
+    const lab = await Lab.findById(req.user.lab).select('name address phone email website logo reportHeader reportFooter currency timeZone notifications');
+    if (!lab) {
+      return res.status(404).json({ success: false, message: 'Lab not found' });
+    }
+    res.status(200).json({ success: true, data: lab });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Update current lab's settings
+// @route   PUT /api/lab/settings
+// @access  Private/Admin
+exports.updateLabSettings = async (req, res, next) => {
+  try {
+    if (!req.user.lab) {
+      return res.status(404).json({ success: false, message: 'No lab associated with this account' });
+    }
+    const allowed = ['name', 'address', 'phone', 'email', 'website', 'logo', 'reportHeader', 'reportFooter', 'currency', 'timeZone', 'notifications'];
+    const update = {};
+    allowed.forEach(k => { if (req.body[k] !== undefined) update[k] = req.body[k]; });
+    const lab = await Lab.findByIdAndUpdate(req.user.lab, update, { new: true, runValidators: true });
+    if (!lab) {
+      return res.status(404).json({ success: false, message: 'Lab not found' });
+    }
+    res.status(200).json({ success: true, data: lab });
+  } catch (error) {
+    next(error);
+  }
+};
