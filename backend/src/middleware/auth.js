@@ -103,7 +103,6 @@ exports.protect = async (req, res, next) => {
 
       next();
     } catch (err) {
-       console.error('Auth Protect Error:', err); // Log the actual error
       return res.status(401).json({
         success: false,
         message: 'Not authorized to access this route'
@@ -186,7 +185,6 @@ exports.checkFeature = (...requiredFeatures) => {
       next();
 
     } catch (error) {
-      console.error('Feature Check Error:', error);
       return res.status(500).json({
         success: false,
         message: 'Error checking feature access.'
@@ -249,7 +247,6 @@ exports.checkLabAccess = async (req, res, next) => {
 
 // Error handler middleware
 exports.errorHandler = (err, req, res, next) => {
-  console.error(err.stack);
 
   // Mongoose validation error
   if (err.name === 'ValidationError') {

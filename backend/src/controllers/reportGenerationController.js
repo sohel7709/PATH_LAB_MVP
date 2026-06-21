@@ -9,14 +9,8 @@ const puppeteer = require('puppeteer'); // Needed for PDF generation
 
 // Register a helper for debugging (can be useful in templates)
 handlebars.registerHelper('debug', function(optionalValue) {
-  console.log('Current Context (Handlebars Debug)');
-  console.log('====================');
-  console.log(this);
 
   if (optionalValue) {
-    console.log('Value (Handlebars Debug)');
-    console.log('====================');
-    console.log(optionalValue);
   }
 });
 
@@ -66,7 +60,6 @@ const prepareReportTemplateData = async (report, lab, labReportSettings, req, sh
             };
           });
 
-        console.log('Parameters array before header insertion:', parameters.map(p => ({ name: p.name, value: p.result, flag: p.flag, isAbnormal: p.isAbnormal }))); // Added log
 
         // --- START: Insert Differential Count Header ---
         // Check if this group contains 'Neutrophils' (case-insensitive)
@@ -86,14 +79,11 @@ const prepareReportTemplateData = async (report, lab, labReportSettings, req, sh
               isAbnormal: false,
               isSubparameter: false
             });
-            console.log(`Inserted 'Differential Count' header at index ${neutrophilIndex}`);
           } else {
-             console.log("'Differential Count' header already exists, skipping dynamic insertion.");
           }
         }
         // --- END: Insert Differential Count Header ---
 
-        console.log('Prepared parameters for template (after potential header insertion):', parameters.map(p => ({ name: p.name, isHeader: p.isHeader }))); // Debug log
 
         if (parameters.length > 0) {
           // --- Get template-specific notes (handle Map or Object) ---
@@ -144,13 +134,10 @@ const prepareReportTemplateData = async (report, lab, labReportSettings, req, sh
                               labReportSettings.footer.footerImage);
 
     // Determine if any of the groupedResults templateName matches testsToHideTableHeadingAndReference
-    console.log('Grouped Results Template Names:', groupedResults.map(g => g.templateName));
     const hideTableHeadingAndReference = groupedResults.some(group => {
       const match = testsToHideTableHeadingAndReference.includes(group.templateName.toLowerCase());
-      console.log(`Checking templateName "${group.templateName}" against hide list: ${match}`);
       return match;
     });
-    console.log('hideTableHeadingAndReference flag:', hideTableHeadingAndReference);
 
     // Prepare data for the template
     const data = {
@@ -233,7 +220,6 @@ exports.generateHtmlReport = async (req, res, next) => {
     const showHeader = req.query.showHeader !== 'false';
     const showFooter = req.query.showFooter !== 'false';
 
-    console.log(`HTML generation options - Show Header: ${showHeader}, Show Footer: ${showFooter}`);
 
     const report = await Report.findById(req.params.id)
       .populate({
@@ -263,9 +249,7 @@ exports.generateHtmlReport = async (req, res, next) => {
     let templateSource;
     try {
       templateSource = fs.readFileSync(reportTemplatePath, 'utf8');
-      console.log('pdf-report.html template loaded successfully for HTML view');
     } catch (err) {
-      console.error('Error reading template file:', err);
       return res.status(500).json({ success: false, message: 'Error reading report template' });
     }
 
@@ -273,9 +257,7 @@ exports.generateHtmlReport = async (req, res, next) => {
     let template;
     try {
       template = handlebars.compile(templateSource);
-      console.log('Template compiled successfully');
     } catch (err) {
-      console.error('Error compiling template:', err);
       return res.status(500).json({ success: false, message: 'Error compiling report template' });
     }
 
@@ -286,13 +268,11 @@ exports.generateHtmlReport = async (req, res, next) => {
     const html = template(data);
 
     // Log the data being passed to the template for debugging
-    console.log('HTML Template data:', JSON.stringify(data, null, 2));
 
     // Send the HTML as the response
     res.setHeader('Content-Type', 'text/html');
     res.send(html);
   } catch (error) {
-    console.error('Error generating HTML report:', error);
     next(error);
   }
 };
@@ -307,7 +287,6 @@ exports.generatePdfReport = async (req, res, next) => {
     const showHeader = req.query.showHeader !== 'false';
     const showFooter = req.query.showFooter !== 'false';
 
-    console.log(`PDF generation options - Show Header: ${showHeader}, Show Footer: ${showFooter}`);
 
     const report = await Report.findById(req.params.id)
       .populate({
@@ -343,11 +322,9 @@ exports.generatePdfReport = async (req, res, next) => {
     const template = handlebars.compile(templateSource);
 
     // Log the data object just before rendering the PDF template
-    console.log('[generatePdfReport] Data being passed to PDF template:', JSON.stringify(data, null, 2));
 
     // Generate the HTML
     const html = template(data);
-    console.log('Using pdf-report.html template for PDF generation');
 
     // Launch a headless browser with additional configuration
     browser = await puppeteer.launch({
@@ -363,11 +340,9 @@ exports.generatePdfReport = async (req, res, next) => {
       // Consider adding executablePath if Puppeteer isn't finding Chrome correctly
       // executablePath: '/path/to/your/chrome/or/chromium'
     });
-    console.log('Puppeteer browser launched.');
 
     // Create a new page
     const page = await browser.newPage();
-    console.log('New page created.');
 
     // Set viewport size to approximate A4 for rendering purposes
     await page.setViewport({
@@ -375,14 +350,12 @@ exports.generatePdfReport = async (req, res, next) => {
       height: 1123, // A4 height in pixels (297mm at 96 DPI)
       deviceScaleFactor: 1 // Use 1 for PDF generation, scale option handles final size
     });
-    console.log('Viewport set.');
 
     // Set the content of the page with longer timeout
     await page.setContent(html, {
       waitUntil: 'networkidle0', // Wait for network activity to cease
       timeout: 60000 // Increased timeout to 60 seconds
     });
-    console.log('Page content set successfully.');
 
     // Set the PDF options with more detailed configuration
     const pdfOptions = {
@@ -399,16 +372,13 @@ exports.generatePdfReport = async (req, res, next) => {
       scale: 1, // Adjust scale if needed, 1 is default
       landscape: false
     };
-    console.log('Generating PDF with options:', JSON.stringify(pdfOptions));
 
     // Generate the PDF
     const pdf = await page.pdf(pdfOptions);
-    console.log('PDF generated successfully.');
 
     // Close the browser
     await browser.close();
     browser = null; // Indicate browser is closed
-    console.log('Browser closed successfully.');
 
     // Set the response headers
     res.setHeader('Content-Type', 'application/pdf');
@@ -418,14 +388,11 @@ exports.generatePdfReport = async (req, res, next) => {
     res.send(pdf);
 
   } catch (error) {
-    console.error('Error generating PDF report:', error);
     // Ensure browser is closed even if an error occurs mid-process
     if (browser) {
       try {
         await browser.close();
-        console.log('Browser closed after error.');
       } catch (closeError) {
-        console.error('Error closing browser after error:', closeError);
       }
     }
     // Pass error to the next middleware (error handler)
@@ -444,9 +411,7 @@ exports.testTemplate = async (req, res, next) => {
     let templateSource;
     try {
       templateSource = fs.readFileSync(testTemplatePath, 'utf8');
-      console.log('Test template loaded successfully');
     } catch (err) {
-      console.error('Error reading test template file:', err);
       return res.status(500).json({ success: false, message: 'Error reading test template' });
     }
 
@@ -454,9 +419,7 @@ exports.testTemplate = async (req, res, next) => {
     let template;
     try {
       template = handlebars.compile(templateSource);
-      console.log('Test template compiled successfully');
     } catch (err) {
-      console.error('Error compiling test template:', err);
       return res.status(500).json({ success: false, message: 'Error compiling test template' });
     }
 
@@ -478,7 +441,6 @@ exports.testTemplate = async (req, res, next) => {
     res.setHeader('Content-Type', 'text/html');
     res.send(html);
   } catch (error) {
-    console.error('Error testing template:', error);
     next(error);
   }
 };
@@ -499,7 +461,6 @@ exports.getPublicReportData = async (req, res) => {
     res.status(200).json(report);
 
   } catch (error) {
-    console.error(error);
 
     res.status(500).json({
       success: false,

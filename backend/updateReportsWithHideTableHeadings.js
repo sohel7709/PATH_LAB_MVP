@@ -22,15 +22,12 @@ const testsToHideTableHeadingAndReference = [
 
 async function updateReports() {
   try {
-    console.log('Using MongoDB URI:', mongoUri); // Log the URI being used
     await mongoose.connect(mongoUri, {
       useNewUrlParser: true,
       useUnifiedTopology: true
     });
-    console.log('Connected to MongoDB');
 
     const reports = await Report.find({});
-    console.log(`Found ${reports.length} reports`);
 
     for (const report of reports) {
       const results = report.results || [];
@@ -55,15 +52,11 @@ async function updateReports() {
       if (report.hideTableHeadingAndReference !== hideFlag) {
         report.hideTableHeadingAndReference = hideFlag;
         await report.save();
-        console.log(`Updated report ${report._id} hideTableHeadingAndReference to ${hideFlag}`);
       } else {
-        console.log(`Report ${report._id} already has correct hideTableHeadingAndReference: ${hideFlag}`);
       }
     }
 
-    console.log('All reports processed');
     await mongoose.disconnect();
-    console.log('Disconnected from MongoDB');
   } catch (error) {
     console.error('Error updating reports:', error);
     process.exit(1);

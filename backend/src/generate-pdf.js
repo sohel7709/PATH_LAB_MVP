@@ -11,7 +11,6 @@ const path = require('path');
 const fs = require('fs');
 
 async function generatePDF() {
-  console.log('Starting PDF generation...');
   
   // Launch a new browser instance
   const browser = await puppeteer.launch({
@@ -27,7 +26,6 @@ async function generatePDF() {
     const htmlPath = path.join(__dirname, 'amylase-lipase-report.html');
     const fileUrl = `file://${htmlPath}`;
     
-    console.log(`Loading HTML from: ${fileUrl}`);
     
     // Navigate to the HTML file
     await page.goto(fileUrl, { waitUntil: 'networkidle0' });
@@ -54,9 +52,7 @@ top: '55mm', // Updated header margin
       }
     });
     
-    console.log(`PDF successfully generated at: ${outputPath}`);
   } catch (error) {
-    console.error('Error generating PDF:', error);
   } finally {
     // Close the browser
     await browser.close();
@@ -64,7 +60,6 @@ top: '55mm', // Updated header margin
 }
 
 // Execute the function
-generatePDF().catch(console.error);
 
 /**
  * Usage:

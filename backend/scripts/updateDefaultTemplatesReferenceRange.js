@@ -18,12 +18,10 @@ async function updateDefaultTemplates() {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
-    console.log('Connected to MongoDB');
 
     // Load default templates from the JSON file
     const defaultTemplatesJSONPath = path.resolve(__dirname, '../src/utils/defaultTestTemplates.json');
     const defaultTemplatesFromJSON = JSON.parse(fs.readFileSync(defaultTemplatesJSONPath, 'utf-8'));
-    console.log(`Loaded ${defaultTemplatesFromJSON.length} templates from defaultTestTemplates.json`);
 
     let updatedCount = 0;
     let notFoundCount = 0;
@@ -47,21 +45,15 @@ async function updateDefaultTemplates() {
           // For this script, we primarily focus on sections.
 
           await dbTemplate.save();
-          console.log(`Updated template: ${dbTemplate.templateName} (ID: ${dbTemplate._id}) with data from JSON.`);
           updatedCount++;
         } else {
-          console.log(`No update needed for template: ${dbTemplate.templateName} (ID: ${dbTemplate._id}). Sections match JSON.`);
         }
       } else {
-        console.warn(`Default template with shortName "${jsonTemplate.shortName}" not found in the database. Skipping.`);
         notFoundCount++;
       }
     }
 
-    console.log('Update process complete.');
-    console.log(`Successfully updated ${updatedCount} templates.`);
     if (notFoundCount > 0) {
-      console.warn(`${notFoundCount} templates from JSON were not found in the database as default templates.`);
     }
     process.exit(0);
   } catch (error) {

@@ -125,7 +125,6 @@ exports.login = async (req, res, next) => {
     // If user is admin or technician, check if they have a lab assigned
     if (user.role !== "super-admin") {
       // Log the user's lab information for debugging
-      console.log("User lab information:", {
         userId: user._id,
         userEmail: user.email,
         userRole: user.role,
@@ -142,7 +141,6 @@ exports.login = async (req, res, next) => {
       // Check if their lab is active
       try {
         const lab = await Lab.findById(user.lab);
-        console.log(
           "Found lab:",
           lab
             ? { id: lab._id, name: lab.name, status: lab.status }
@@ -163,7 +161,6 @@ exports.login = async (req, res, next) => {
           });
         }
       } catch (labError) {
-        console.error("Error finding lab:", labError);
         return res.status(500).json({
           success: false,
           message:
@@ -219,12 +216,10 @@ exports.getMe = async (req, res, next) => {
         if (lab) {
           user.lab = lab;
         } else {
-          console.error(
             `Lab with ID ${userWithLab.lab} not found for user ${user._id}`,
           );
         }
       } else {
-        console.error(`User ${user._id} has no lab assigned`);
       }
     }
 
@@ -332,10 +327,8 @@ exports.verifyToken = async (req, res, next) => {
       select: "name status subscription",
     });
 
-    console.log("Verifying token for user:", user);
 
     if (!user) {
-      console.log("User not found for token verification");
       return res.status(404).json({
         success: false,
         message: "User not found",
@@ -353,12 +346,10 @@ exports.verifyToken = async (req, res, next) => {
         if (lab) {
           user.lab = lab;
         } else {
-          console.error(
             `Lab with ID ${userWithLab.lab} not found for user ${user._id}`,
           );
         }
       } else {
-        console.error(`User ${user._id} has no lab assigned`);
       }
     }
 
@@ -436,13 +427,11 @@ exports.forgotPassword = async (req, res, next) => {
         !process.env.EMAIL_PASSWORD ||
         process.env.EMAIL_PASSWORD.includes("your_gmail")
       ) {
-        console.log(
           "Email credentials not properly configured. Using development mode.",
         );
 
         // In development mode, just log the reset URL and return success
         if (process.env.NODE_ENV !== "production") {
-  console.log("Reset URL:", resetUrl);
 }
 
         
@@ -469,7 +458,6 @@ exports.forgotPassword = async (req, res, next) => {
         // Send the email
         await transporter.sendMail(mailOptions);
       } catch (emailError) {
-        console.error("Email sending error details:", emailError);
 
         // Check for authentication errors
         if (emailError.message.includes("Authentication")) {
@@ -486,14 +474,12 @@ exports.forgotPassword = async (req, res, next) => {
       }
 
       // Log the reset URL for development purposes
-      console.log("Reset URL:", resetUrl);
 
       res.status(200).json({
         success: true,
         message: "Password reset email sent",
       });
     } catch (err) {
-      console.error("Email sending error:", err);
 
       // If email fails, reset the token and expiry
       user.resetPasswordToken = undefined;
@@ -535,20 +521,17 @@ exports.resetPassword = async (req, res, next) => {
 
     // Find user by token and check if token is still valid
 
-    // console.log("RAW TOKEN:", token);
 
     // // const resetPasswordToken = crypto
     // //   .createHash("sha256")
     // //   .update(token)
     // //   .digest("hex");
 
-    // console.log("HASHED TOKEN:", resetPasswordToken);
 
     // const userCheck = await User.findOne({
     //   resetPasswordToken,
     // });
 
-    // console.log("USER FOUND BY TOKEN:", userCheck ? userCheck.email : "NO");
 
     const user = await User.findOne({
       resetPasswordToken,

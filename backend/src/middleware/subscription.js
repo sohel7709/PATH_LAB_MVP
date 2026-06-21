@@ -69,7 +69,6 @@ exports.checkSubscription = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.error('Subscription check error:', error);
     res.status(500).json({
       success: false,
       message: 'Error checking subscription',
@@ -166,7 +165,6 @@ exports.checkSubscriptionForCreate = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.error('Subscription create check error:', error);
     res.status(500).json({
       success: false,
       message: 'Error checking subscription',

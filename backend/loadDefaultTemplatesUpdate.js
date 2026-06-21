@@ -25,11 +25,8 @@ if (!fs.existsSync(DEFAULT_TEMPLATES_PATH)) {
 
 const loadDefaultTemplatesUpdate = async () => {
   try {
-    console.log('Connecting to MongoDB...');
     await mongoose.connect(MONGODB_URI);
-    console.log('Connected to MongoDB.');
 
-    console.log(`Reading default templates from ${DEFAULT_TEMPLATES_PATH}...`);
     const defaultTemplatesData = JSON.parse(fs.readFileSync(DEFAULT_TEMPLATES_PATH, 'utf-8'));
 
     if (!Array.isArray(defaultTemplatesData) || defaultTemplatesData.length === 0) {
@@ -48,7 +45,6 @@ const loadDefaultTemplatesUpdate = async () => {
           createdBy: PLACEHOLDER_USER_ID
         });
         updatedCount++;
-        console.log(`Added new template: ${template.templateName} (${template.shortName})`);
       } else {
         // Update existing template with new data
         // Prepare update data, excluding createdBy
@@ -66,17 +62,13 @@ const loadDefaultTemplatesUpdate = async () => {
           }
         );
         updatedCount++;
-        console.log(`Updated existing template: ${template.templateName} (${template.shortName})`);
       }
     }
 
-    console.log(`Successfully added or updated ${updatedCount} test templates.`);
   } catch (error) {
     console.error('Error loading default test templates:', error);
   } finally {
-    console.log('Disconnecting from MongoDB...');
     await mongoose.disconnect();
-    console.log('Disconnected from MongoDB.');
   }
 };
 

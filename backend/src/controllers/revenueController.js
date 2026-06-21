@@ -104,9 +104,6 @@ exports.getRevenueData = async (req, res, next) => {
       }
     ];
 
-    console.log("Aggregation Pipeline:", JSON.stringify(aggregationPipeline, null, 2));
-    console.log("Query Lab ID:", queryLabId);
-    console.log("Date Range:", startDate, "to", endDate);
 
     const results = await Report.aggregate(aggregationPipeline);
 
@@ -123,7 +120,6 @@ exports.getRevenueData = async (req, res, next) => {
     });
 
   } catch (error) { // Added missing closing brace for try block above
-    console.error('Error fetching revenue data:', error);
     next(error);
   }
 };

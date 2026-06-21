@@ -19,7 +19,6 @@ exports.getActivePlans = async (req, res) => {
       data: plans
     });
   } catch (error) {
-    console.error('Error fetching active plans:', error);
     res.status(500).json({ success: false, message: 'Error fetching plans', error: error.message });
   }
 };
@@ -91,7 +90,6 @@ exports.requestSubscription = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error requesting subscription:', error);
     res.status(500).json({ success: false, message: 'Error requesting subscription', error: error.message });
   }
 };
@@ -132,7 +130,6 @@ exports.getCurrentSubscription = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching current subscription:', error);
     res.status(500).json({ success: false, message: 'Error fetching subscription', error: error.message });
   }
 };
@@ -170,7 +167,6 @@ exports.getAllLabSubscriptions = async (req, res) => {
       data: formattedLabs
     });
   } catch (error) {
-    console.error('Error fetching all subscriptions:', error);
     res.status(500).json({ success: false, message: 'Error fetching subscriptions', error: error.message });
   }
 };
@@ -279,7 +275,6 @@ exports.activateSubscription = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error activating subscription:', error);
     res.status(500).json({ success: false, message: 'Error activating subscription', error: error.message });
   }
 };
@@ -344,7 +339,6 @@ exports.cancelSubscription = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error cancelling subscription:', error);
     res.status(500).json({ success: false, message: 'Error cancelling subscription', error: error.message });
   }
 };
@@ -422,7 +416,6 @@ exports.extendSubscription = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error extending subscription:', error);
     res.status(500).json({ success: false, message: 'Error extending subscription', error: error.message });
   }
 };
@@ -529,7 +522,6 @@ exports.changePlan = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error changing plan:', error);
     res.status(500).json({ success: false, message: 'Error changing plan', error: error.message });
   }
 };
@@ -554,7 +546,6 @@ exports.getSubscriptionHistory = async (req, res) => {
       data: history
     });
   } catch (error) {
-    console.error('Error fetching subscription history:', error);
     res.status(500).json({ success: false, message: 'Error fetching history', error: error.message });
   }
 };
@@ -618,7 +609,6 @@ exports.checkSubscriptionStatus = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error checking subscription status:', error);
     res.status(500).json({ success: false, message: 'Error checking status', error: error.message });
   }
 };

@@ -37,7 +37,6 @@ exports.createUser = async (req, res, next) => {
       }
     } else {
       // SUPER ADMIN FLOW
-      console.log('Creating user with data:', { name, email, role, labId });
 
       if (!['super-admin', 'admin', 'technician'].includes(role)) {
         return res.status(400).json({ success: false, message: 'Invalid role' });
@@ -77,11 +76,9 @@ exports.createUser = async (req, res, next) => {
       lab: finalRole !== 'super-admin' ? finalLabId : undefined
     };
     
-    console.log('Creating user with final data:', userData);
     const user = await User.create(userData);
     
     const createdUser = await User.findById(user._id).populate('lab', 'name');
-    console.log('Created user:', {
       id: createdUser._id,
       name: createdUser.name,
       email: createdUser.email,
@@ -94,7 +91,6 @@ exports.createUser = async (req, res, next) => {
       data: createdUser
     });
   } catch (error) {
-    console.error('Error creating user:', error);
     next(error);
   }
 };
@@ -117,7 +113,6 @@ exports.getUsers = async (req, res, next) => {
       query.role = req.query.role;
     }
     
-    console.log('User query:', query);
     
     const users = await User.find(query).populate({
       path: 'lab',
@@ -130,7 +125,6 @@ exports.getUsers = async (req, res, next) => {
       data: users
     });
   } catch (error) {
-    console.error('Error getting users:', error);
     next(error);
   }
 };
@@ -156,7 +150,6 @@ exports.getUser = async (req, res, next) => {
 
     res.status(200).json({ success: true, data: user });
   } catch (error) {
-    console.error('Error getting user:', error);
     next(error);
   }
 };
@@ -224,7 +217,6 @@ exports.updateUser = async (req, res, next) => {
 
     res.status(200).json({ success: true, data: user });
   } catch (error) {
-    console.error('Error updating user:', error);
     next(error);
   }
 };
@@ -255,7 +247,6 @@ exports.deleteUser = async (req, res, next) => {
 
     res.status(200).json({ success: true, message: 'User deleted successfully' });
   } catch (error) {
-    console.error('Error deleting user:', error);
     next(error);
   }
 };

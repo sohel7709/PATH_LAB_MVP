@@ -66,7 +66,6 @@ const getIntelligenceData = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching intelligence data:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch intelligence data',

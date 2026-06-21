@@ -83,10 +83,8 @@ class WhatsAppService {
         }
       );
 
-      console.log(`WhatsApp notification sent to ${to}:`, response.data);
       return response.data;
     } catch (error) {
-      console.error('Error sending WhatsApp message:', error.response?.data || error.message);
       throw error;
     }
   }

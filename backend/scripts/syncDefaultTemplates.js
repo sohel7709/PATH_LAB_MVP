@@ -14,11 +14,8 @@ const DEFAULT_TEMPLATES_PATH = path.join(__dirname, '../src/utils/defaultTestTem
 async function syncDefaultTemplates() {
   let connection;
   try {
-    console.log('Connecting to MongoDB...');
     connection = await mongoose.connect(MONGO_URI);
-    console.log('MongoDB Connected.');
 
-    console.log(`Reading default templates from: ${DEFAULT_TEMPLATES_PATH}`);
     const defaultTemplatesData = JSON.parse(fs.readFileSync(DEFAULT_TEMPLATES_PATH, 'utf-8'));
 
     if (!Array.isArray(defaultTemplatesData) || defaultTemplatesData.length === 0) {
@@ -28,25 +25,21 @@ async function syncDefaultTemplates() {
 
     // Find the admin user provided by the user to attribute creation/updates
     const adminEmail = 'superadmin_1744692753759@example.com'; // Use the provided email
-    console.log(`Attempting to find admin user with email: ${adminEmail}`);
     let systemUser = await User.findOne({ email: adminEmail });
     if (!systemUser) {
         console.error(`Cannot find admin user with email ${adminEmail}. Please ensure this user exists.`);
         return; // Stop if the specified user doesn't exist
     } // <<< Added missing closing brace here
     const systemUserId = systemUser._id;
-    console.log(`Using user ID ${systemUserId} for createdBy field.`);
 
 
     let updatedCount = 0;
     let createdCount = 0;
     let skippedCount = 0;
 
-    console.log(`Processing ${defaultTemplatesData.length} templates from JSON file...`);
 
     for (const templateData of defaultTemplatesData) {
       if (!templateData.templateName || !templateData.shortName) {
-        console.warn('Skipping template due to missing templateName or shortName:', templateData);
         skippedCount++;
         continue;
       }
@@ -83,7 +76,6 @@ async function syncDefaultTemplates() {
 
       if (existingTemplate) {
         // Update existing template
-        console.log(`Updating existing default template: ${templateFromFile.templateName} (${templateFromFile.shortName})`);
         // Overwrite sections completely to ensure sync
         existingTemplate.templateName = templateFromFile.templateName;
         existingTemplate.category = templateFromFile.category;
@@ -95,26 +87,17 @@ async function syncDefaultTemplates() {
         updatedCount++;
       } else {
         // Create new default template if it doesn't exist
-        console.log(`Creating new default template: ${templateFromFile.templateName} (${templateFromFile.shortName})`);
         await TestTemplate.create(templateFromFile);
         createdCount++;
       }
     }
 
-    console.log('\n--- Sync Summary ---');
-    console.log(`Templates Processed from JSON: ${defaultTemplatesData.length}`);
-    console.log(`Templates Updated in DB: ${updatedCount}`);
-    console.log(`Templates Created in DB: ${createdCount}`);
-    console.log(`Templates Skipped (Missing Name/ShortName): ${skippedCount}`);
-    console.log('--------------------\n');
-    console.log('Default template synchronization complete.');
 
   } catch (error) {
     console.error('Error during default template synchronization:', error);
   } finally {
     if (connection) {
       await mongoose.disconnect();
-      console.log('MongoDB Disconnected.');
     }
   }
 }

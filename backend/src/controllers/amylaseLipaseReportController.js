@@ -35,9 +35,7 @@ exports.generateAmylaseLipaseHtml = async (req, res, next) => {
     let templateSource;
     try {
       templateSource = fs.readFileSync(reportTemplatePath, 'utf8');
-      console.log('Black-only Amylase/Lipase template loaded successfully for HTML view');
     } catch (err) {
-      console.error('Error reading template file:', err);
       return res.status(500).json({
         success: false,
         message: 'Error reading report template'
@@ -48,9 +46,7 @@ exports.generateAmylaseLipaseHtml = async (req, res, next) => {
     let template;
     try {
       template = handlebars.compile(templateSource);
-      console.log('Template compiled successfully');
     } catch (err) {
-      console.error('Error compiling template:', err);
       return res.status(500).json({
         success: false,
         message: 'Error compiling report template'
@@ -88,7 +84,6 @@ exports.generateAmylaseLipaseHtml = async (req, res, next) => {
     res.setHeader('Content-Type', 'text/html');
     res.send(html);
   } catch (error) {
-    console.error('Error generating Amylase/Lipase HTML report:', error);
     next(error);
   }
 };
@@ -147,7 +142,6 @@ exports.generateAmylaseLipasePdf = async (req, res, next) => {
     // Generate the HTML
     const html = template(data);
     
-    console.log('Using black-only template for PDF generation');
     
     // Launch a headless browser
     const browser = await puppeteer.launch({
@@ -202,7 +196,6 @@ exports.generateAmylaseLipasePdf = async (req, res, next) => {
       // Send the PDF as the response
       res.send(pdf);
     } catch (pdfError) {
-      console.error('Error in PDF generation step:', pdfError);
       await browser.close();
       return res.status(500).json({
         success: false,
@@ -211,7 +204,6 @@ exports.generateAmylaseLipasePdf = async (req, res, next) => {
       });
     }
   } catch (error) {
-    console.error('Error generating Amylase/Lipase PDF report:', error);
     next(error);
   }
 };
@@ -261,7 +253,6 @@ exports.generateSampleReport = async (req, res, next) => {
     res.setHeader('Content-Type', 'text/html');
     res.send(html);
   } catch (error) {
-    console.error('Error generating sample report:', error);
     next(error);
   }
 };

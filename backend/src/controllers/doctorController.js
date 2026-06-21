@@ -9,7 +9,6 @@ exports.createDoctor = async (req, res) => {
 
     // Ensure req.user and req.user.lab exist, as lab is a required field for a doctor
     if (!req.user || !req.user.lab) {
-      console.error('Error creating doctor: User or user.lab is undefined. req.user:', req.user);
       return res.status(400).json({
         success: false,
         message: 'User not authenticated or not associated with a lab. Cannot create doctor.'
@@ -33,7 +32,6 @@ exports.createDoctor = async (req, res) => {
       data: doctor
     });
   } catch (error) {
-    console.error('Detailed error creating doctor:', error); // Log the full error object
     res.status(500).json({
       success: false,
       message: error.message || 'Error creating doctor', // Use Mongoose error message if available

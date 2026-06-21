@@ -184,7 +184,6 @@ exports.updateLabReportSettings = asyncHandler(async (req, res) => {
       data: settings,
     });
   } catch (error) {
-    console.error("Error updating lab report settings:", error);
     res.status(500).json({
       success: false,
       message: "Failed to update lab report settings",
@@ -218,7 +217,6 @@ const validateImageDimensions = async (buffer, type) => {
 
     return { valid: true };
   } catch (error) {
-    console.error("Error validating image dimensions:", error);
     return { valid: false, message: "Error validating image dimensions" };
   }
 };
@@ -343,7 +341,6 @@ exports.uploadImage = asyncHandler(async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error uploading image:", error);
     res.status(500).json({
       success: false,
       message: "Failed to upload image",

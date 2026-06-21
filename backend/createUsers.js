@@ -31,7 +31,6 @@ const createUsers = async () => {
 
     for (const userData of users) {
       const user = await User.create(userData);
-      console.log('User created:', user);
     }
 
     await mongoose.disconnect();

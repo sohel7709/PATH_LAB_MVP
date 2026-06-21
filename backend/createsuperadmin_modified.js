@@ -64,10 +64,6 @@ mongoose.connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true 
     // Create admin and technician users
     await User.create([adminUser, technicianUser]);
 
-    console.log('Super Admin created with email:', superAdminEmail);
-    console.log('Admin created with email:', adminEmail);
-    console.log('Technician created with email:', technicianEmail);
-    console.log('Sample Lab created');
     mongoose.connection.close();
   })
   .catch(err => {

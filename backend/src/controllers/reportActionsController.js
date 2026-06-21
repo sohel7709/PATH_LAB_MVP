@@ -49,7 +49,6 @@ exports.verifyReport = async (req, res, next) => {
       data: populatedReport // Send populated report
     });
   } catch (error) {
-    console.error('Error verifying report:', error);
     next(error);
   }
 };
@@ -102,7 +101,6 @@ exports.addComment = async (req, res, next) => {
       data: populatedReport // Send report with populated comments
     });
   } catch (error) {
-    console.error('Error adding comment:', error);
     next(error);
   }
 };

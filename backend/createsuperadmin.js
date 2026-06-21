@@ -59,7 +59,6 @@ mongoose.connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true 
     // Create admin and technician users
     await User.create([adminUser, technicianUser]);
 
-    console.log('Super Admin, Admin, Technician users, and Sample Lab created');
     mongoose.connection.close();
   })
   .catch(err => {

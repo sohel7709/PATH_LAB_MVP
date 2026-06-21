@@ -17,8 +17,6 @@ exports.createReport = async (req, res, next) => {
     req.body.lab = req.user.lab;
     req.body.technician = req.user.id;
 
-    console.log('--- Attempting to Create Report ---');
-    console.log('Received Request Body:', JSON.stringify(req.body, null, 2));
 
     // Prepare data, ensuring results is an array and calculating flags
     let resultsWithFlags = (Array.isArray(req.body.results) ? req.body.results : []);
@@ -94,10 +92,6 @@ exports.createReport = async (req, res, next) => {
     delete reportDataToCreate.patientAge;
     // ... potentially others if the frontend sends redundant data
 
-    console.log('--- Data before Report.create ---'); // LOG BEFORE CREATE
-    console.log('Template Notes:', JSON.stringify(reportDataToCreate.templateNotes)); // LOG templateNotes specifically
-    console.log('Full Data:', JSON.stringify(reportDataToCreate, null, 2)); // Log full data
-    console.log('---------------------------------');
 
     const report = await Report.create(reportDataToCreate);
 
@@ -155,10 +149,8 @@ exports.createReport = async (req, res, next) => {
                   }
               };
               await createdReport.save();
-              console.log('WhatsApp notification sent to patient and status updated.');
           }
         } else {
-          console.log(`Patient ${report.patientInfo.name} has not enabled WhatsApp notifications. Skipping.`);
         }
       }
 
@@ -180,11 +172,9 @@ exports.createReport = async (req, res, next) => {
             lab.name,
             customMessage
           );
-          console.log('WhatsApp notification sent to doctor.');
         }
       }
     } catch (notificationError) {
-      console.error('Error sending WhatsApp notification:', notificationError);
     }
 
     res.status(201).json({
@@ -192,7 +182,6 @@ exports.createReport = async (req, res, next) => {
       data: report // Send the initially created report data
     });
   } catch (error) {
-    console.error('Error creating report:', error);
     next(error);
   }
 };
@@ -204,20 +193,16 @@ exports.createReport = async (req, res, next) => {
 exports.getReports = async (req, res, next) => {
   try {
     let query = { lab: req.user.lab };
-    console.log(`[getReports] Initial query for lab ${req.user.lab}:`, JSON.stringify(query)); // Log initial query
 
     // Add filters from query parameters
     if (req.query.status) {
       query.status = req.query.status;
-      console.log(`[getReports] Added status filter: ${query.status}`);
     }
     if (req.query.patientId) {
       query['patientInfo.patientId'] = req.query.patientId;
-      console.log(`[getReports] Added patientId filter: ${query['patientInfo.patientId']}`);
     }
     if (req.query.testName) {
       query['testInfo.name'] = new RegExp(req.query.testName, 'i');
-      console.log(`[getReports] Added testName filter (regex): ${req.query.testName}`);
     }
 
     // Add date range filter
@@ -226,10 +211,8 @@ exports.getReports = async (req, res, next) => {
         $gte: new Date(req.query.startDate),
         $lte: new Date(req.query.endDate)
       };
-      console.log(`[getReports] Added date range filter: ${JSON.stringify(query.createdAt)}`);
     }
 
-    console.log(`[getReports] Final query object:`, JSON.stringify(query)); // Log final query
 
     // Pagination
     const page = parseInt(req.query.page, 10) || 1;
@@ -237,13 +220,9 @@ exports.getReports = async (req, res, next) => {
     const startIndex = (page - 1) * limit;
     const endIndex = page * limit;
 
-    console.log(`[getReports] Pagination: page=${page}, limit=${limit}, startIndex=${startIndex}`); // Log pagination
 
-    console.log('[getReports] Attempting to count documents...'); // Log before count
     const total = await Report.countDocuments(query);
-    console.log(`[getReports] Document count successful: total=${total}`); // Log after count
 
-    console.log('[getReports] Attempting to find documents...'); // Log before find
     const reports = await Report.find(query)
       .populate({
         path: 'technician',
@@ -256,7 +235,6 @@ exports.getReports = async (req, res, next) => {
       .skip(startIndex)
       .limit(limit)
       .sort({ createdAt: -1 });
-    console.log(`[getReports] Find documents successful: found ${reports.length} reports`); // Log after find
 
     // Pagination result
     const pagination = {};
@@ -275,7 +253,6 @@ exports.getReports = async (req, res, next) => {
       };
     }
 
-    console.log('[getReports] Sending successful response.'); // Log before sending response
     res.status(200).json({
       success: true,
       count: reports.length,
@@ -283,7 +260,6 @@ exports.getReports = async (req, res, next) => {
       data: reports
     });
   } catch (error) {
-    console.error('[getReports] Error occurred:', error); // Log the specific error
     next(error);
   }
 };
@@ -319,9 +295,7 @@ exports.getReport = async (req, res, next) => {
     }
 
     // Log the raw Mongoose document before conversion
-    console.log('[getReport] Raw report document fetched:', report);
     // Specifically log the templateNotes field from the raw document
-    console.log('[getReport] Raw report.templateNotes:', report.templateNotes);
 
 
     // Convert Mongoose document to a plain JavaScript object
@@ -330,10 +304,8 @@ exports.getReport = async (req, res, next) => {
     // --- Explicitly convert templateNotes Map to Object ---
     // (Even though schema transform should do this, let's be certain)
     if (reportObject.templateNotes instanceof Map) {
-        console.log('[getReport] templateNotes is a Map, converting to object...');
         reportObject.templateNotes = Object.fromEntries(reportObject.templateNotes);
     } else {
-         console.log('[getReport] templateNotes is already an object or null/undefined:', reportObject.templateNotes);
     }
     // --- End explicit conversion ---
 
@@ -357,13 +329,11 @@ exports.getReport = async (req, res, next) => {
     }
     // --- End Populate Test Template Names ---
 
-    console.log('[getReport] Sending reportObject:', JSON.stringify(reportObject, null, 2)); // Log the object being sent
     res.status(200).json({
       success: true,
       data: reportObject
     });
   } catch (error) {
-    console.error('[getReport] Error occurred:', error); // Log the specific error
     next(error);
   }
 };
@@ -385,7 +355,6 @@ exports.updateReport = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Report cannot be modified in its current status' });
     }
 
-    console.log('Update report request body:', req.body);
 
     // Prepare update data, starting with allowed fields from req.body
     let updateData = {
@@ -543,10 +512,6 @@ exports.updateReport = async (req, res, next) => {
     }
 
 
-    console.log('--- Data before Report.findByIdAndUpdate ---'); // LOG BEFORE UPDATE
-    console.log('Template Notes:', JSON.stringify(updateData.templateNotes)); // LOG templateNotes specifically
-    console.log('Full Data:', JSON.stringify(updateData, null, 2)); // Log full data
-    console.log('------------------------------------------');
 
 
     const updatedReport = await Report.findByIdAndUpdate(req.params.id, updateData, {
@@ -564,7 +529,6 @@ exports.updateReport = async (req, res, next) => {
       data: updatedReport // Send the updated report data
     });
   } catch (error) {
-    console.error('Error updating report:', error);
     next(error);
   }
 };

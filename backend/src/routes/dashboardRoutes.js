@@ -95,7 +95,6 @@ router.get('/stats', protect, async (req, res) => {
       labName
     });
   } catch (error) {
-    console.error('Error fetching dashboard stats:', error);
     res.status(500).json({
       success: false,
       message: 'Server error fetching dashboard stats.',
@@ -226,8 +225,6 @@ router.get('/system-stats', protect, authorize('super-admin'), async (req, res) 
       }
     });
   } catch (error) {
-    console.error('Error in /api/dashboard/system-stats:', error);
-    console.error('Stack Trace:', error.stack);
     res.status(500).json({
       success: false,
       message: 'Server error fetching system statistics.',

@@ -10,7 +10,6 @@ exports.createPlan = async (req, res) => {
         const newPlan = await Plan.create(req.body);
         res.status(201).json({ success: true, data: newPlan });
     } catch (error) {
-        console.error('Error creating plan:', error);
         // Handle potential duplicate key error for unique name
         if (error.code === 11000) {
             return res.status(400).json({ success: false, message: 'Plan name already exists.' });
@@ -28,7 +27,6 @@ exports.getAllPlans = async (req, res) => {
         const plans = await Plan.find().sort('name'); // Sort by name for consistency
         res.status(200).json({ success: true, count: plans.length, data: plans });
     } catch (error) {
-        console.error('Error getting plans:', error);
         res.status(500).json({ success: false, message: 'Server Error', error: error.message });
     }
 };
@@ -44,7 +42,6 @@ exports.getPlanById = async (req, res) => {
         }
         res.status(200).json({ success: true, data: plan });
     } catch (error) {
-        console.error(`Error getting plan ${req.params.id}:`, error);
         // Handle potential CastError if ID format is invalid
         if (error.name === 'CastError') {
              return res.status(400).json({ success: false, message: 'Invalid Plan ID format' });
@@ -73,7 +70,6 @@ exports.updatePlan = async (req, res) => {
 
         res.status(200).json({ success: true, data: plan });
     } catch (error) {
-        console.error(`Error updating plan ${req.params.id}:`, error);
          // Handle potential duplicate key error for unique name on update
         if (error.code === 11000) {
             return res.status(400).json({ success: false, message: 'Plan name already exists.' });
@@ -118,7 +114,6 @@ exports.deletePlan = async (req, res) => {
 
         res.status(200).json({ success: true, message: 'Plan deleted successfully', data: {} }); // Return empty data on delete
     } catch (error) {
-        console.error(`Error deleting plan ${req.params.id}:`, error);
         // Handle potential CastError if ID format is invalid
         if (error.name === 'CastError') {
              return res.status(400).json({ success: false, message: 'Invalid Plan ID format' });

@@ -43,7 +43,6 @@ exports.getRevenueStats = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Error fetching revenue stats:', error);
     res.status(500).json({ success: false, message: 'Error fetching revenue stats', error: error.message });
   }
 };
@@ -76,7 +75,6 @@ exports.getRevenueTransactions = async (req, res) => {
       data: transactions,
     });
   } catch (error) {
-    console.error('Error fetching revenue transactions:', error);
     res.status(500).json({ success: false, message: 'Error fetching transactions', error: error.message });
   }
 };
@@ -123,7 +121,6 @@ exports.getMonthlyRevenueChart = async (req, res) => {
       data: chartData,
     });
   } catch (error) {
-    console.error('Error fetching monthly chart:', error);
     res.status(500).json({ success: false, message: 'Error fetching chart data', error: error.message });
   }
 };
@@ -166,7 +163,6 @@ exports.getPlanSalesChart = async (req, res) => {
       data: planData,
     });
   } catch (error) {
-    console.error('Error fetching plan chart:', error);
     res.status(500).json({ success: false, message: 'Error fetching chart data', error: error.message });
   }
 };

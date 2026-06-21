@@ -222,16 +222,12 @@ exports.getLabStats = async (req, res, next) => {
     
     // Get total patients count
     const Patient = require('../models/Patient');
-    console.log('Counting patients for lab ID:', lab._id);
     
     // Debug: Check if there are any patients in the system
     const allPatients = await Patient.find({});
-    console.log('Total patients in system:', allPatients.length);
-    console.log('Sample patient data:', allPatients.length > 0 ? allPatients[0] : 'No patients');
     
     // Count patients for this lab
     const totalPatients = await Patient.countDocuments({ labId: lab._id });
-    console.log('Patients found for this lab:', totalPatients);
     
     // Get total reports count
     const totalReports = await Report.countDocuments({ lab: lab._id });
@@ -358,7 +354,6 @@ exports.assignPlanToLab = async (req, res, next) => {
         });
 
     } catch (error) {
-        console.error(`Error assigning plan ${planId} to lab ${labId}:`, error);
         // Handle potential CastError if ID format is invalid (already handled above but good practice)
         if (error.name === 'CastError') {
              return res.status(400).json({ success: false, message: 'Invalid ID format provided' });
@@ -403,7 +398,6 @@ exports.getSubscriptionHistoryForLab = async (req, res, next) => {
         });
 
     } catch (error) {
-        console.error(`Error fetching subscription history for lab ${labId}:`, error);
         next(error);
     }
 };
