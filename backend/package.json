@@ -6,9 +6,11 @@
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest --runInBand --forceExit --testTimeout=30000",
+    "test:coverage": "jest --runInBand --forceExit --coverage --testTimeout=30000",
     "deploy": "node deploy.js",
-    "prod": "cross-env NODE_ENV=production node src/app.js"
+    "prod": "cross-env NODE_ENV=production node src/app.js",
+    "prod:cluster": "cross-env NODE_ENV=production node cluster.js"
   },
   "keywords": [
     "pathology",
@@ -42,7 +44,11 @@
     "xss-clean": "^0.1.4"
   },
   "devDependencies": {
-    "nodemon": "^2.0.22"
+    "@jest/globals": "^30.4.1",
+    "jest": "^30.4.2",
+    "mongodb-memory-server": "^11.2.0",
+    "nodemon": "^2.0.22",
+    "supertest": "^7.2.2"
   },
   "engines": {
     "node": ">=14.0.0"

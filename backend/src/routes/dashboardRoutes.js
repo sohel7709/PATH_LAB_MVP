@@ -106,7 +106,15 @@ router.get('/stats', protect, async (req, res) => {
 // @desc    Get system-wide statistics for super admin
 // @route   GET /api/dashboard/system-stats
 // @access  Private/Super Admin
+let _statsCache = null;
+let _statsCacheTime = 0;
+const STATS_CACHE_TTL = 60 * 1000;
+
 router.get('/system-stats', protect, authorize('super-admin'), async (req, res) => {
+  if (_statsCache && Date.now() - _statsCacheTime < STATS_CACHE_TTL) {
+    return res.status(200).json({ success: true, data: _statsCache, cached: true });
+  }
+
   try {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -160,22 +168,24 @@ router.get('/system-stats', protect, authorize('super-admin'), async (req, res) 
 
     const systemRevenueThisMonth = revenueThisMonthResult.length > 0 ? revenueThisMonthResult[0].total : 0;
 
-    res.status(200).json({
-      success: true,
-      data: {
-        totalLabs,
-        totalUsers,
-        totalReports,
-        activeSubscriptions,
-        revenueThisMonth: systemRevenueThisMonth,
-        recentLabs,
-        recentUsers,
-        labsBySubscription,
-        usersByRole,
-        monthlyReports,
-        monthlyNewLabs
-      }
-    });
+    const data = {
+      totalLabs,
+      totalUsers,
+      totalReports,
+      activeSubscriptions,
+      revenueThisMonth: systemRevenueThisMonth,
+      recentLabs,
+      recentUsers,
+      labsBySubscription,
+      usersByRole,
+      monthlyReports,
+      monthlyNewLabs
+    };
+
+    _statsCache = data;
+    _statsCacheTime = Date.now();
+
+    res.status(200).json({ success: true, data });
   } catch (error) {
     res.status(500).json({
       success: false,

@@ -60,7 +60,11 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-mongoose.connect(process.env.MONGODB_URI)
+mongoose.connect(process.env.MONGODB_URI, {
+  maxPoolSize: 20,
+  minPoolSize: 5,
+  serverSelectionTimeoutMS: 5000,
+})
 
 app.use(helmet({
   contentSecurityPolicy: {
@@ -85,11 +89,13 @@ app.use(xssClean());
 app.use(hpp());
 
 const limiter = rateLimit({
-  windowMs: 10 * 60 * 1000,
-  max: 500,
+  windowMs: 60 * 1000,
+  max: 300,
+  keyGenerator: (req) => req.user?.id || req.ip,
+  skip: (req) => req.path === '/health',
   message: {
     success: false,
-    message: 'Too many requests from this IP, please try again after 10 minutes'
+    message: 'Too many requests, please slow down and try again in a minute'
   }
 });
 app.use(limiter);
