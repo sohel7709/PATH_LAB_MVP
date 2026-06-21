@@ -666,39 +666,9 @@ export const useReportGenerator = (
           pageDiv.style.pageBreakAfter = "always";
         }
 
-        if (
-          printMode === "official" &&
-          reportSettings?.watermark?.enabled &&
-          reportSettings?.watermark?.image
-        ) {
-          // Ensure pageDiv stretches to full A4 height so the watermark covers
-          // the entire page (header → footer), not just the content block
-          pageDiv.style.minHeight = "277mm"; // A4 297mm minus top+bottom margin
-
-          const watermark = document.createElement("img");
-          watermark.src = reportSettings.watermark.image;
-
-          // Cover the full page area
-          watermark.style.position = "absolute";
-          watermark.style.top = "0";
-          watermark.style.left = "0";
-          watermark.style.width = "100%";
-          watermark.style.height = "100%";
-          watermark.style.objectFit = "contain";   // keeps aspect ratio, fills page
-          watermark.style.objectPosition = "center center";
-          watermark.style.opacity = "0.08";
-          watermark.style.pointerEvents = "none";
-          watermark.style.zIndex = "1";
-
-          // Content wrapper stays above
-          pageDiv.style.isolation = "isolate";
-          pageDiv.appendChild(watermark);
-        }
-
-        // Content wrapper sits above the watermark
+        // Content wrapper
         const contentWrapper = document.createElement("div");
         contentWrapper.style.position = "relative";
-        contentWrapper.style.zIndex = "2";
 
         if (printMode === "official") {
           contentWrapper.appendChild(createHeader(headerSettings));
@@ -1012,11 +982,43 @@ export const useReportGenerator = (
         }
         // --- End Template-Specific Notes ---
 
-        contentWrapper.appendChild(testGroupDiv);
+        // Watermark body: covers test results + footer only (after patient info)
+        const bodyWrapper = document.createElement("div");
+        bodyWrapper.style.position = "relative";
+        bodyWrapper.style.overflow = "hidden";
+
+        if (
+          printMode === "official" &&
+          reportSettings?.watermark?.enabled &&
+          reportSettings?.watermark?.image
+        ) {
+          const watermark = document.createElement("img");
+          watermark.src = reportSettings.watermark.image;
+          watermark.style.position = "absolute";
+          watermark.style.top = "0";
+          watermark.style.left = "0";
+          watermark.style.width = "100%";
+          watermark.style.height = "100%";
+          watermark.style.objectFit = "contain";
+          watermark.style.objectPosition = "center center";
+          watermark.style.opacity = "0.08";
+          watermark.style.pointerEvents = "none";
+          watermark.style.zIndex = "0";
+          bodyWrapper.appendChild(watermark);
+        }
+
+        // Test results sit above watermark
+        const bodyContent = document.createElement("div");
+        bodyContent.style.position = "relative";
+        bodyContent.style.zIndex = "1";
+        bodyContent.appendChild(testGroupDiv);
 
         if (printMode === "official") {
-          contentWrapper.appendChild(createFooter(footerSettings));
+          bodyContent.appendChild(createFooter(footerSettings));
         }
+
+        bodyWrapper.appendChild(bodyContent);
+        contentWrapper.appendChild(bodyWrapper);
 
         pageDiv.appendChild(contentWrapper);
         printContainer.appendChild(pageDiv);
