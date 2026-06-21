@@ -246,7 +246,7 @@ const SuperAdminDashboard = () => {
           </div>
           <div className="bg-gray-50 px-5 py-3">
             <div className="text-sm">
-              <Link to="/finance" className="font-medium text-blue-700 hover:text-blue-900">
+              <Link to="/finance/revenue" className="font-medium text-blue-700 hover:text-blue-900">
                 View all
               </Link>
             </div>
