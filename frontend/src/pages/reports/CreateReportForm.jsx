@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'; // Add useRef
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ExclamationCircleIcon, CheckCircleIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
+import { ExclamationCircleIcon, CheckCircleIcon, DocumentTextIcon, UserPlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { reports, patients, doctors } from '../../utils/api';
 import { REPORT_STATUS } from '../../utils/constants';
 import { useAuth } from '../../context/AuthContext';
@@ -17,6 +17,21 @@ export default function CreateReportForm() {
   const [subscriptionModal, setSubscriptionModal] = useState(false);
   const [subscriptionErrorData, setSubscriptionErrorData] = useState(null);
   const [patientList, setPatientList] = useState([]);
+  const [showNewPatientModal, setShowNewPatientModal] = useState(false);
+  const [newPatientLoading, setNewPatientLoading] = useState(false);
+  const [newPatientError, setNewPatientError] = useState('');
+  const [newPatientValidationErrors, setNewPatientValidationErrors] = useState({ phone: '' });
+  const [newPatientForm, setNewPatientForm] = useState({
+    designation: '',
+    fullName: '',
+    age: '',
+    gender: '',
+    phone: '',
+    email: '',
+    address: '',
+    labId: user?.lab || '',
+    whatsappNotificationEnabled: false,
+  });
   const [doctorList, setDoctorList] = useState([]);
   const [patientSearchTerm, setPatientSearchTerm] = useState('');
   const [showPatientDropdown, setShowPatientDropdown] = useState(false);
@@ -42,7 +57,8 @@ export default function CreateReportForm() {
     technicianId: user?.id || '',
     labId: user?.lab || '',
     testParameters: [],
-    referenceDoctor: ''
+    referenceDoctor: '',
+    whatsappNotificationEnabled: false
   });
 
   // Fetch patients and doctors when component mounts
@@ -64,6 +80,131 @@ export default function CreateReportForm() {
     
     initializeData(); 
   }, [location]);
+
+  // Validate phone number (optional)
+  const validateNewPatientPhone = (phone) => {
+    const digitsOnly = phone.replace(/\D/g, '');
+    if (digitsOnly.length === 0) return '';
+    if (digitsOnly.length !== 10) return 'If provided, phone number must be exactly 10 digits';
+    return '';
+  };
+
+  // Handle new patient form changes
+  const handleNewPatientChange = (e) => {
+    const { name, value } = e.target;
+    if (name === 'phone') {
+      const digitsOnly = value.replace(/\D/g, '');
+      const truncated = digitsOnly.slice(0, 10);
+      setNewPatientForm(prev => ({ ...prev, [name]: truncated }));
+      const phoneError = validateNewPatientPhone(truncated);
+      setNewPatientValidationErrors(prev => ({ ...prev, phone: phoneError }));
+    } else {
+      setNewPatientForm(prev => ({ ...prev, [name]: value }));
+    }
+  };
+
+  // Handle new patient form submission
+  const handleCreateNewPatient = async (e) => {
+    e.preventDefault();
+    setNewPatientError('');
+
+    // Validate phone if provided
+    if (newPatientForm.phone.trim() !== '') {
+      const phoneError = validateNewPatientPhone(newPatientForm.phone);
+      if (phoneError) {
+        setNewPatientValidationErrors(prev => ({ ...prev, phone: phoneError }));
+        return;
+      }
+    } else {
+      setNewPatientValidationErrors(prev => ({ ...prev, phone: '' }));
+    }
+
+    // Validate required fields
+    if (!newPatientForm.fullName.trim()) {
+      setNewPatientError('Full name is required.');
+      return;
+    }
+    if (!newPatientForm.age || newPatientForm.age < 0 || newPatientForm.age > 150) {
+      setNewPatientError('Valid age (0-150) is required.');
+      return;
+    }
+    if (!newPatientForm.gender) {
+      setNewPatientError('Gender is required.');
+      return;
+    }
+    if (!newPatientForm.designation) {
+      setNewPatientError('Designation is required.');
+      return;
+    }
+
+    setNewPatientLoading(true);
+    try {
+      const createdPatient = await patients.create({
+        ...newPatientForm,
+        labId: user?.lab || '',
+      });
+
+      // Refresh patient list
+      await fetchPatients();
+
+      // Auto-select the newly created patient
+      const patientId = createdPatient.patient?._id || createdPatient.patient?.id || createdPatient._id || createdPatient.id;
+      if (patientId) {
+        // First directly populate form data from what we just submitted (fast, no extra API call needed)
+        setFormData(prev => ({
+          ...prev,
+          patientId: patientId,
+          patientName: newPatientForm.fullName,
+          patientAge: newPatientForm.age,
+          patientGender: newPatientForm.gender,
+          patientDesignation: newPatientForm.designation,
+          patientPhone: newPatientForm.phone,
+          whatsappNotificationEnabled: newPatientForm.whatsappNotificationEnabled,
+        }));
+        setPatientSearchTerm(`${newPatientForm.fullName} - ${newPatientForm.phone}`);
+        setShowPatientDropdown(false);
+      }
+
+      // Close modal and reset form
+      setShowNewPatientModal(false);
+      resetNewPatientForm();
+      setError('');
+      setSuccess('Patient created and selected successfully.');
+    } catch (err) {
+      console.error('Error creating patient:', err);
+      if (err.response?.data?.code === 'SUBSCRIPTION_REQUIRED' ||
+          err.response?.data?.code === 'MAX_PATIENTS_REACHED') {
+        setSubscriptionErrorData(err.response.data);
+        setSubscriptionModal(true);
+        setShowNewPatientModal(false);
+      } else if (err.response?.data?.duplicate) {
+        setNewPatientError('Patient already exists in the system. Please search and select the existing patient.');
+      } else if (err.response?.data?.message) {
+        setNewPatientError(err.response.data.message);
+      } else {
+        setNewPatientError(err.message || 'Failed to create patient. Please try again.');
+      }
+    } finally {
+      setNewPatientLoading(false);
+    }
+  };
+
+  // Reset new patient form
+  const resetNewPatientForm = () => {
+    setNewPatientForm({
+      designation: '',
+      fullName: '',
+      age: '',
+      gender: '',
+      phone: '',
+      email: '',
+      address: '',
+      labId: user?.lab || '',
+      whatsappNotificationEnabled: false,
+    });
+    setNewPatientValidationErrors({ phone: '' });
+    setNewPatientError('');
+  };
 
   // Effect to handle clicks outside the search input/dropdown
   useEffect(() => {
@@ -178,7 +319,8 @@ export default function CreateReportForm() {
         patientAge: patientData.age || '',
         patientGender: patientData.gender || '',
         patientDesignation: patientData.designation || '', // Set designation
-        patientPhone: patientData.phone || ''
+        patientPhone: patientData.phone || '',
+        whatsappNotificationEnabled: patientData.whatsappNotificationEnabled || false
       }));
 
       setError('');
@@ -546,6 +688,20 @@ export default function CreateReportForm() {
                     Selected: {formData.patientName} - {formData.patientPhone}
                   </div>
                 )}
+                <div className="mt-3 text-center sm:text-left">
+                  <span className="text-sm text-gray-500 italic">OR</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      resetNewPatientForm();
+                      setShowNewPatientModal(true);
+                    }}
+                    className="ml-2 inline-flex items-center px-4 py-2 border border-green-300 rounded-lg shadow-sm text-sm font-medium text-green-700 bg-green-50 hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-400 transition"
+                  >
+                    <UserPlusIcon className="h-5 w-5 mr-1" />
+                    + Create New Patient
+                  </button>
+                </div>
               </div>
 
               <div className="sm:col-span-3">
@@ -655,6 +811,40 @@ export default function CreateReportForm() {
                   </div>
                 </div>
               </div>
+
+              {/* WhatsApp Notification Toggle */}
+              <div className="sm:col-span-6">
+                <div className="relative flex items-start">
+                  <div className="flex h-6 items-center">
+                    {/* <input
+                      id="whatsappNotificationEnabled"
+                      name="whatsappNotificationEnabled"
+                      type="checkbox"
+                      checked={formData.whatsappNotificationEnabled || false}
+                      onChange={async (e) => {
+                        const checked = e.target.checked;
+                        setFormData(prev => ({ ...prev, whatsappNotificationEnabled: checked }));
+                        if (formData.patientId) {
+                          try {
+                            await patients.update(formData.patientId, { whatsappNotificationEnabled: checked });
+                          } catch (err) {
+                            console.error('Error updating patient WhatsApp preference:', err);
+                          }
+                        }
+                      }}
+                      className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    /> */}
+                  </div>
+                  {/* <div className="ml-3 text-sm leading-6">
+                    <label htmlFor="whatsappNotificationEnabled" className="font-medium text-gray-700 cursor-pointer">
+                      Send WhatsApp Notifications
+                    </label>
+                    <p className="text-gray-500 text-xs">
+                      When enabled, the patient will receive report links via WhatsApp when reports are created.
+                    </p>
+                  </div> */}
+                </div>
+              </div>
             </div>
           </section>
 
@@ -686,6 +876,250 @@ export default function CreateReportForm() {
           </div>
         </form>
       </div>
+
+      {/* New Patient Modal */}
+      {showNewPatientModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="new-patient-modal" role="dialog" aria-modal="true">
+          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            {/* Background overlay */}
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onClick={() => { setShowNewPatientModal(false); resetNewPatientForm(); }}></div>
+
+            {/* Trick browser into centering modal */}
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            {/* Modal panel */}
+            <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full sm:p-6">
+              <div className="absolute top-0 right-0 pt-4 pr-4">
+                <button
+                  type="button"
+                  onClick={() => { setShowNewPatientModal(false); resetNewPatientForm(); }}
+                  className="bg-white rounded-md text-gray-400 hover:text-gray-500 focus:outline-none"
+                >
+                  <span className="sr-only">Close</span>
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+              <div className="sm:flex sm:items-start">
+                <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                  <h3 className="text-lg leading-6 font-semibold text-blue-700" id="new-patient-modal">
+                    <UserPlusIcon className="h-6 w-6 inline mr-2" />
+                    Create New Patient
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-1 mb-4">
+                    Enter the patient details below. Fields marked with <span className="text-red-500">*</span> are required.
+                  </p>
+
+                  {newPatientError && (
+                    <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-3 rounded mb-4">
+                      <div className="flex items-center">
+                        <ExclamationCircleIcon className="h-5 w-5 mr-2 text-red-500" aria-hidden="true" />
+                        <span className="font-medium">Error:</span>
+                        <span className="ml-2">{newPatientError}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleCreateNewPatient}>
+                    <div className="grid grid-cols-1 gap-y-4 gap-x-4 sm:grid-cols-6">
+                      {/* Designation */}
+                      <div className="sm:col-span-1">
+                        <label htmlFor="new-designation" className="block text-sm font-medium text-gray-700 mb-1">
+                          Designation <span className="text-red-500 ml-1">*</span>
+                        </label>
+                        <select
+                          id="new-designation"
+                          name="designation"
+                          required
+                          value={newPatientForm.designation}
+                          onChange={handleNewPatientChange}
+                          className="block w-full rounded-lg border border-blue-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+                        >
+                          <option value="">Select</option>
+                          <option value="Mr.">Mr.</option>
+                          <option value="Mrs.">Mrs.</option>
+                          <option value="Ms.">Ms.</option>
+                          <option value="Dr.">Dr.</option>
+                          <option value="Master">Master</option>
+                          <option value="Miss">Miss</option>
+                        </select>
+                      </div>
+
+                      {/* Full Name */}
+                      <div className="sm:col-span-2">
+                        <label htmlFor="new-fullName" className="block text-sm font-medium text-gray-700 mb-1">
+                          Full name <span className="text-red-500 ml-1">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          name="fullName"
+                          id="new-fullName"
+                          required
+                          placeholder="Enter patient's full name"
+                          value={newPatientForm.fullName}
+                          onChange={handleNewPatientChange}
+                          className="block w-full rounded-lg border border-blue-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+                        />
+                      </div>
+
+                      {/* Age */}
+                      <div className="sm:col-span-1">
+                        <label htmlFor="new-age" className="block text-sm font-medium text-gray-700 mb-1">
+                          Age <span className="text-red-500 ml-1">*</span>
+                        </label>
+                        <input
+                          type="number"
+                          name="age"
+                          id="new-age"
+                          required
+                          min="0"
+                          max="150"
+                          placeholder="Age"
+                          value={newPatientForm.age}
+                          onChange={handleNewPatientChange}
+                          className="block w-full rounded-lg border border-blue-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+                        />
+                      </div>
+
+                      {/* Gender */}
+                      <div className="sm:col-span-2">
+                        <label htmlFor="new-gender" className="block text-sm font-medium text-gray-700 mb-1">
+                          Gender <span className="text-red-500 ml-1">*</span>
+                        </label>
+                        <select
+                          id="new-gender"
+                          name="gender"
+                          required
+                          value={newPatientForm.gender}
+                          onChange={handleNewPatientChange}
+                          className="block w-full rounded-lg border border-blue-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+                        >
+                          <option value="">Select gender</option>
+                          <option value="male">Male</option>
+                          <option value="female">Female</option>
+                          <option value="other">Other</option>
+                        </select>
+                      </div>
+
+                      {/* Phone */}
+                      <div className="sm:col-span-3">
+                        <label htmlFor="new-phone" className="block text-sm font-medium text-gray-700 mb-1">
+                          Phone number <span className="text-gray-400 text-sm">(optional)</span>
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="tel"
+                            name="phone"
+                            id="new-phone"
+                            placeholder="Enter contact number"
+                            value={newPatientForm.phone}
+                            onChange={handleNewPatientChange}
+                            className={`block w-full rounded-lg border ${newPatientValidationErrors.phone ? 'border-red-500' : (newPatientForm.phone.length === 10 ? 'border-green-500' : 'border-blue-300')} px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition`}
+                            maxLength="10"
+                          />
+                          {newPatientForm.phone.length === 10 && (
+                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                        {newPatientValidationErrors.phone && (
+                          <p className="mt-1 text-sm text-red-600">{newPatientValidationErrors.phone}</p>
+                        )}
+                      </div>
+
+                      {/* Email */}
+                      <div className="sm:col-span-3">
+                        <label htmlFor="new-email" className="block text-sm font-medium text-gray-700 mb-1">
+                          Email address <span className="text-gray-400 text-sm">(optional)</span>
+                        </label>
+                        <input
+                          type="email"
+                          name="email"
+                          id="new-email"
+                          placeholder="patient@example.com"
+                          value={newPatientForm.email}
+                          onChange={handleNewPatientChange}
+                          className="block w-full rounded-lg border border-blue-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+                        />
+                      </div>
+
+                      {/* Address */}
+                      <div className="sm:col-span-6">
+                        <label htmlFor="new-address" className="block text-sm font-medium text-gray-700 mb-1">
+                          Address <span className="text-gray-400 text-sm">(optional)</span>
+                        </label>
+                        <textarea
+                          name="address"
+                          id="new-address"
+                          rows={2}
+                          placeholder="Enter patient's full address"
+                          value={newPatientForm.address}
+                          onChange={handleNewPatientChange}
+                          className="block w-full rounded-lg border border-blue-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+                        />
+                      </div>
+
+                      {/* WhatsApp Notification Toggle in Modal */}
+                      <div className="sm:col-span-6">
+                        <div className="relative flex items-start">
+                          <div className="flex h-6 items-center">
+                            <input
+                              id="new-whatsappNotificationEnabled"
+                              name="whatsappNotificationEnabled"
+                              type="checkbox"
+                              checked={newPatientForm.whatsappNotificationEnabled}
+                              onChange={(e) => setNewPatientForm(prev => ({
+                                ...prev,
+                                whatsappNotificationEnabled: e.target.checked
+                              }))}
+                              className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                            />
+                          </div>
+                          <div className="ml-3 text-sm leading-6">
+                            <label htmlFor="new-whatsappNotificationEnabled" className="font-medium text-gray-700 cursor-pointer">
+                              Send WhatsApp Notifications
+                            </label>
+                            <p className="text-gray-500 text-xs">
+                              When enabled, the patient will receive report links via WhatsApp when reports are created.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Modal Actions */}
+                    <div className="mt-6 flex justify-end space-x-3">
+                      <button
+                        type="button"
+                        onClick={() => { setShowNewPatientModal(false); resetNewPatientForm(); }}
+                        className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 font-medium shadow-sm hover:bg-gray-50 transition focus:outline-none focus:ring-2 focus:ring-blue-300"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={newPatientLoading}
+                        className="px-4 py-2 rounded-lg border border-transparent bg-gradient-to-r from-green-600 to-green-500 text-white font-medium shadow hover:from-green-700 hover:to-green-600 transition focus:outline-none focus:ring-2 focus:ring-green-400 flex items-center"
+                      >
+                        {newPatientLoading ? (
+                          <>Saving...</>
+                        ) : (
+                          <>
+                            <UserPlusIcon className="h-5 w-5 mr-1" />
+                            Save Patient
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Subscription Required Modal */}
       <SubscriptionRequiredModal

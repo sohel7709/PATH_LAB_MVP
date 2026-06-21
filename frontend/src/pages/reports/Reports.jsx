@@ -13,6 +13,7 @@ import LoadingSpinner, { SkeletonLoader, ButtonLoader } from '../../components/c
 import { reports } from '../../utils/api';
 import { formatDate, getStatusColor } from '../../utils/helpers';
 import { REPORT_STATUS } from '../../utils/constants';
+import { useAuth } from '../../context/AuthContext';
 
 export default function Reports() {
   const [reportsData, setReportsData] = useState([]);
@@ -23,7 +24,10 @@ export default function Reports() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'desc' });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  // Removed unused state for reportToDelete
+  const [reportToDelete, setReportToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin' || user?.role === 'super-admin';
 
   useEffect(() => {
     fetchReports();
@@ -77,6 +81,25 @@ export default function Reports() {
 
   const cancelDelete = () => {
     setShowDeleteConfirm(false);
+    setReportToDelete(null);
+  };
+
+  const handleDelete = async () => {
+    if (!reportToDelete) return;
+    setIsDeleting(true);
+    try {
+      await reports.delete(reportToDelete);
+      setShowDeleteConfirm(false);
+      setReportToDelete(null);
+      fetchReports(true);
+    } catch (err) {
+      console.error('Error deleting report:', err);
+      setError(err.message || 'Failed to delete report');
+      setShowDeleteConfirm(false);
+      setReportToDelete(null);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handleSort = (key) => {
@@ -337,7 +360,7 @@ export default function Reports() {
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                 </svg>
                               </Link>
-                            <Link
+                             <Link
                                 to={`/reports/${reportId}/print`}
                                 className="text-gray-600 hover:text-gray-900 p-1 rounded-full hover:bg-gray-100 transition-colors"
                                 title="Print Report"
@@ -346,6 +369,18 @@ export default function Reports() {
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                                 </svg>
                             </Link>
+                            {isAdmin && (
+                              <button
+                                onClick={() => {
+                                  setReportToDelete(reportId);
+                                  setShowDeleteConfirm(true);
+                                }}
+                                className="text-red-600 hover:text-red-900 p-1 rounded-full hover:bg-red-50 transition-colors"
+                                title="Delete Report"
+                              >
+                                <TrashIcon className="h-5 w-5" />
+                              </button>
+                            )}
                             </div>
                           </td>
                         </tr>
@@ -378,11 +413,19 @@ export default function Reports() {
             </div>
             <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
               <button
-                type="button"
-                className="mt-3 w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:w-auto sm:text-sm transition-colors duration-300"
-                onClick={cancelDelete}
+               type="button"
+               className="mt-3 w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:w-auto sm:text-sm transition-colors duration-300"
+               onClick={cancelDelete}
               >
                 Cancel
+              </button>
+              <button
+                type="button"
+                className="mt-3 w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm transition-colors duration-300"
+                onClick={handleDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? 'Deleting...' : 'Delete'}
               </button>
             </div>
           </div>
