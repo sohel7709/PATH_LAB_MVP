@@ -1,0 +1,303 @@
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
+import {
+  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell
+} from 'recharts';
+import {
+  CurrencyRupeeIcon,
+  BanknotesIcon,
+  BuildingOffice2Icon,
+  CalendarDaysIcon,
+  ArrowTrendingUpIcon,
+} from '@heroicons/react/24/outline';
+
+const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
+
+const SuperAdminRevenue = () => {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [stats, setStats] = useState({
+    totalRevenue: 0,
+    monthlyRevenue: 0,
+    yearlyRevenue: 0,
+    activeSubscriptions: 0,
+    totalLabsSubscribed: 0,
+  });
+  const [transactions, setTransactions] = useState([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [monthlyChartData, setMonthlyChartData] = useState([]);
+  const [planChartData, setPlanChartData] = useState([]);
+
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token');
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': token ? `Bearer ${token}` : '',
+    };
+  };
+
+  const fetchStats = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/revenue`, { headers: getAuthHeaders() });
+      const data = await res.json();
+      if (data.success) setStats(data.data);
+    } catch (err) {
+      console.error('Error fetching stats:', err);
+    }
+  };
+
+  const fetchTransactions = async (p = 1) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/revenue/transactions?page=${p}&limit=20`, { headers: getAuthHeaders() });
+      const data = await res.json();
+      if (data.success) {
+        setTransactions(data.data);
+        setTotalPages(data.pages);
+        setPage(data.page);
+      }
+    } catch (err) {
+      console.error('Error fetching transactions:', err);
+    }
+  };
+
+  const fetchMonthlyChart = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/revenue/monthly-chart`, { headers: getAuthHeaders() });
+      const data = await res.json();
+      if (data.success) setMonthlyChartData(data.data);
+    } catch (err) {
+      console.error('Error fetching monthly chart:', err);
+    }
+  };
+
+  const fetchPlanChart = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/revenue/plan-chart`, { headers: getAuthHeaders() });
+      const data = await res.json();
+      if (data.success) setPlanChartData(data.data);
+    } catch (err) {
+      console.error('Error fetching plan chart:', err);
+    }
+  };
+
+  useEffect(() => {
+    const loadAll = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        await Promise.all([
+          fetchStats(),
+          fetchTransactions(1),
+          fetchMonthlyChart(),
+          fetchPlanChart(),
+        ]);
+      } catch (err) {
+        setError('Failed to load revenue data');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadAll();
+  }, []);
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(amount);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6 bg-gray-50 min-h-screen">
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Revenue Dashboard</h1>
+        <p className="text-gray-500 mb-8">Subscription-based revenue from all labs</p>
+
+        {error && (
+          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded mb-6">
+            {error}
+          </div>
+        )}
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+          <div className="bg-white rounded-xl shadow p-5 border-l-4 border-blue-500">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Total Revenue</p>
+                <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.totalRevenue)}</p>
+              </div>
+              <CurrencyRupeeIcon className="h-8 w-8 text-blue-500" />
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow p-5 border-l-4 border-green-500">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Monthly Revenue</p>
+                <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.monthlyRevenue)}</p>
+              </div>
+              <ArrowTrendingUpIcon className="h-8 w-8 text-green-500" />
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow p-5 border-l-4 border-purple-500">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Yearly Revenue</p>
+                <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.yearlyRevenue)}</p>
+              </div>
+              <CalendarDaysIcon className="h-8 w-8 text-purple-500" />
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow p-5 border-l-4 border-orange-500">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Active Subscriptions</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.activeSubscriptions}</p>
+              </div>
+              <BanknotesIcon className="h-8 w-8 text-orange-500" />
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow p-5 border-l-4 border-teal-500">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Labs Subscribed</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalLabsSubscribed}</p>
+              </div>
+              <BuildingOffice2Icon className="h-8 w-8 text-teal-500" />
+            </div>
+          </div>
+        </div>
+
+        {/* Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Monthly Revenue Chart */}
+          <div className="bg-white rounded-xl shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Monthly Revenue {new Date().getFullYear()}</h2>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={monthlyChartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip formatter={(value) => formatCurrency(value)} />
+                <Legend />
+                <Bar dataKey="revenue" fill="#3B82F6" name="Revenue (₹)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Plan Sales Distribution */}
+          <div className="bg-white rounded-xl shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Subscription Sales by Plan</h2>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={planChartData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={true}
+                  label={({ planName, subscriptions }) => `${planName} (${subscriptions})`}
+                  outerRadius={100}
+                  fill="#8884d8"
+                  dataKey="subscriptions"
+                  nameKey="planName"
+                >
+                  {planChartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value, name, props) => [`${value} sales`, props.payload.planName]} />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Revenue Transactions Table */}
+        <div className="bg-white rounded-xl shadow overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-900">Revenue Transactions</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lab Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admin</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {transactions.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-10 text-center text-gray-500">
+                      No revenue transactions yet. Activate subscriptions to generate revenue.
+                    </td>
+                  </tr>
+                ) : (
+                  transactions.map((tx) => (
+                    <tr key={tx._id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {tx.lab?.name || 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {tx.admin?.name || 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {tx.subscriptionPlan?.name || 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
+                        {formatCurrency(tx.amount)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(tx.activatedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+              <button
+                onClick={() => fetchTransactions(page - 1)}
+                disabled={page <= 1}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              <span className="text-sm text-gray-500">Page {page} of {totalPages}</span>
+              <button
+                onClick={() => fetchTransactions(page + 1)}
+                disabled={page >= totalPages}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default SuperAdminRevenue;

@@ -1,61 +1,52 @@
-// backend/src/routes/subscriptionRoutes.js
 const express = require('express');
 const {
-    getCurrentSubscription,
-    initiateUpgrade,
-    handlePaymentWebhook,
-    modifySubscriptionBySuperAdmin, // Import Super Admin function
-    getAllSubscriptions // Import Super Admin function
+  getActivePlans,
+  requestSubscription,
+  getCurrentSubscription,
+  getAllLabSubscriptions,
+  activateSubscription,
+  cancelSubscription,
+  extendSubscription,
+  changePlan,
+  getSubscriptionHistory,
+  checkSubscriptionStatus,
 } = require('../controllers/subscriptionController');
-// Explicitly import middleware functions
-const authMiddleware = require('../middleware/auth');
-const protect = authMiddleware.protect;
-const authorize = authMiddleware.authorize;
+const { protect, authorize } = require('../middleware/auth');
 
 const router = express.Router();
 
-// --- DEBUG LOGS ---
-console.log('[subscriptionRoutes] Type of protect:', typeof protect);
-console.log('[subscriptionRoutes] Type of authorize:', typeof authorize);
-console.log('[subscriptionRoutes] Type of getCurrentSubscription:', typeof getCurrentSubscription);
-console.log('[subscriptionRoutes] Type of initiateUpgrade:', typeof initiateUpgrade);
-console.log('[subscriptionRoutes] Type of handlePaymentWebhook:', typeof handlePaymentWebhook);
-console.log('[subscriptionRoutes] Type of getAllSubscriptions:', typeof getAllSubscriptions);
-console.log('[subscriptionRoutes] Type of modifySubscriptionBySuperAdmin:', typeof modifySubscriptionBySuperAdmin);
-// --- END DEBUG LOGS ---
+// --- User Routes (Admin / Technician) ---
 
+// Get active plans for viewing
+router.get('/plans', protect, getActivePlans);
 
-// Note: The base path for these routes will likely be /api/subscriptions
+// Request a subscription plan (Admin only)
+router.post('/request', protect, authorize('admin'), requestSubscription);
 
-// @route   GET /api/subscriptions/current
-// @desc    Get the current subscription details for the logged-in user's lab
-// @access  Private (Requires authenticated user - checkSubscription middleware runs via app.js)
-router.get('/current', protect, getCurrentSubscription); // Use protect middleware
+// Get current lab's subscription
+router.get('/current', protect, getCurrentSubscription);
 
-// @route   POST /api/subscriptions/upgrade
-// @desc    Initiate the plan upgrade process (placeholder)
-// @access  Private (Requires Lab Admin role)
-router.post('/upgrade', protect, authorize('admin'), initiateUpgrade); // Use protect middleware
-
-// @route   POST /api/subscriptions/webhook/razorpay (Example)
-// @desc    Handle incoming webhook from Razorpay (placeholder)
-// @access  Public (Needs signature verification within the controller)
-router.post('/webhook/razorpay', handlePaymentWebhook);
-
-// Add other webhook endpoints if supporting multiple providers (e.g., /webhook/stripe)
-
+// Check subscription status (lightweight)
+router.get('/status', protect, checkSubscriptionStatus);
 
 // --- Super Admin Routes ---
 
-// @route   GET /api/subscriptions/all
-// @desc    Get all subscriptions (Super Admin only)
-// @access  Private (Super Admin)
-router.get('/all', protect, authorize('superadmin'), getAllSubscriptions); // Use protect middleware
+// Get all lab subscriptions
+router.get('/admin/all', protect, authorize('super-admin'), getAllLabSubscriptions);
 
-// @route   PUT /api/subscriptions/:subscriptionId/modify
-// @desc    Modify a specific subscription (Super Admin only)
-// @access  Private (Super Admin)
-router.put('/:subscriptionId/modify', protect, authorize('superadmin'), modifySubscriptionBySuperAdmin); // Use protect middleware
+// Activate subscription for a lab
+router.post('/admin/activate', protect, authorize('super-admin'), activateSubscription);
 
+// Cancel subscription
+router.post('/admin/cancel', protect, authorize('super-admin'), cancelSubscription);
+
+// Extend subscription
+router.post('/admin/extend', protect, authorize('super-admin'), extendSubscription);
+
+// Change plan
+router.post('/admin/change-plan', protect, authorize('super-admin'), changePlan);
+
+// Subscription history for a lab
+router.get('/admin/history/:labId', protect, authorize('super-admin'), getSubscriptionHistory);
 
 module.exports = router;

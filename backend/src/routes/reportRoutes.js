@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { protect, authorize, checkLabAccess } = require('../middleware/auth');
+const { checkSubscriptionForCreate } = require('../middleware/subscription');
 const {
   createReport,
   getReports,
@@ -27,7 +28,7 @@ router.use(protect);
 // Routes for both Admin and Technician
 router.route('/')
   .get(authorize('admin', 'technician'), checkLabAccess, getReports)
-  .post(authorize('admin', 'technician'), checkLabAccess, createReport);
+  .post(authorize('admin', 'technician'), checkLabAccess, checkSubscriptionForCreate, createReport);
 
 router.route('/:id')
   .get(authorize('admin', 'technician'), checkLabAccess, getReport)

@@ -3,63 +3,83 @@ const Lab = require('../models/Lab');
 
 // @desc    Create new user
 // @route   POST /api/users
-// @access  Private/Super Admin
+// @access  Private/Admin, Super Admin
 exports.createUser = async (req, res, next) => {
   try {
     const { name, email, password, role, labId } = req.body;
+    const isAdmin = req.user.role === 'admin';
 
-    console.log('Creating user with data:', { name, email, role, labId });
+    let finalRole = role;
+    let finalLabId = labId;
 
-    // Validate role
-    if (!['super-admin', 'admin', 'technician'].includes(role)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid role'
-      });
-    }
-
-    // Validate lab assignment for non-super-admin roles
-    if (role !== 'super-admin') {
-      if (!labId) {
+    if (isAdmin) {
+      // ADMIN CAN ONLY CREATE TECHNICIANS FOR THEIR OWN LAB
+      if (role && role !== 'technician') {
+        return res.status(403).json({
+          success: false,
+          message: 'Admins can only create technician accounts.'
+        });
+      }
+      finalRole = 'technician';
+      finalLabId = req.user.lab;
+      if (!finalLabId) {
         return res.status(400).json({
           success: false,
-          message: 'Lab ID is required for admin and technician roles'
+          message: 'Admin has no lab assigned.'
         });
       }
+      const adminLab = await Lab.findById(finalLabId);
+      if (!adminLab) {
+        return res.status(400).json({
+          success: false,
+          message: 'Your assigned lab was not found.'
+        });
+      }
+    } else {
+      // SUPER ADMIN FLOW
+      console.log('Creating user with data:', { name, email, role, labId });
 
-      // Verify the lab exists
-      try {
-        const lab = await Lab.findById(labId);
-        console.log('Found lab for assignment:', lab ? { id: lab._id, name: lab.name } : 'No lab found');
-        
-        if (!lab) {
+      if (!['super-admin', 'admin', 'technician'].includes(role)) {
+        return res.status(400).json({ success: false, message: 'Invalid role' });
+      }
+
+      if (role !== 'super-admin') {
+        if (!labId) {
           return res.status(400).json({
             success: false,
-            message: 'Lab not found'
+            message: 'Lab ID is required for admin and technician roles'
           });
         }
-      } catch (labError) {
-        console.error('Error finding lab:', labError);
-        return res.status(500).json({
-          success: false,
-          message: 'Error verifying lab information'
-        });
+
+        const lab = await Lab.findById(labId);
+        if (!lab) {
+          return res.status(400).json({ success: false, message: 'Lab not found' });
+        }
+
+        // Enforce: ONE LAB = ONE ADMIN
+        if (role === 'admin') {
+          const existingAdmin = await User.findOne({ role: 'admin', lab: labId });
+          if (existingAdmin) {
+            return res.status(400).json({
+              success: false,
+              message: 'This lab already has an assigned admin.'
+            });
+          }
+        }
       }
     }
 
-    // Create user
     const userData = {
       name,
       email,
       password,
-      role,
-      lab: role !== 'super-admin' ? labId : undefined
+      role: finalRole,
+      lab: finalRole !== 'super-admin' ? finalLabId : undefined
     };
     
     console.log('Creating user with final data:', userData);
     const user = await User.create(userData);
     
-    // Verify the user was created with the lab assigned
     const createdUser = await User.findById(user._id).populate('lab', 'name');
     console.log('Created user:', {
       id: createdUser._id,
@@ -79,39 +99,30 @@ exports.createUser = async (req, res, next) => {
   }
 };
 
-// @desc    Get all users
+// @desc    Get all users (scoped to lab for admins)
 // @route   GET /api/users
-// @access  Private/Super Admin
+// @access  Private/Admin, Super Admin
 exports.getUsers = async (req, res, next) => {
   try {
-    // Build query based on request parameters
     let query = {};
     
-    // Filter by lab if lab parameter is provided
-    if (req.query.lab) {
+    // Admin sees only their own lab's users; super-admin sees all
+    if (req.user.role === 'admin') {
+      query.lab = req.user.lab;
+    } else if (req.query.lab) {
       query.lab = req.query.lab;
     }
     
-    // Filter by role if role parameter is provided
     if (req.query.role) {
       query.role = req.query.role;
     }
     
     console.log('User query:', query);
     
-    // Populate lab information with name and subscription status
     const users = await User.find(query).populate({
       path: 'lab',
       select: 'name subscription.status'
     });
-
-    // Log the populated users for debugging
-    console.log('Users with populated lab:', users.map(u => ({
-      id: u._id,
-      name: u.name,
-      role: u.role,
-      lab: u.lab ? u.lab.name : 'No lab'
-    })));
 
     res.status(200).json({
       success: true,
@@ -126,44 +137,24 @@ exports.getUsers = async (req, res, next) => {
 
 // @desc    Get single user
 // @route   GET /api/users/:id
-// @access  Private/Super Admin
+// @access  Private/Admin, Super Admin
 exports.getUser = async (req, res, next) => {
   try {
-    // Populate lab information with name and subscription status
     const user = await User.findById(req.params.id).populate({
       path: 'lab',
       select: 'name subscription.status'
     });
 
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
+      return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    // For non-super-admin users, verify lab exists and is properly populated
-    if (user.role !== 'super-admin' && !user.lab) {
-      // Try to find the lab directly
-      const userWithLab = await User.findById(req.params.id);
-      
-      if (userWithLab.lab) {
-        // Lab ID exists but wasn't populated, try to get lab details
-        const lab = await Lab.findById(userWithLab.lab);
-        if (lab) {
-          user.lab = lab;
-        } else {
-          console.error(`Lab with ID ${userWithLab.lab} not found for user ${user._id}`);
-        }
-      } else {
-        console.error(`User ${user._id} has no lab assigned`);
-      }
+    // Admin can only view users from their own lab
+    if (req.user.role === 'admin' && user.lab && user.lab._id.toString() !== req.user.lab.toString()) {
+      return res.status(403).json({ success: false, message: 'Not authorized to view this user' });
     }
 
-    res.status(200).json({
-      success: true,
-      data: user
-    });
+    res.status(200).json({ success: true, data: user });
   } catch (error) {
     console.error('Error getting user:', error);
     next(error);
@@ -172,20 +163,24 @@ exports.getUser = async (req, res, next) => {
 
 // @desc    Update user
 // @route   PUT /api/users/:id
-// @access  Private/Super Admin
+// @access  Private/Admin, Super Admin
 exports.updateUser = async (req, res, next) => {
   try {
-    // Get the existing user
     const existingUser = await User.findById(req.params.id);
 
     if (!existingUser) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
+      return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    // If lab is already assigned and trying to change it, prevent it
+    // Admin can only update users from their own lab
+    if (req.user.role === 'admin') {
+      if (!existingUser.lab || existingUser.lab.toString() !== req.user.lab.toString()) {
+        return res.status(403).json({ success: false, message: 'Not authorized to update this user' });
+      }
+      // Admin cannot change role
+      delete req.body.role;
+    }
+
     if (existingUser.lab && req.body.lab && existingUser.lab.toString() !== req.body.lab.toString()) {
       return res.status(400).json({
         success: false,
@@ -193,33 +188,41 @@ exports.updateUser = async (req, res, next) => {
       });
     }
 
-    // If labId is provided instead of lab, convert it
     if (req.body.labId && !req.body.lab) {
       req.body.lab = req.body.labId;
       delete req.body.labId;
     }
 
-    // Handle password update separately to ensure proper hashing
+    const targetRole = req.body.role || existingUser.role;
+    const targetLab = req.body.lab || existingUser.lab?.toString();
+    
+    if (targetRole === 'admin' && targetLab) {
+      const existingAdmin = await User.findOne({
+        role: 'admin',
+        lab: targetLab,
+        _id: { $ne: existingUser._id }
+      });
+      if (existingAdmin) {
+        return res.status(400).json({
+          success: false,
+          message: 'This lab already has an assigned admin.'
+        });
+      }
+    }
+
     if (req.body.password) {
-      // Get the user with the password field
       const userWithPassword = await User.findById(req.params.id).select('+password');
       userWithPassword.password = req.body.password;
       await userWithPassword.save();
-      
-      // Remove password from req.body to avoid overwriting the hashed password
       delete req.body.password;
     }
 
-    // Update the user with the remaining fields
     const user = await User.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true
     });
 
-    res.status(200).json({
-      success: true,
-      data: user
-    });
+    res.status(200).json({ success: true, data: user });
   } catch (error) {
     console.error('Error updating user:', error);
     next(error);
@@ -228,25 +231,29 @@ exports.updateUser = async (req, res, next) => {
 
 // @desc    Delete user
 // @route   DELETE /api/users/:id
-// @access  Private/Super Admin
+// @access  Private/Admin, Super Admin
 exports.deleteUser = async (req, res, next) => {
   try {
     const user = await User.findById(req.params.id);
 
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
+      return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    // Use findByIdAndDelete instead of remove() which is deprecated
+    // Admin can only delete users from their own lab
+    if (req.user.role === 'admin') {
+      if (!user.lab || user.lab.toString() !== req.user.lab.toString()) {
+        return res.status(403).json({ success: false, message: 'Not authorized to delete this user' });
+      }
+      // Admin cannot delete other admins or super-admins
+      if (user.role !== 'technician') {
+        return res.status(403).json({ success: false, message: 'Admins can only delete technicians' });
+      }
+    }
+
     await User.findByIdAndDelete(req.params.id);
 
-    res.status(200).json({
-      success: true,
-      message: 'User deleted successfully'
-    });
+    res.status(200).json({ success: true, message: 'User deleted successfully' });
   } catch (error) {
     console.error('Error deleting user:', error);
     next(error);

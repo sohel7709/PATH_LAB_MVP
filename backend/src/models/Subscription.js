@@ -2,15 +2,15 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const subscriptionSchema = new Schema({
-  labId: {
+  lab: {
     type: Schema.Types.ObjectId,
-    ref: 'Lab', // Reference to the Lab model
+    ref: 'Lab',
     required: true,
-    index: true, // Index for faster lookups by labId
+    index: true,
   },
-  planId: {
+  plan: {
     type: Schema.Types.ObjectId,
-    ref: 'Plan', // Reference to the Plan model
+    ref: 'Plan',
     required: true,
   },
   startDate: {
@@ -24,19 +24,33 @@ const subscriptionSchema = new Schema({
   status: {
     type: String,
     required: true,
-    enum: ['active', 'trial', 'expired', 'cancelled', 'pending_payment'], // Added more statuses
-    default: 'trial',
+    enum: ['active', 'expired', 'cancelled', 'pending'],
+    default: 'active',
   },
-  paymentProvider: { // Track which payment provider was used (if any)
+  paymentProvider: {
     type: String,
-    enum: ['Stripe', 'Razorpay', 'Instamojo', 'None'], // Allow 'None' for trials/manual activation
+    enum: ['None', 'Stripe', 'Razorpay', 'UPI', 'WhatsApp'],
     default: 'None',
   },
-  paymentId: { // Store the transaction ID from the payment provider
+  paymentId: {
     type: String,
-    sparse: true, // Allow null/undefined values, only index if present
+    sparse: true,
   },
-  autoRenew: { // Flag for auto-renewal status
+  activatedBy: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+  },
+  cancelledBy: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+  },
+  cancelledAt: {
+    type: Date,
+  },
+  cancelReason: {
+    type: String,
+  },
+  autoRenew: {
     type: Boolean,
     default: false,
   },
@@ -52,6 +66,7 @@ const subscriptionSchema = new Schema({
 
 // Index for efficient querying of active subscriptions by end date (for cron jobs)
 subscriptionSchema.index({ status: 1, endDate: 1 });
+subscriptionSchema.index({ lab: 1, status: 1 });
 
 const Subscription = mongoose.model('Subscription', subscriptionSchema);
 

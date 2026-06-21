@@ -48,6 +48,17 @@ exports.register = async (req, res, next) => {
           message: "Lab not found",
         });
       }
+
+      // Enforce: ONE LAB = ONE ADMIN
+      if (role === "admin") {
+        const existingAdmin = await User.findOne({ role: "admin", lab: labId });
+        if (existingAdmin) {
+          return res.status(400).json({
+            success: false,
+            message: "This lab already has an assigned admin.",
+          });
+        }
+      }
     }
 
     // Create user

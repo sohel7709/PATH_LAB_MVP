@@ -7,10 +7,12 @@ import {
 // import { reports as apiReports } from "../utils/api";
 import { useReportGenerator } from "../hooks/useReportGenerator";
 import { useReportPdf } from "../hooks/useReportPdf";
+import { labReportSettings } from "../utils/api";
 
 export default function PrintReport() {
   const { id } = useParams();
   const [report, setReport] = useState(null);
+  const [reportSettings, setReportSettings] = useState(null);
   // const [labSettings, setLabSettings] = useState(null); // No longer needed directly here
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -19,7 +21,7 @@ export default function PrintReport() {
   // Use the custom hooks
   // REMOVED hideTableHeadingAndReference variable definition
   // console.log('PrintReport.jsx - hideTableHeadingAndReference:', hideTableHeadingAndReference); // REMOVED log
-  const reportHtml = useReportGenerator(report); // REMOVED flag from hook call
+  const reportHtml = useReportGenerator(report, reportSettings, "official");
   const {
     printPdf: originalPrintPdf,
     downloadPdf,
@@ -45,8 +47,8 @@ export default function PrintReport() {
 
       // Fetch the report data
       const response = await fetch(
-  `http://localhost:5001/api/reports/public-data/${id}`
-);
+        `http://localhost:5001/api/reports/public-data/${id}`,
+      );
 
       const reportData = await response.json();
 
@@ -75,6 +77,21 @@ export default function PrintReport() {
       // }
 
       setReport(reportData);
+      const labId = reportData.lab?._id || reportData.lab;
+
+      if (labId) {
+        try {
+          const settingsResponse = await labReportSettings.getSettings(labId);
+
+          const settingsData = settingsResponse.data || settingsResponse;
+
+          console.log("PUBLIC REPORT SETTINGS:", settingsData);
+
+          setReportSettings(settingsData);
+        } catch (err) {
+          console.error("Error loading report settings:", err);
+        }
+      }
       // setLabSettings(settingsData); // No longer needed here
     } catch (err) {
       console.error("Error fetching report:", err); // Updated error message
@@ -130,8 +147,8 @@ export default function PrintReport() {
   }
 
   // Render message if report state is still null after loading
-  if (!report) {
-    return <div>Loading report data...</div>;
+  if (!report || !reportSettings) {
+    return <div>Loading report...</div>;
   }
 
   // Main component return statement

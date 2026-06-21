@@ -21,23 +21,27 @@ const planSchema = new mongoose.Schema({
     required: [true, 'Plan duration is required.'],
     min: [1, 'Duration must be at least 1 day.'],
   },
+  maxPatients: { // Maximum patients allowed (optional)
+    type: Number,
+    default: null,
+  },
+  maxReports: { // Maximum reports allowed (optional)
+    type: Number,
+    default: null,
+  },
   features: {
-    // Define specific feature toggles here
-    // Example:
     maxUsers: { type: Number, default: 5 },
-    maxPatients: { type: Number, default: 1000 },
     customReportHeader: { type: Boolean, default: false },
     customReportFooter: { type: Boolean, default: false },
     apiAccess: { type: Boolean, default: false },
-    // Add more features as needed
   },
-  isDefault: { // Optional: Mark a plan as the default for new labs
+  isDefault: {
     type: Boolean,
     default: false,
   },
   isActive: { // Allows disabling a plan without deleting it
-      type: Boolean,
-      default: true,
+    type: Boolean,
+    default: true,
   },
   createdAt: {
     type: Date,
@@ -56,8 +60,8 @@ planSchema.pre('save', function (next) {
 });
 
 planSchema.pre('findOneAndUpdate', function (next) {
-    this.set({ updatedAt: Date.now() });
-    next();
+  this.set({ updatedAt: Date.now() });
+  next();
 });
 
 

@@ -8,13 +8,13 @@ const Patient = require('../models/Patient');
 
 // @desc    Export data in CSV or PDF format
 // @route   GET /api/export/:type
-// @access  Private/Super Admin
-router.get('/:type', protect, authorize('super-admin'), async (req, res) => {
+// @access  Private/Admin, Super Admin
+router.get('/:type', protect, authorize('admin', 'super-admin'), async (req, res) => {
   try {
     const { type } = req.params;
     const { format } = req.query;
     
-    if (!['labs', 'users', 'reports', 'patients', 'analytics'].includes(type)) {
+    if (!['labs', 'users', 'reports', 'patients', 'analytics', 'revenue'].includes(type)) {
       return res.status(400).json({
         success: false,
         message: 'Invalid export type'
@@ -50,70 +50,47 @@ router.get('/:type', protect, authorize('super-admin'), async (req, res) => {
         fileName = 'patients-export';
         break;
       case 'analytics':
-        // Get system-wide analytics
         const totalLabs = await Lab.countDocuments();
         const totalUsers = await User.countDocuments();
         const totalReports = await Report.countDocuments();
         const totalPatients = await Patient.countDocuments();
         
-        // Get labs by subscription type
         const labsBySubscription = await Lab.aggregate([
-          {
-            $group: {
-              _id: '$subscription.plan',
-              count: { $sum: 1 }
-            }
-          }
+          { $group: { _id: '$subscription.plan', count: { $sum: 1 } } }
         ]);
         
-        // Get users by role
         const usersByRole = await User.aggregate([
-          {
-            $group: {
-              _id: '$role',
-              count: { $sum: 1 }
-            }
-          }
+          { $group: { _id: '$role', count: { $sum: 1 } } }
         ]);
         
         data = {
-          summary: {
-            totalLabs,
-            totalUsers,
-            totalReports,
-            totalPatients
-          },
+          summary: { totalLabs, totalUsers, totalReports, totalPatients },
           labsBySubscription,
           usersByRole
         };
-        
         fileName = 'analytics-export';
+        break;
+      case 'revenue':
+        const RevenueTransaction = require('../models/RevenueTransaction');
+        data = await RevenueTransaction.find({ status: 'active' })
+          .populate('lab', 'name')
+          .populate('admin', 'name email')
+          .populate('subscriptionPlan', 'name price')
+          .populate('activatedBy', 'name')
+          .sort({ activatedAt: -1 })
+          .lean();
+        fileName = 'revenue-export';
         break;
     }
     
-    // Format data based on requested format
     if (format === 'csv') {
-      // In a real implementation, we would use a library like json2csv
-      // For this example, we'll just send the JSON with a note
       res.setHeader('Content-Type', 'application/json');
       res.setHeader('Content-Disposition', `attachment; filename=${fileName}.json`);
-      
-      return res.status(200).json({
-        success: true,
-        message: 'In a production environment, this would be a CSV file',
-        data
-      });
+      return res.status(200).json({ success: true, data });
     } else if (format === 'pdf') {
-      // In a real implementation, we would use a library like PDFKit
-      // For this example, we'll just send the JSON with a note
       res.setHeader('Content-Type', 'application/json');
       res.setHeader('Content-Disposition', `attachment; filename=${fileName}.json`);
-      
-      return res.status(200).json({
-        success: true,
-        message: 'In a production environment, this would be a PDF file',
-        data
-      });
+      return res.status(200).json({ success: true, data });
     }
   } catch (error) {
     res.status(500).json({

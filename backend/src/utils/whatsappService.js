@@ -4,26 +4,54 @@ const axios = require('axios');
  * WhatsApp Notification Service
  * 
  * This service handles sending WhatsApp messages to patients and doctors
- * using the AiSensy WhatsApp Business API.
+ * using the UltraMsg WhatsApp API.
  */
 class WhatsAppService {
   constructor() {
     this.apiKey = process.env.WHATSAPP_API_KEY;
-    this.apiUrl = 'https://backend.aisensy.com/campaign/t1/api/v2';
+    this.baseUrl = (process.env.WHATSAPP_API_URL || 'https://api.ultramsg.com/').replace(/\/+$/, '');
     this.fromNumber = process.env.WHATSAPP_FROM_NUMBER;
   }
 
   /**
-   * Send a WhatsApp message with a report link
+   * Format a message template by replacing placeholders with actual values
    * 
-   * @param {string} to - Recipient's phone number (with country code)
-   * @param {string} patientName - Patient's name
-   * @param {string} testName - Name of the test
-   * @param {string} reportLink - Link to the report
-   * @param {string} labName - Name of the lab
+   * Supported placeholders:
+   * {patientName} - Patient's full name
+   * {testName} - Name of the test
+   * {reportLink} - Link to view the report
+   * {labName} - Name of the lab
+   * {doctorName} - Doctor's name (for doctor notifications)
+   * 
+   * @param {string} template - The message template with placeholders
+   * @param {Object} data - Object containing values for placeholders
+   * @returns {string} - Formatted message
+   */
+  formatMessage(template, data) {
+    let message = template;
+    const placeholders = {
+      '{patientName}': data.patientName || '',
+      '{testName}': data.testName || '',
+      '{reportLink}': data.reportLink || '',
+      '{labName}': data.labName || '',
+      '{doctorName}': data.doctorName || '',
+    };
+
+    for (const [placeholder, value] of Object.entries(placeholders)) {
+      message = message.replaceAll(placeholder, value);
+    }
+
+    return message;
+  }
+
+  /**
+   * Send a WhatsApp message via UltraMsg API
+   * 
+   * @param {string} to - Recipient's phone number (with country code, e.g. +919876543210)
+   * @param {string} messageBody - The message text to send
    * @returns {Promise<Object>} - Response from the WhatsApp API
    */
-  async sendReportNotification(to, patientName, testName, reportLink, labName) {
+  async _sendMessage(to, messageBody) {
     try {
       // Validate phone number format (should include country code)
       if (!to.startsWith('+')) {
@@ -33,25 +61,20 @@ class WhatsAppService {
       // Remove any spaces or special characters from phone number
       to = to.replace(/[^+\d]/g, '');
 
-      // Format according to AiSensy API requirements
+      // UltraMsg API payload format
+      // POST https://api.ultramsg.com/{instance_id}/messages/chat
       const payload = {
-        apiKey: this.apiKey,
-        campaignName: "Lab Report Notification",
-        destination: to.replace('+', ''),
-        userName: patientName,
-        source: "Lab Report System",
-        templateParams: [
-          patientName,
-          testName
-        ],
-        attributes: {},
-        paramsFallbackValue: {
-          FirstName: patientName
-        }
+        token: this.apiKey,
+        to: to,
+        body: messageBody,
+        priority: '1',
+        referenceId: ''
       };
 
+      const apiEndpoint = `${this.baseUrl}/messages/chat`;
+
       const response = await axios.post(
-        this.apiUrl,
+        apiEndpoint,
         payload,
         {
           headers: {
@@ -60,12 +83,40 @@ class WhatsAppService {
         }
       );
 
-      console.log(`WhatsApp notification sent to ${to}`, response.data);
+      console.log(`WhatsApp notification sent to ${to}:`, response.data);
       return response.data;
     } catch (error) {
-      console.error('Error sending WhatsApp notification:', error.response?.data || error.message);
+      console.error('Error sending WhatsApp message:', error.response?.data || error.message);
       throw error;
     }
+  }
+
+  /**
+   * Send a WhatsApp message with a report link to a patient
+   * 
+   * @param {string} to - Recipient's phone number (with country code)
+   * @param {string} patientName - Patient's name
+   * @param {string} testName - Name of the test
+   * @param {string} reportLink - Link to the report
+   * @param {string} labName - Name of the lab
+   * @param {string} customMessage - Optional custom message to send instead of template
+   * @returns {Promise<Object>} - Response from the WhatsApp API
+   */
+  async sendReportNotification(to, patientName, testName, reportLink, labName, customMessage) {
+    // Prepare the message - use custom message if provided, otherwise use default format
+    let messageBody;
+    if (customMessage) {
+      messageBody = this.formatMessage(customMessage, {
+        patientName,
+        testName,
+        reportLink,
+        labName
+      });
+    } else {
+      messageBody = `Dear ${patientName}, your ${testName} report is ready. View your report here: ${reportLink} - ${labName}`;
+    }
+
+    return this._sendMessage(to, messageBody);
   }
 
   /**
@@ -77,51 +128,25 @@ class WhatsAppService {
    * @param {string} testName - Name of the test
    * @param {string} reportLink - Link to the report
    * @param {string} labName - Name of the lab
+   * @param {string} customMessage - Optional custom message template
    * @returns {Promise<Object>} - Response from the WhatsApp API
    */
-  async sendDoctorNotification(to, doctorName, patientName, testName, reportLink, labName) {
-    try {
-      // Validate phone number format (should include country code)
-      if (!to.startsWith('+')) {
-        to = `+${to}`;
-      }
-
-      // Remove any spaces or special characters from phone number
-      to = to.replace(/[^+\d]/g, '');
-
-      // Format according to AiSensy API requirements
-      const payload = {
-        apiKey: this.apiKey,
-        campaignName: "Doctor Report Notification",
-        destination: to.replace('+', ''),
-        userName: doctorName,
-        source: "Lab Report System",
-        templateParams: [
-          doctorName,
-          patientName
-        ],
-        attributes: {},
-        paramsFallbackValue: {
-          FirstName: doctorName
-        }
-      };
-
-      const response = await axios.post(
-        this.apiUrl,
-        payload,
-        {
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-
-      console.log(`WhatsApp notification sent to doctor ${to}`, response.data);
-      return response.data;
-    } catch (error) {
-      console.error('Error sending WhatsApp notification to doctor:', error.response?.data || error.message);
-      throw error;
+  async sendDoctorNotification(to, doctorName, patientName, testName, reportLink, labName, customMessage) {
+    // Prepare the message - use custom message if provided, otherwise use default format
+    let messageBody;
+    if (customMessage) {
+      messageBody = this.formatMessage(customMessage, {
+        doctorName,
+        patientName,
+        testName,
+        reportLink,
+        labName
+      });
+    } else {
+      messageBody = `Dear Dr. ${doctorName}, the report for patient ${patientName} (${testName}) is ready. View report: ${reportLink} - ${labName}`;
     }
+
+    return this._sendMessage(to, messageBody);
   }
 
   /**

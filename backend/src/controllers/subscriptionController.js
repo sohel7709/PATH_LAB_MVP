@@ -1,177 +1,624 @@
-const Razorpay = require('razorpay');
-const crypto = require('crypto');
 const Plan = require('../models/Plan');
 const Lab = require('../models/Lab');
+const Subscription = require('../models/Subscription');
 const SubscriptionHistory = require('../models/SubscriptionHistory');
-
-// Initialize Razorpay instance
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
+const RevenueTransaction = require('../models/RevenueTransaction');
+const User = require('../models/User');
 
 /**
- * @desc    Create Razorpay order for subscription purchase
- * @route   POST /api/v1/subscriptions/create-order
- * @access  Protected (lab user)
+ * @desc    Get all subscription plans (for Admin viewing)
+ * @route   GET /api/subscriptions/plans
+ * @access  Protected (Admin, Technician)
  */
-const createOrder = async (req, res) => {
-  const { planId } = req.body;
-  const user = req.user;
-  const labId = user.lab;
-
-  if (!planId) {
-    return res.status(400).json({ success: false, message: 'Plan ID is required' });
-  }
+exports.getActivePlans = async (req, res) => {
   try {
-    const plan = await Plan.findById(planId);
-    if (!plan || !plan.isActive) {
-      return res.status(404).json({ success: false, message: 'Invalid or inactive plan' });
-    }
-
-    const amountInPaise = Math.round(plan.price * 100); // Convert INR to paise
-
-    // Create order
-    const options = {
-      amount: amountInPaise,
-      currency: 'INR',
-      receipt: `receipt_sub_${labId}_${Date.now()}`,
-      notes: {
-        planId: planId,
-        labId: labId.toString(),
-      },
-    };
-    const order = await razorpay.orders.create(options);
-
-    res.status(201).json({
+    const plans = await Plan.find({ isActive: true }).sort('price');
+    res.status(200).json({
       success: true,
-      data: {
-        orderId: order.id,
-        amount: order.amount,
-        currency: order.currency,
-        plan,
-      }
+      count: plans.length,
+      data: plans
     });
   } catch (error) {
-    console.error('Error creating Razorpay order:', error);
-    res.status(500).json({ success: false, message: 'Could not create order', error: error.message });
+    console.error('Error fetching active plans:', error);
+    res.status(500).json({ success: false, message: 'Error fetching plans', error: error.message });
   }
 };
 
 /**
- * @desc    Verify Razorpay payment and activate subscription
- * @route   POST /api/v1/subscriptions/verify
- * @access  Protected (lab user)
+ * @desc    Request a subscription plan (Admin initiates purchase)
+ * @route   POST /api/subscriptions/request
+ * @access  Protected (Admin)
  */
-const verifyPayment = async (req, res) => {
-  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
-  const user = req.user;
-  const labId = user.lab;
-
-  if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-    return res.status(400).json({ success: false, message: 'Payment details incomplete' });
-  }
-
-  // Verify signature
-  const generatedSignature = crypto
-    .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-    .update(`${razorpay_order_id}|${razorpay_payment_id}`)
-    .digest('hex');
-
-  if (generatedSignature !== razorpay_signature) {
-    return res.status(400).json({ success: false, message: 'Payment signature verification failed' });
-  }
-
+exports.requestSubscription = async (req, res) => {
   try {
-    // Fetch order to get notes
-    const order = await razorpay.orders.fetch(razorpay_order_id);
-    const planId = order.notes.planId;
-    const startDate = new Date();
-    const plan = await Plan.findById(planId);
-    const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + plan.duration);
+    const { planId, message } = req.body;
+    const user = req.user;
+    const labId = user.lab;
 
-    // Update lab subscription
-    const updatedLab = await Lab.findByIdAndUpdate(
-      labId,
-      { subscription: { plan: planId, startDate, endDate } },
-      { new: true }
+    if (!planId) {
+      return res.status(400).json({ success: false, message: 'Plan ID is required' });
+    }
+
+    const plan = await Plan.findById(planId);
+    if (!plan || !plan.isActive) {
+      return res.status(404).json({ success: false, message: 'Plan not found or inactive' });
+    }
+
+    const lab = await Lab.findById(labId);
+    if (!lab) {
+      return res.status(404).json({ success: false, message: 'Lab not found' });
+    }
+
+    // Create a pending subscription record
+    const subscription = await Subscription.create({
+      lab: labId,
+      plan: planId,
+      startDate: new Date(),
+      endDate: new Date(Date.now() + plan.duration * 24 * 60 * 60 * 1000),
+      status: 'pending',
+      paymentProvider: 'WhatsApp',
+    });
+
+    // Log in history
+    await SubscriptionHistory.create({
+      lab: labId,
+      plan: planId,
+      startDate: new Date(),
+      endDate: new Date(Date.now() + plan.duration * 24 * 60 * 60 * 1000),
+      status: 'pending_payment',
+      createdBy: user._id,
+      paymentDetails: {
+        paymentMethod: 'WhatsApp',
+      },
+    });
+
+    // Return data for WhatsApp redirect
+    res.status(201).json({
+      success: true,
+      data: {
+        subscription,
+        plan,
+        lab: {
+          _id: lab._id,
+          name: lab.name,
+        },
+        admin: {
+          name: user.name,
+          email: user.email,
+        },
+        // Super admin WhatsApp number - can be configured in env
+        whatsappNumber: process.env.SUPER_ADMIN_WHATSAPP || '919XXXXXXXXX',
+      }
+    });
+  } catch (error) {
+    console.error('Error requesting subscription:', error);
+    res.status(500).json({ success: false, message: 'Error requesting subscription', error: error.message });
+  }
+};
+
+/**
+ * @desc    Get current lab's subscription status
+ * @route   GET /api/subscriptions/current
+ * @access  Protected (Admin, Technician)
+ */
+exports.getCurrentSubscription = async (req, res) => {
+  try {
+    const labId = req.user.lab;
+    if (!labId) {
+      return res.status(400).json({ success: false, message: 'No lab assigned' });
+    }
+
+    const lab = await Lab.findById(labId)
+      .select('subscriptionStatus subscriptionExpiry subscriptionPlan name totalPatientsCreated totalReportsCreated')
+      .populate('subscriptionPlan', 'name description price duration maxPatients maxReports isActive');
+
+    if (!lab) {
+      return res.status(404).json({ success: false, message: 'Lab not found' });
+    }
+
+    // Get active subscription from Subscription collection
+    const activeSub = await Subscription.findOne({
+      lab: labId,
+      status: 'active',
+    })
+      .populate('plan', 'name description price duration')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        lab,
+        activeSubscription: activeSub,
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching current subscription:', error);
+    res.status(500).json({ success: false, message: 'Error fetching subscription', error: error.message });
+  }
+};
+
+/**
+ * @desc    Get all lab subscriptions (Super Admin)
+ * @route   GET /api/subscriptions/admin/all
+ * @access  Private (Super Admin)
+ */
+exports.getAllLabSubscriptions = async (req, res) => {
+  try {
+    const labs = await Lab.find({})
+      .select('name subscriptionStatus subscriptionExpiry subscriptionPlan status totalPatientsCreated totalReportsCreated')
+      .populate('subscriptionPlan', 'name description price duration maxPatients maxReports')
+      .populate({
+        path: 'users',
+        match: { role: 'admin' },
+        select: 'name email phone',
+        options: { limit: 1 }
+      })
+      .sort({ createdAt: -1 });
+
+    // Format labs to include admin name
+    const formattedLabs = labs.map(lab => {
+      const labObj = lab.toObject();
+      labObj.adminName = lab.users && lab.users.length > 0 ? lab.users[0].name : 'No Admin';
+      labObj.adminEmail = lab.users && lab.users.length > 0 ? lab.users[0].email : '';
+      labObj.adminPhone = lab.users && lab.users.length > 0 ? lab.users[0].phone : '';
+      return labObj;
+    });
+
+    res.status(200).json({
+      success: true,
+      count: formattedLabs.length,
+      data: formattedLabs
+    });
+  } catch (error) {
+    console.error('Error fetching all subscriptions:', error);
+    res.status(500).json({ success: false, message: 'Error fetching subscriptions', error: error.message });
+  }
+};
+
+/**
+ * @desc    Activate subscription for a lab (Super Admin)
+ * @route   POST /api/subscriptions/admin/activate
+ * @access  Private (Super Admin)
+ */
+exports.activateSubscription = async (req, res) => {
+  try {
+    const { labId, planId, duration } = req.body;
+
+    if (!labId || !planId) {
+      return res.status(400).json({ success: false, message: 'Lab ID and Plan ID are required' });
+    }
+
+    const lab = await Lab.findById(labId);
+    if (!lab) {
+      return res.status(404).json({ success: false, message: 'Lab not found' });
+    }
+
+    const plan = await Plan.findById(planId);
+    if (!plan) {
+      return res.status(404).json({ success: false, message: 'Plan not found' });
+    }
+
+    const days = duration || plan.duration;
+    const startDate = new Date();
+    const endDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+
+    // Cancel any existing active subscriptions
+    await Subscription.updateMany(
+      { lab: labId, status: 'active' },
+      {
+        status: 'cancelled',
+        cancelledBy: req.user._id,
+        cancelledAt: new Date(),
+        cancelReason: 'Plan changed or renewed'
+      }
     );
 
-    // Create subscription history record
+    // Create new subscription
+    const subscription = await Subscription.create({
+      lab: labId,
+      plan: planId,
+      startDate,
+      endDate,
+      status: 'active',
+      paymentProvider: 'WhatsApp',
+      activatedBy: req.user._id,
+    });
+
+    // Update lab subscription fields
+    lab.subscriptionStatus = 'active';
+    lab.subscriptionExpiry = endDate;
+    lab.subscriptionPlan = planId;
+    lab.subscription = {
+      plan: planId,
+      startDate,
+      endDate,
+    };
+    lab.status = 'active';
+    await lab.save();
+
+    // Log in history
     await SubscriptionHistory.create({
       lab: labId,
       plan: planId,
       startDate,
       endDate,
       status: 'active',
+      createdBy: req.user._id,
       paymentDetails: {
-        transactionId: razorpay_payment_id,
-        amount: order.amount / 100,
-        currency: order.currency,
-        paymentDate: new Date(),
-        paymentMethod: 'razorpay',
+        paymentMethod: 'WhatsApp',
       },
-      createdBy: user._id,
-      modifiedBy: user._id,
-      reason: 'Payment via Razorpay',
-      modificationType: 'purchase',
     });
 
-    res.json({ success: true, message: 'Payment verified, subscription activated', data: updatedLab });
+    // Create revenue transaction
+    const labAdmin = await User.findOne({ role: 'admin', lab: labId });
+    await RevenueTransaction.create({
+      lab: labId,
+      admin: labAdmin?._id,
+      subscriptionPlan: planId,
+      subscription: subscription._id,
+      amount: plan.price,
+      activatedBy: req.user._id,
+      activatedAt: startDate,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Subscription activated successfully',
+      data: {
+        subscription,
+        lab: {
+          _id: lab._id,
+          name: lab.name,
+          subscriptionStatus: lab.subscriptionStatus,
+          subscriptionExpiry: lab.subscriptionExpiry,
+        },
+        plan: {
+          _id: plan._id,
+          name: plan.name,
+        }
+      }
+    });
   } catch (error) {
-    console.error('Error verifying payment:', error);
-    res.status(500).json({ success: false, message: 'Verification failed', error: error.message });
+    console.error('Error activating subscription:', error);
+    res.status(500).json({ success: false, message: 'Error activating subscription', error: error.message });
   }
 };
 
 /**
- * @desc    Start trial subscription for current lab
- * @route   POST /api/v1/subscriptions/trial
- * @access  Protected (lab user)
+ * @desc    Cancel a lab's subscription (Super Admin)
+ * @route   POST /api/subscriptions/admin/cancel
+ * @access  Private (Super Admin)
  */
-const startTrial = async (req, res) => {
-  const user = req.user;
-  const labId = user.lab;
+exports.cancelSubscription = async (req, res) => {
   try {
-    // Find active trial plan
-    const trialPlan = await Plan.findOne({ name: /trial/i, isActive: true });
-    if (!trialPlan) {
-      return res.status(404).json({ success: false, message: 'Trial plan not available' });
-    }
-    const startDate = new Date();
-    const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + trialPlan.duration);
+    const { labId, reason } = req.body;
 
-    // Update lab subscription
-    const updatedLab = await Lab.findByIdAndUpdate(
-      labId,
-      { subscription: { plan: trialPlan._id, startDate, endDate } },
-      { new: true }
+    if (!labId) {
+      return res.status(400).json({ success: false, message: 'Lab ID is required' });
+    }
+
+    const lab = await Lab.findById(labId);
+    if (!lab) {
+      return res.status(404).json({ success: false, message: 'Lab not found' });
+    }
+
+    // Cancel all active subscriptions for this lab
+    await Subscription.updateMany(
+      { lab: labId, status: 'active' },
+      {
+        status: 'cancelled',
+        cancelledBy: req.user._id,
+        cancelledAt: new Date(),
+        cancelReason: reason || 'Cancelled by Super Admin'
+      }
     );
 
-    // Log history
+    // Update lab
+    lab.subscriptionStatus = 'cancelled';
+    lab.subscriptionExpiry = new Date(); // Set to now
+    // Keep subscriptionPlan reference for history
+    await lab.save();
+
+    // Log in history
     await SubscriptionHistory.create({
       lab: labId,
-      plan: trialPlan._id,
-      startDate,
-      endDate,
-      status: 'active',
-      createdBy: user._id,
-      modifiedBy: user._id,
-      reason: 'Trial started',
-      modificationType: 'trial',
+      plan: lab.subscriptionPlan,
+      startDate: lab.subscription?.startDate || new Date(),
+      endDate: new Date(),
+      status: 'cancelled',
+      createdBy: req.user._id,
+      paymentDetails: {
+        paymentMethod: 'Manual',
+      },
     });
 
-    res.json({ success: true, message: 'Trial started', data: updatedLab });
+    res.status(200).json({
+      success: true,
+      message: 'Subscription cancelled successfully',
+      data: {
+        lab: {
+          _id: lab._id,
+          name: lab.name,
+          subscriptionStatus: lab.subscriptionStatus,
+        }
+      }
+    });
   } catch (error) {
-    console.error('Error starting trial:', error);
-    res.status(500).json({ success: false, message: 'Could not start trial', error: error.message });
+    console.error('Error cancelling subscription:', error);
+    res.status(500).json({ success: false, message: 'Error cancelling subscription', error: error.message });
   }
 };
 
-module.exports = {
-  createOrder,
-  verifyPayment,
-  startTrial,
+/**
+ * @desc    Extend a lab's subscription (Super Admin)
+ * @route   POST /api/subscriptions/admin/extend
+ * @access  Private (Super Admin)
+ */
+exports.extendSubscription = async (req, res) => {
+  try {
+    const { labId, days, reason } = req.body;
+
+    if (!labId || !days) {
+      return res.status(400).json({ success: false, message: 'Lab ID and days are required' });
+    }
+
+    const lab = await Lab.findById(labId);
+    if (!lab) {
+      return res.status(404).json({ success: false, message: 'Lab not found' });
+    }
+
+    // Extend the expiry date
+    const currentExpiry = lab.subscriptionExpiry || new Date();
+    const newExpiry = new Date(currentExpiry.getTime() + days * 24 * 60 * 60 * 1000);
+
+    lab.subscriptionExpiry = newExpiry;
+    if (lab.subscription) {
+      lab.subscription.endDate = newExpiry;
+    }
+    lab.subscriptionStatus = 'active';
+    await lab.save();
+
+    // Update active subscription in Subscription collection
+    const activeSub = await Subscription.findOne({ lab: labId, status: 'active' });
+    if (activeSub) {
+      activeSub.endDate = newExpiry;
+      await activeSub.save();
+    } else if (lab.subscriptionPlan) {
+      // Create a new subscription if none active
+      await Subscription.create({
+        lab: labId,
+        plan: lab.subscriptionPlan,
+        startDate: new Date(),
+        endDate: newExpiry,
+        status: 'active',
+        paymentProvider: 'WhatsApp',
+        activatedBy: req.user._id,
+      });
+    }
+
+    // Log in history
+    await SubscriptionHistory.create({
+      lab: labId,
+      plan: lab.subscriptionPlan,
+      startDate: new Date(),
+      endDate: newExpiry,
+      status: 'active',
+      createdBy: req.user._id,
+      paymentDetails: {
+        paymentMethod: 'Manual',
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `Subscription extended by ${days} days`,
+      data: {
+        lab: {
+          _id: lab._id,
+          name: lab.name,
+          subscriptionExpiry: newExpiry,
+          subscriptionStatus: 'active',
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error extending subscription:', error);
+    res.status(500).json({ success: false, message: 'Error extending subscription', error: error.message });
+  }
+};
+
+/**
+ * @desc    Change a lab's plan (Super Admin)
+ * @route   POST /api/subscriptions/admin/change-plan
+ * @access  Private (Super Admin)
+ */
+exports.changePlan = async (req, res) => {
+  try {
+    const { labId, planId, reason } = req.body;
+
+    if (!labId || !planId) {
+      return res.status(400).json({ success: false, message: 'Lab ID and Plan ID are required' });
+    }
+
+    const lab = await Lab.findById(labId);
+    if (!lab) {
+      return res.status(404).json({ success: false, message: 'Lab not found' });
+    }
+
+    const plan = await Plan.findById(planId);
+    if (!plan) {
+      return res.status(404).json({ success: false, message: 'Plan not found' });
+    }
+
+    // Cancel existing active subscriptions
+    await Subscription.updateMany(
+      { lab: labId, status: 'active' },
+      {
+        status: 'cancelled',
+        cancelledBy: req.user._id,
+        cancelledAt: new Date(),
+        cancelReason: reason || 'Plan changed'
+      }
+    );
+
+    // Create new subscription with new plan
+    const startDate = new Date();
+    const endDate = new Date(Date.now() + plan.duration * 24 * 60 * 60 * 1000);
+
+    const subscription = await Subscription.create({
+      lab: labId,
+      plan: planId,
+      startDate,
+      endDate,
+      status: 'active',
+      paymentProvider: 'WhatsApp',
+      activatedBy: req.user._id,
+    });
+
+    // Update lab
+    lab.subscriptionPlan = planId;
+    lab.subscriptionStatus = 'active';
+    lab.subscriptionExpiry = endDate;
+    lab.subscription = {
+      plan: planId,
+      startDate,
+      endDate,
+    };
+    lab.status = 'active';
+    await lab.save();
+
+    // Log in history
+    await SubscriptionHistory.create({
+      lab: labId,
+      plan: planId,
+      startDate,
+      endDate,
+      status: 'active',
+      createdBy: req.user._id,
+      paymentDetails: {
+        paymentMethod: 'Manual',
+      },
+    });
+
+    // Create revenue transaction for plan change
+    const labAdmin = await User.findOne({ role: 'admin', lab: labId });
+    await RevenueTransaction.create({
+      lab: labId,
+      admin: labAdmin?._id,
+      subscriptionPlan: planId,
+      subscription: subscription._id,
+      amount: plan.price,
+      activatedBy: req.user._id,
+      activatedAt: startDate,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `Plan changed to ${plan.name}`,
+      data: {
+        subscription,
+        plan: {
+          _id: plan._id,
+          name: plan.name,
+        },
+        lab: {
+          _id: lab._id,
+          name: lab.name,
+          subscriptionStatus: lab.subscriptionStatus,
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error changing plan:', error);
+    res.status(500).json({ success: false, message: 'Error changing plan', error: error.message });
+  }
+};
+
+/**
+ * @desc    Get subscription history for a lab (Super Admin)
+ * @route   GET /api/subscriptions/admin/history/:labId
+ * @access  Private (Super Admin)
+ */
+exports.getSubscriptionHistory = async (req, res) => {
+  try {
+    const { labId } = req.params;
+
+    const history = await SubscriptionHistory.find({ lab: labId })
+      .populate('plan', 'name price duration')
+      .populate('createdBy', 'name email')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: history.length,
+      data: history
+    });
+  } catch (error) {
+    console.error('Error fetching subscription history:', error);
+    res.status(500).json({ success: false, message: 'Error fetching history', error: error.message });
+  }
+};
+
+/**
+ * @desc    Check subscription status (lightweight endpoint for frontend)
+ * @route   GET /api/subscriptions/status
+ * @access  Protected
+ */
+exports.checkSubscriptionStatus = async (req, res) => {
+  try {
+    if (req.user.role === 'super-admin') {
+      return res.status(200).json({
+        success: true,
+        data: {
+          isActive: true,
+          status: 'active',
+          planName: 'Unlimited',
+        }
+      });
+    }
+
+    const labId = req.user.lab;
+    if (!labId) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          isActive: false,
+          status: 'no_lab',
+          planName: 'None',
+        }
+      });
+    }
+
+    const lab = await Lab.findById(labId)
+      .select('subscriptionStatus subscriptionExpiry subscriptionPlan name')
+      .populate('subscriptionPlan', 'name');
+
+    if (!lab) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          isActive: false,
+          status: 'lab_not_found',
+          planName: 'None',
+        }
+      });
+    }
+
+    const isActive = lab.subscriptionStatus === 'active' || lab.subscriptionStatus === 'trial';
+    const isExpired = lab.subscriptionExpiry && new Date(lab.subscriptionExpiry) < new Date();
+
+    res.status(200).json({
+      success: true,
+      data: {
+        isActive: isActive && !isExpired,
+        status: isExpired ? 'expired' : lab.subscriptionStatus,
+        planName: lab.subscriptionPlan?.name || 'None',
+        expiryDate: lab.subscriptionExpiry,
+        labName: lab.name,
+      }
+    });
+  } catch (error) {
+    console.error('Error checking subscription status:', error);
+    res.status(500).json({ success: false, message: 'Error checking status', error: error.message });
+  }
 };

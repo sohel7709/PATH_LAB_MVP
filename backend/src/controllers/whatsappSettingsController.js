@@ -1,95 +1,80 @@
-const dotenv = require('dotenv');
-const fs = require('fs');
-const path = require('path');
+const WhatsAppSettings = require('../models/WhatsAppSettings');
 
-/**
- * @desc    Get WhatsApp notification settings
- * @route   GET /api/settings/whatsapp
- * @access  Private/Admin/SuperAdmin
- */
+// @desc    Get WhatsApp settings for a lab
+// @route   GET /api/settings/whatsapp
+// @access  Private (admin, super-admin)
 exports.getWhatsAppSettings = async (req, res, next) => {
   try {
-    // Only allow admin and super-admin to access settings
-    if (!['admin', 'super-admin'].includes(req.user.role)) {
-      return res.status(403).json({
+    // Determine labId: check query param first (sent from frontend), then JWT user.lab
+    const labId = req.query.lab || req.user.lab;
+
+    if (!labId) {
+      return res.status(400).json({
         success: false,
-        message: 'Not authorized to access WhatsApp settings'
+        message: 'Lab ID is required'
       });
     }
 
-    // Return the WhatsApp settings from environment variables
-    const settings = {
-      enabled: process.env.WHATSAPP_API_KEY ? true : false,
-      apiKey: process.env.WHATSAPP_API_KEY || '',
-      fromNumber: process.env.WHATSAPP_FROM_NUMBER || '',
-      apiUrl: process.env.WHATSAPP_API_URL || 'https://api.whatsapp.com/v1/messages'
-    };
+    let settings = await WhatsAppSettings.findOne({ lab: labId });
+
+    if (!settings) {
+      // Return default settings if none exist
+      settings = {
+        lab: labId,
+        enabled: false,
+        messageTemplate: 'Dear {patientName}, your {testName} report is ready. View your report here: {reportLink} - {labName}',
+        sendToPatientOnReportComplete: true,
+        sendToDoctorOnReportComplete: false
+      };
+    }
 
     res.status(200).json({
       success: true,
       data: settings
     });
   } catch (error) {
-    console.error('Error getting WhatsApp settings:', error);
     next(error);
   }
 };
 
-/**
- * @desc    Update WhatsApp notification settings
- * @route   POST /api/settings/whatsapp
- * @access  Private/Admin/SuperAdmin
- */
+// @desc    Create or update WhatsApp settings for a lab
+// @route   PUT /api/settings/whatsapp
+// @access  Private (admin, super-admin)
 exports.updateWhatsAppSettings = async (req, res, next) => {
   try {
-    // Only allow admin and super-admin to update settings
-    if (!['admin', 'super-admin'].includes(req.user.role)) {
-      return res.status(403).json({
+    // Determine labId: check req.body.labId first (sent from frontend), then req.user.lab
+    const labId = req.body.labId || req.user.lab;
+
+    if (!labId) {
+      return res.status(400).json({
         success: false,
-        message: 'Not authorized to update WhatsApp settings'
+        message: 'Lab is not associated with your account'
       });
     }
 
-    const { enabled, apiKey, fromNumber, apiUrl } = req.body;
+    const { enabled, messageTemplate, sendToPatientOnReportComplete, sendToDoctorOnReportComplete } = req.body;
 
-    // Read the current .env file
-    const envPath = path.resolve(process.cwd(), '.env');
-    let envContent = fs.readFileSync(envPath, 'utf8');
+    const updateData = {};
+    if (enabled !== undefined) updateData.enabled = enabled;
+    if (messageTemplate !== undefined) updateData.messageTemplate = messageTemplate;
+    if (sendToPatientOnReportComplete !== undefined) updateData.sendToPatientOnReportComplete = sendToPatientOnReportComplete;
+    if (sendToDoctorOnReportComplete !== undefined) updateData.sendToDoctorOnReportComplete = sendToDoctorOnReportComplete;
 
-    // Update or add WhatsApp settings
-    const envVars = {
-      WHATSAPP_API_KEY: enabled ? apiKey : '',
-      WHATSAPP_FROM_NUMBER: enabled ? fromNumber : '',
-      WHATSAPP_API_URL: enabled && apiUrl ? apiUrl : 'https://api.whatsapp.com/v1/messages'
-    };
-
-    // Update each environment variable in the .env file
-    Object.entries(envVars).forEach(([key, value]) => {
-      // Check if the variable already exists in the file
-      const regex = new RegExp(`^${key}=.*`, 'm');
-      if (regex.test(envContent)) {
-        // Replace existing variable
-        envContent = envContent.replace(regex, `${key}=${value}`);
-      } else {
-        // Add new variable
-        envContent += `\n${key}=${value}`;
+    const settings = await WhatsAppSettings.findOneAndUpdate(
+      { lab: labId },
+      { ...updateData, lab: labId },
+      { 
+        new: true, 
+        upsert: true, 
+        runValidators: true 
       }
-    });
-
-    // Write the updated content back to the .env file
-    fs.writeFileSync(envPath, envContent);
-
-    // Update the environment variables in the current process
-    Object.entries(envVars).forEach(([key, value]) => {
-      process.env[key] = value;
-    });
+    );
 
     res.status(200).json({
       success: true,
-      message: 'WhatsApp settings updated successfully'
+      data: settings
     });
   } catch (error) {
-    console.error('Error updating WhatsApp settings:', error);
     next(error);
   }
 };

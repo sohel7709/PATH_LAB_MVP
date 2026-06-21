@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { protect, authorize, checkLabAccess } = require('../middleware/auth');
+const { checkSubscriptionForCreate } = require('../middleware/subscription');
 
 // Import controller functions (to be implemented)
 const {
@@ -16,7 +17,7 @@ router.use(protect);
 
 // Routes for patient management
 router.route('/')
-  .post(authorize('super-admin', 'admin', 'technician'), checkLabAccess, createPatient)
+  .post(authorize('super-admin', 'admin', 'technician'), checkLabAccess, checkSubscriptionForCreate, createPatient)
   .get(authorize('super-admin', 'admin', 'technician'), checkLabAccess, getPatients);
 
 router.route('/:id')
