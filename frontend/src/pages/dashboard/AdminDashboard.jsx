@@ -48,10 +48,8 @@ const AdminDashboard = () => {
                 // Fetch lab statistics
                 try {
                   const statsData = await dashboard.getStats(user.lab);
-                  console.log('Stats data:', statsData);
                   // Make sure we're getting the actual patient count
                   const patientCount = statsData.totalPatients !== undefined ? statsData.totalPatients : 0;
-                  console.log('Patient count:', patientCount);
                   
                   setStats({
                     totalReports: statsData.totalReports || 0,
@@ -59,17 +57,13 @@ const AdminDashboard = () => {
                     inventoryItems: statsData.inventoryItems || 0,
                   });
                 } catch (statsErr) {
-                  console.error('Error fetching lab statistics:', statsErr);
                 }
                 
                 // Fetch patients for this lab
                 try {
-                  console.log('Fetching patients for lab:', user.lab);
                   if (!user.lab) {
-                    console.error('Lab ID is missing or undefined');
                   }
                   const patientsData = await patients.getAll(user.lab);
-                  console.log('Patients data:', patientsData);
                   
                   // Update totalPatients count based on patientsData length
                   if (patientsData && Array.isArray(patientsData)) {
@@ -85,16 +79,13 @@ const AdminDashboard = () => {
                       contact: patient.phone,
                     })));
                   } else {
-                    console.error('Patients data is not an array or is empty');
                   }
                 } catch (patientsErr) {
-                  console.error('Error fetching patients data:', patientsErr);
                 }
                 
                 // Fetch lab reports
                 try {
                   const reportsResponse = await reports.getAll({ lab: user.lab });
-                  console.log('Reports response:', reportsResponse);
                   
                   // Handle different response formats
                   let reportsArray = [];
@@ -118,29 +109,22 @@ const AdminDashboard = () => {
                     date: report.createdAt || report.reportMeta?.generatedAt || new Date().toISOString(),
                   })));
                 } catch (reportsErr) {
-                  console.error('Error fetching lab reports:', reportsErr);
                 }
                 
                 // Fetch patients for this lab
                 try {
                   const patientsData = await patients.getAll(user.lab);
-                  console.log('Patients data:', patientsData);
                 } catch (patientsErr) {
-                  console.error('Error fetching patients data:', patientsErr);
                 }
               } else {
-                console.error('Failed to fetch lab details:', labResponse.message);
               }
             } catch (labErr) {
-              console.error('Error fetching lab details:', labErr);
             }
           }
         } catch (error) {
-          console.error('Error in lab details section:', error);
         }
         
       } catch (error) {
-        console.error('Error fetching dashboard data:', error);
       }
     };
     
@@ -412,7 +396,7 @@ const AdminDashboard = () => {
               <tbody className="bg-white divide-y divide-blue-100">
                 {recentPatients.length > 0 ? (
                   recentPatients.map((patient) => (
-                    <tr key={patient._id} className="hover:bg-blue-50 transition-colors duration-150">
+                    <tr key={patient.id} className="hover:bg-blue-50 transition-colors duration-150">
                       <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {patient.name}
                       </td>
@@ -422,10 +406,10 @@ const AdminDashboard = () => {
                       <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{patient.contact}</td>
                       <td className="px-3 py-4 whitespace-nowrap text-sm">
                         <div className="flex space-x-3">
-                          <Link to={`/patients/${patient._id}/edit`} className="text-green-600 hover:text-green-900 p-1 rounded-full hover:bg-green-50 transition-colors" title="Edit Patient">
+                          <Link to={`/patients/${patient.id}/edit`} className="text-green-600 hover:text-green-900 p-1 rounded-full hover:bg-green-50 transition-colors" title="Edit Patient">
                             <PencilSquareIcon className="h-5 w-5" aria-hidden="true" />
                           </Link>
-                          <Link to={`/reports/create?patientId=${patient._id}`} className="text-blue-600 hover:text-blue-900 p-1 rounded-full hover:bg-blue-50 transition-colors" title="Create Report">
+                          <Link to={`/reports/create?patientId=${patient.id}`} className="text-blue-600 hover:text-blue-900 p-1 rounded-full hover:bg-blue-50 transition-colors" title="Create Report">
                             <DocumentTextIcon className="h-5 w-5 mr-2" aria-hidden="true" />
                           </Link>
                         </div>
