@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 // Custom hook to handle PDF generation, printing, and downloading
-export const useReportPdf = (report, reportHtml) => {
+export const useReportPdf = (report, reportHtml, printMode = "official") => {
   const [isPrinting, setIsPrinting] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
 
@@ -21,8 +21,10 @@ export const useReportPdf = (report, reportHtml) => {
   };
 
   // Common PDF generation options
+  // Top margin: official = 5mm, plain = 35mm (for blank header space on every page)
+  const topMargin = printMode === "plain" ? 35 : 5;
   const getPdfOptions = (filename) => ({
-    margin: [5, 0, 40, 0], // Top margin changed to 47mm: [Top 47mm, Right 0, Bottom 40mm, Left 0]
+    margin: [topMargin, 0, 40, 0], // [Top, Right, Bottom, Left] in mm
     filename: filename || 'Report.pdf',
     image: { type: 'jpeg', quality: 0.98 },
     html2canvas: {

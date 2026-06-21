@@ -974,7 +974,7 @@ export const useReportGenerator = (
                   nameCell.style.fontSize = "10pt";
                   nameCell.style.verticalAlign = "top";
                   if (param.isSubparameter) nameCell.style.paddingLeft = "20px";
-                  nameCell.style.border = "1px solid black"; // Add border
+                  nameCell.style.border = "none"; // Add border
 
                   const resultValue =
                     param.value !== null && param.value !== undefined
@@ -983,10 +983,7 @@ export const useReportGenerator = (
                   resultCell.textContent = resultValue;
                   resultCell.style.padding = "3px 8px";
                   // Align left if 2-column layout OR if it's Urine/RBS (3-column), else right
-                  resultCell.style.textAlign =
-                    shouldHideUnitAndReference || isThreeColumnTest
-                      ? "left"
-                      : "right";
+                  resultCell.style.textAlign = "center";
                   // Bold if abnormal OR if value is POSITIVE/REACTIVE/PRESENT (case-insensitive) or starts with "Present" and has "+"
                   const lowerResultValue = resultValue.toLowerCase();
                   const presentPlusRegex = /^present\s*\+{1,}$/; // Matches "present" followed by one or more "+"
@@ -1009,7 +1006,7 @@ export const useReportGenerator = (
                     resultCell.style.width = "30%";
                   } // Else: 4 columns, use default/thead widths
                   resultCell.style.verticalAlign = "top";
-                  resultCell.style.border = "1px solid black"; // Add border
+                  resultCell.style.border = "none"; // Add border
 
                   // Populate Unit cell only if it was created (i.e., not 2-column layout)
                   if (unitCell) {
@@ -1022,7 +1019,7 @@ export const useReportGenerator = (
                       unitCell.style.width = "30%";
                     } // Else: 4 columns, use default/thead widths
                     unitCell.style.verticalAlign = "top";
-                    unitCell.style.border = "1px solid black"; // Add border
+                    unitCell.style.border = "none"; // Add border
                   }
 
                   // Conditionally add the reference range cell (Hide if 2-column or 3-column layout)
@@ -1033,7 +1030,7 @@ export const useReportGenerator = (
                     rangeCell.style.textAlign = "left";
                     rangeCell.style.fontSize = "10pt";
                     rangeCell.style.verticalAlign = "top";
-                    rangeCell.style.border = "1px solid black"; // Add border
+                    rangeCell.style.border = "none"; // Add border
                   }
                   // No 'else' needed, the cell is simply not created if shouldHideForThisGroup is true
                 }

@@ -30,7 +30,7 @@ export default function PrintReport() {
     downloadPdf,
     isPrinting,
     isDownloading,
-  } = useReportPdf(report, reportHtml); // Get PDF functions and states
+  } = useReportPdf(report, reportHtml, printMode); // Get PDF functions and states, pass printMode for margin control
 
   const printPdf = async () => {
     try {
