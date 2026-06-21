@@ -6,21 +6,16 @@ export const useReportGenerator = (
   report,
   reportSettings = null,
   printMode = "official",
+  plainTopMargin = 40,
 ) => {
   const [reportHtml, setReportHtml] = useState("");
 
   // Function to check if a value is outside the reference range
   // (Copied and adapted from ReportTemplate.jsx)
   const isOutsideRange = (value, referenceRange, patientGender) => {
-    console.log(
-      `[isOutsideRange] Checking value: ${value}, range: "${referenceRange}", gender: ${patientGender}`,
-    );
-
+    
     if (!value || !referenceRange) {
-      console.log(
-        "[isOutsideRange] Value or referenceRange is null/undefined. Returning false.",
-      );
-      return false;
+            return false;
     }
 
     const cleanValue = value.toString().replace(/,/g, "");
@@ -28,23 +23,16 @@ export const useReportGenerator = (
     const numValue = parseFloat(cleanValue);
 
     if (isNaN(numValue)) {
-      console.log(
-        `[isOutsideRange] numValue is NaN for cleanValue: "${cleanValue}". Returning false.`,
-      );
-      return false;
+            return false;
     }
-    console.log(`[isOutsideRange] Parsed numValue: ${numValue}`);
-
+    
     // Attempt to parse gender-specific ranges
     const maleRegex = /Male:\s*([\d.]+)\s*-\s*([\d.]+)/i;
     const femaleRegex = /Female:\s*([\d.]+)\s*-\s*([\d.]+)/i;
     const maleRangeMatch = cleanRange.match(maleRegex);
     const femaleRangeMatch = cleanRange.match(femaleRegex);
 
-    console.log(
-      `[isOutsideRange] Male match: ${maleRangeMatch}, Female match: ${femaleRangeMatch}`,
-    );
-
+    
     let targetRange = null;
 
     if (
@@ -53,27 +41,19 @@ export const useReportGenerator = (
       maleRangeMatch
     ) {
       targetRange = `${maleRangeMatch[1]}-${maleRangeMatch[2]}`;
-      console.log(`[isOutsideRange] Using Male range: "${targetRange}"`);
-    } else if (
+          } else if (
       patientGender &&
       patientGender.toLowerCase() === "female" &&
       femaleRangeMatch
     ) {
       targetRange = `${femaleRangeMatch[1]}-${femaleRangeMatch[2]}`;
-      console.log(`[isOutsideRange] Using Female range: "${targetRange}"`);
-    }
+          }
 
     if (targetRange) {
       cleanRange = targetRange; // Use the gender-specific range
     } else {
-      console.log(
-        "[isOutsideRange] No specific gender range matched or applied. Using original/full range for parsing.",
-      );
-    }
-    console.log(
-      `[isOutsideRange] Effective cleanRange for parsing: "${cleanRange}"`,
-    );
-
+          }
+    
     try {
       if (cleanRange.includes("-") || cleanRange.includes("–")) {
         const separator = cleanRange.includes("-") ? "-" : "–";
@@ -83,97 +63,54 @@ export const useReportGenerator = (
           const maxStr = parts[1].trim();
           const min = parseFloat(minStr);
           const max = parseFloat(maxStr);
-          console.log(
-            `[isOutsideRange] Parsed min: ${min} (from "${minStr}"), max: ${max} (from "${maxStr}") for range "${cleanRange}"`,
-          );
-          if (!isNaN(min) && !isNaN(max)) {
+                    if (!isNaN(min) && !isNaN(max)) {
             const result = numValue < min || numValue > max;
-            console.log(
-              `[isOutsideRange] Comparing ${numValue} with ${min}-${max}. Abnormal: ${result}`,
-            );
-            return result;
+                        return result;
           } else {
-            console.log(
-              "[isOutsideRange] Min or Max is NaN for hyphenated range.",
-            );
-          }
+                      }
         } else {
-          console.log(
-            "[isOutsideRange] Hyphenated range does not have at least 2 parts.",
-          );
-        }
+                  }
       } else if (cleanRange.startsWith("<")) {
         const max = parseFloat(cleanRange.substring(1).trim());
         const result = !isNaN(max) && numValue >= max;
-        console.log(
-          `[isOutsideRange] Comparing ${numValue} with <${max}. Abnormal: ${result}`,
-        );
-        return result;
+                return result;
       } else if (cleanRange.startsWith("≤")) {
         const max = parseFloat(cleanRange.substring(1).trim());
         const result = !isNaN(max) && numValue > max;
-        console.log(
-          `[isOutsideRange] Comparing ${numValue} with ≤${max}. Abnormal: ${result}`,
-        );
-        return result;
+                return result;
       } else if (cleanRange.startsWith(">")) {
         const min = parseFloat(cleanRange.substring(1).trim());
         const result = !isNaN(min) && numValue <= min;
-        console.log(
-          `[isOutsideRange] Comparing ${numValue} with >${min}. Abnormal: ${result}`,
-        );
-        return result;
+                return result;
       } else if (cleanRange.startsWith("≥")) {
         const min = parseFloat(cleanRange.substring(1).trim());
         const result = !isNaN(min) && numValue < min;
-        console.log(
-          `[isOutsideRange] Comparing ${numValue} with ≥${min}. Abnormal: ${result}`,
-        );
-        return result;
+                return result;
       } else if (cleanRange.toLowerCase().includes("less than")) {
         const max = parseFloat(
           cleanRange.toLowerCase().replace("less than", "").trim(),
         );
         const result = !isNaN(max) && numValue >= max;
-        console.log(
-          `[isOutsideRange] Comparing ${numValue} with "less than ${max}". Abnormal: ${result}`,
-        );
-        return result;
+                return result;
       } else if (cleanRange.toLowerCase().includes("greater than")) {
         const min = parseFloat(
           cleanRange.toLowerCase().replace("greater than", "").trim(),
         );
         const result = !isNaN(min) && numValue <= min;
-        console.log(
-          `[isOutsideRange] Comparing ${numValue} with "greater than ${min}". Abnormal: ${result}`,
-        );
-        return result;
+                return result;
       }
     } catch (error) {
-      console.warn(
-        "[isOutsideRange] Error during parsing:",
-        referenceRange,
-        error,
-      );
-    }
-    console.log(
-      "[isOutsideRange] No range condition met or error occurred. Returning false.",
-    );
-    return false;
+          }
+        return false;
   };
 
   // Prepare data structure needed by the build function
   const prepareReportData = (currentReport) => {
     if (!currentReport) {
-      console.log("useReportGenerator: Report data missing, cannot prepare.");
-      return null;
+            return null;
     }
 
-    console.log(
-      "useReportGenerator: Preparing data for report:",
-      currentReport._id,
-    );
-    // console.log("useReportGenerator: Raw results array:", currentReport.results); // Keep commented unless needed
+        //  // Keep commented unless needed
 
     // Group parameters by templateId first
     const paramsByTemplate = (currentReport.results || []).reduce(
@@ -209,7 +146,7 @@ export const useReportGenerator = (
 
     const finalGroupedResults = Object.values(paramsByTemplate);
 
-    // console.log("useReportGenerator: Grouped results:", finalGroupedResults); // Keep commented unless needed
+    //  // Keep commented unless needed
 
     // Pass general notes separately
     return {
@@ -286,83 +223,109 @@ export const useReportGenerator = (
 
     if (headerSettings.headerMode === "image" && headerSettings.headerImage) {
       const headerImg = document.createElement("img");
-
       headerImg.src = headerSettings.headerImage;
-
       headerImg.style.width = "100%";
-      // headerImg.style.marginBottom = "5mm";
-
       wrapper.appendChild(headerImg);
-    } else if (headerSettings.headerMode !== "none") {
-      const customHeader = document.createElement("div");
-
-      customHeader.style.marginBottom = "5mm";
-      customHeader.style.borderBottom = "2px solid #000";
-      // customHeader.style.paddingBottom = "5mm";
-
-      customHeader.innerHTML = `
-      <div style="
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
-      ">
-
-        <div>
-
-          <div style="
-            font-size:28px;
-            font-weight:bold;
-            color:#2563eb;
-          ">
-            ${headerSettings.labName || ""}
-          </div>
-
-          <div style="
-            font-size:16px;
-            font-weight:bold;
-          ">
-            ${headerSettings.address || ""}
-          </div>
-
-          <div>
-            ${headerSettings.phone || ""}
-          </div>
-
-          <div>
-            ${headerSettings.email || ""}
-          </div>
-
-        </div>
-
-        <div style="text-align:right">
-
-          <div style="
-            font-size:18px;
-            font-weight:bold;
-          ">
-            ${headerSettings.doctorName || ""}
-          </div>
-
-          <div>
-            ${headerSettings.registrationNo || ""}
-          </div>
-
-          <div>
-            ${headerSettings.technicianName || ""}
-          </div>
-
-          <div>
-            ${headerSettings.website || ""}
-          </div>
-
-        </div>
-
-      </div>
-    `;
-
-      wrapper.appendChild(customHeader);
+      return wrapper;
     }
 
+    if (headerSettings.headerMode === "none") return wrapper;
+
+    const design = headerSettings.headerDesign || "classic";
+    const {
+      labName = "", doctorName = "", registrationNo = "",
+      technicianName = "", technicianDesignation = "",
+      address = "", phone = "", email = "",
+    } = headerSettings;
+
+    const techBlock = (technicianName || technicianDesignation) ? `
+      <div style="margin-top:3px; font-size:8.5pt; color:#555;">
+        ${technicianName ? `<span style="font-weight:600;">${technicianName}</span>` : ""}
+        ${technicianDesignation ? `<span> &bull; ${technicianDesignation}</span>` : ""}
+      </div>` : "";
+
+    let html = "";
+
+    if (design === "classic") {
+      // Left: lab info | Right: doctor + technician
+      html = `
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; padding-bottom:4mm; border-bottom:2.5px solid #000; margin-bottom:4mm;">
+          <div>
+            <div style="font-size:22pt; font-weight:bold; color:#1d4ed8; line-height:1.1;">${labName}</div>
+            ${address ? `<div style="font-size:8.5pt; color:#444; margin-top:2px;">${address}</div>` : ""}
+            <div style="font-size:8.5pt; color:#444; margin-top:2px;">
+              ${phone ? `&#128222; ${phone}` : ""}
+              ${phone && email ? " &nbsp;|&nbsp; " : ""}
+              ${email ? `&#9993; ${email}` : ""}
+            </div>
+          </div>
+          <div style="text-align:right;">
+            ${doctorName ? `<div style="font-size:13pt; font-weight:bold; color:#1d4ed8;">${doctorName}</div>` : ""}
+            ${registrationNo ? `<div style="font-size:8.5pt; color:#555;">Reg. No: ${registrationNo}</div>` : ""}
+            ${techBlock}
+          </div>
+        </div>`;
+
+    } else if (design === "centered") {
+      // Everything centered
+      html = `
+        <div style="text-align:center; padding-bottom:4mm; border-bottom:2.5px double #000; margin-bottom:4mm;">
+          <div style="font-size:24pt; font-weight:bold; color:#1d4ed8; letter-spacing:0.5px;">${labName}</div>
+          ${doctorName ? `<div style="font-size:12pt; font-weight:bold; margin-top:2px;">${doctorName}</div>` : ""}
+          ${registrationNo ? `<div style="font-size:8.5pt; color:#555;">Reg. No: ${registrationNo}</div>` : ""}
+          ${address ? `<div style="font-size:8.5pt; color:#444; margin-top:2px;">${address}</div>` : ""}
+          <div style="font-size:8.5pt; color:#444; margin-top:2px;">
+            ${phone ? `&#128222; ${phone}` : ""}
+            ${phone && email ? " &nbsp;|&nbsp; " : ""}
+            ${email ? `&#9993; ${email}` : ""}
+          </div>
+          ${(technicianName || technicianDesignation) ? `
+          <div style="margin-top:4px; font-size:8.5pt; color:#555; border-top:1px solid #ddd; padding-top:3px;">
+            Technician: ${technicianName}${technicianDesignation ? ` &bull; ${technicianDesignation}` : ""}
+          </div>` : ""}
+        </div>`;
+
+    } else if (design === "modern") {
+      // Colored banner top, white split below
+      html = `
+        <div style="margin-bottom:4mm;">
+          <div style="background:#1d4ed8; color:white; padding:4mm 6mm; display:flex; justify-content:space-between; align-items:center; border-radius:2px 2px 0 0;">
+            <div style="font-size:20pt; font-weight:bold; letter-spacing:0.5px;">${labName}</div>
+            <div style="text-align:right; font-size:8.5pt; opacity:0.9;">
+              ${phone ? `&#128222; ${phone}` : ""}
+              ${phone && email ? "<br>" : ""}
+              ${email ? `&#9993; ${email}` : ""}
+            </div>
+          </div>
+          <div style="background:#eff6ff; padding:3mm 6mm; display:flex; justify-content:space-between; align-items:center; border:1px solid #bfdbfe; border-top:none; border-radius:0 0 2px 2px; margin-bottom:2mm;">
+            <div style="font-size:8.5pt; color:#374151;">${address}</div>
+            <div style="text-align:right;">
+              ${doctorName ? `<div style="font-size:10pt; font-weight:bold; color:#1d4ed8;">${doctorName}</div>` : ""}
+              ${registrationNo ? `<div style="font-size:7.5pt; color:#555;">Reg: ${registrationNo}</div>` : ""}
+              ${techBlock}
+            </div>
+          </div>
+        </div>`;
+
+    } else if (design === "minimal") {
+      // Single thin line, compact
+      html = `
+        <div style="display:flex; justify-content:space-between; align-items:flex-end; padding-bottom:2mm; border-bottom:1.5px solid #374151; margin-bottom:4mm;">
+          <div>
+            <span style="font-size:18pt; font-weight:bold;">${labName}</span>
+            ${address ? `<span style="font-size:8pt; color:#6b7280; margin-left:8px;">${address}</span>` : ""}
+          </div>
+          <div style="text-align:right; font-size:8.5pt;">
+            ${doctorName ? `<div style="font-weight:bold;">${doctorName}${registrationNo ? ` &bull; ${registrationNo}` : ""}</div>` : ""}
+            <div style="color:#6b7280;">
+              ${phone || ""}${phone && email ? " | " : ""}${email || ""}
+            </div>
+            ${(technicianName || technicianDesignation) ? `<div style="color:#6b7280;">${technicianName}${technicianDesignation ? ` &bull; ${technicianDesignation}` : ""}</div>` : ""}
+          </div>
+        </div>`;
+    }
+
+    wrapper.innerHTML = html;
     return wrapper;
   };
 
@@ -371,58 +334,29 @@ export const useReportGenerator = (
 
     if (footerSettings.footerMode === "image" && footerSettings.footerImage) {
       const footerImg = document.createElement("img");
-
       footerImg.src = footerSettings.footerImage;
       footerImg.style.width = "100%";
-      // footerImg.style.marginTop = "10mm";
-
       wrapper.appendChild(footerImg);
     } else if (footerSettings.footerMode !== "none") {
       const footerDiv = document.createElement("div");
-
       footerDiv.style.marginTop = "5mm";
       footerDiv.style.borderTop = "1px solid #000";
-      // footerDiv.style.paddingTop = "5mm";
 
       footerDiv.innerHTML = `
-      <div style="
-        display:flex;
-        justify-content:space-between;
-        align-items:flex-end;
-      ">
+      <div style="display:flex; justify-content:space-between; align-items:flex-end; padding-top:3mm;">
 
-        <div style="
-          font-size:9pt;
-          max-width:70%;
-        ">
-          These are not diagnostic results.
-          Strictly for medical use only.
+        <div style="font-size:8.5pt; color:#444; font-style:italic; max-width:55%;">
+          These are not diagnostic results. Strictly for medical use only.
         </div>
 
-        <div style="text-align:center">
-
+        <div style="text-align:center;">
           ${
             footerSettings.signature
-              ? `
-                <img
-                  src="${footerSettings.signature}"
-                  style="
-                    max-width:120px;
-                    max-height:60px;
-                  "
-                />
-              `
+              ? `<img src="${footerSettings.signature}" style="max-width:120px; max-height:60px; display:block; margin:0 auto;" />`
               : ""
           }
-
-          <div style="font-weight:bold;">
-            ${footerSettings.verifiedBy || ""}
-          </div>
-
-          <div>
-            ${footerSettings.designation || ""}
-          </div>
-
+          <div style="font-weight:bold; font-size:9pt;">${footerSettings.verifiedBy || ""}</div>
+          <div style="font-size:8.5pt;">${footerSettings.designation || ""}</div>
         </div>
 
       </div>
@@ -513,11 +447,8 @@ export const useReportGenerator = (
     generalTestNotes,
     templateNotesMap,
   ) => {
-    // console.log("buildPrintHtmlStructure - Received currentReport:", JSON.stringify(currentReport, null, 2)); // Keep commented unless needed
-    console.log(
-      "buildPrintHtmlStructure - Received templateNotesMap:",
-      JSON.stringify(templateNotesMap),
-    ); // DEBUG LOG for notes map
+    //  // Keep commented unless needed
+// DEBUG LOG for notes map
 
     if (!currentReport) return null;
 
@@ -558,14 +489,12 @@ export const useReportGenerator = (
 
     // Basic container styling (same as before)
     printContainer.style.width = "210mm";
-    printContainer.style.minHeight = "297mm";
-    // printContainer.style.padding = "15mm";
+    // Do NOT set minHeight — let content determine height so PDF stays 1 page when content fits
     printContainer.style.boxSizing = "border-box";
     printContainer.style.fontFamily = "Arial, sans-serif";
     printContainer.style.backgroundColor = "white";
     printContainer.style.position = "relative";
     printContainer.style.fontSize = "11pt"; // Base font size
-    printContainer.style.marginTop = "-7mm";
 
     // if (
     //   reportSettings?.watermark?.enabled &&
@@ -723,13 +652,15 @@ export const useReportGenerator = (
 
         pageDiv.style.width = "100%";
         pageDiv.style.minHeight = "auto";
-
         pageDiv.style.position = "relative";
-
         pageDiv.style.background = "white";
         pageDiv.style.overflow = "hidden";
-        pageDiv.style.padding = "5mm 10mm";
-        // pageDiv.style.boxSizing = "border-box";
+        // In plain mode, add top space on every page so content clears the pre-printed letterhead
+        if (printMode === "plain") {
+          pageDiv.style.padding = `${plainTopMargin}mm 10mm 5mm 10mm`;
+        } else {
+          pageDiv.style.padding = "5mm 10mm";
+        }
 
         if (index < groupedResults.length - 1) {
           pageDiv.style.pageBreakAfter = "always";
@@ -740,33 +671,39 @@ export const useReportGenerator = (
           reportSettings?.watermark?.enabled &&
           reportSettings?.watermark?.image
         ) {
-          const watermark = document.createElement("img");
+          // Ensure pageDiv stretches to full A4 height so the watermark covers
+          // the entire page (header → footer), not just the content block
+          pageDiv.style.minHeight = "277mm"; // A4 297mm minus top+bottom margin
 
+          const watermark = document.createElement("img");
           watermark.src = reportSettings.watermark.image;
 
+          // Cover the full page area
           watermark.style.position = "absolute";
-
-          watermark.style.top = "50%";
-
-          watermark.style.left = "50%";
-
-          watermark.style.transform = "translate(-50%, -50%)";
-
-          watermark.style.width = "120mm";
-
+          watermark.style.top = "0";
+          watermark.style.left = "0";
+          watermark.style.width = "100%";
+          watermark.style.height = "100%";
+          watermark.style.objectFit = "contain";   // keeps aspect ratio, fills page
+          watermark.style.objectPosition = "center center";
           watermark.style.opacity = "0.08";
-
           watermark.style.pointerEvents = "none";
+          watermark.style.zIndex = "1";
 
-          watermark.style.zIndex = "0";
-
+          // Content wrapper stays above
+          pageDiv.style.isolation = "isolate";
           pageDiv.appendChild(watermark);
         }
 
+        // Content wrapper sits above the watermark
+        const contentWrapper = document.createElement("div");
+        contentWrapper.style.position = "relative";
+        contentWrapper.style.zIndex = "2";
+
         if (printMode === "official") {
-          pageDiv.appendChild(createHeader(headerSettings));
+          contentWrapper.appendChild(createHeader(headerSettings));
         }
-        pageDiv.appendChild(createPatientInfoSection(report));
+        contentWrapper.appendChild(createPatientInfoSection(report));
         // Determine formatting flags for THIS group
         const lowerCaseTemplateName = (group.templateName || "").toLowerCase();
         const isWidalTest = lowerCaseTemplateName.includes("widal test");
@@ -838,10 +775,7 @@ export const useReportGenerator = (
           ) {
             templateSpecificNotes =
               templateNotesMap[templateIdForNotes.toString()];
-            console.log(
-              `Widal Notes lookup for ${templateIdForNotes}:`,
-              templateSpecificNotes,
-            ); // DEBUG NOTES LOOKUP
+// DEBUG NOTES LOOKUP
           }
           if (templateSpecificNotes && templateSpecificNotes.trim() !== "") {
             const templateNotesDiv = document.createElement("div");
@@ -918,8 +852,7 @@ export const useReportGenerator = (
                 cell.style.fontSize = "11pt";
                 cell.style.padding = "6px 8px";
                 cell.style.textAlign = "left";
-                cell.style.borderTop = "1px solid #ccc";
-                cell.style.borderBottom = "1px solid #ccc";
+                cell.style.border = "none";
                 // cell.style.backgroundColor = '#f8f8f8'; // Removed background color
               }
 
@@ -974,7 +907,7 @@ export const useReportGenerator = (
                   nameCell.style.fontSize = "10pt";
                   nameCell.style.verticalAlign = "top";
                   if (param.isSubparameter) nameCell.style.paddingLeft = "20px";
-                  nameCell.style.border = "1px solid black"; // Add border
+                  nameCell.style.border = "none";
 
                   const resultValue =
                     param.value !== null && param.value !== undefined
@@ -982,11 +915,7 @@ export const useReportGenerator = (
                       : ""; // Ensure value is a string
                   resultCell.textContent = resultValue;
                   resultCell.style.padding = "3px 8px";
-                  // Align left if 2-column layout OR if it's Urine/RBS (3-column), else right
-                  resultCell.style.textAlign =
-                    shouldHideUnitAndReference || isThreeColumnTest
-                      ? "left"
-                      : "right";
+                  resultCell.style.textAlign = "center";
                   // Bold if abnormal OR if value is POSITIVE/REACTIVE/PRESENT (case-insensitive) or starts with "Present" and has "+"
                   const lowerResultValue = resultValue.toLowerCase();
                   const presentPlusRegex = /^present\s*\+{1,}$/; // Matches "present" followed by one or more "+"
@@ -1009,20 +938,20 @@ export const useReportGenerator = (
                     resultCell.style.width = "30%";
                   } // Else: 4 columns, use default/thead widths
                   resultCell.style.verticalAlign = "top";
-                  resultCell.style.border = "1px solid black"; // Add border
+                  resultCell.style.border = "none";
 
                   // Populate Unit cell only if it was created (i.e., not 2-column layout)
                   if (unitCell) {
                     unitCell.textContent = param.unit || "";
                     unitCell.style.padding = "3px 8px 3px 5px";
-                    unitCell.style.textAlign = "left";
+                    unitCell.style.textAlign = "center";
                     unitCell.style.fontSize = "10pt";
                     // Set width for 3-column layout
                     if (shouldHideOnlyReference) {
                       unitCell.style.width = "30%";
                     } // Else: 4 columns, use default/thead widths
                     unitCell.style.verticalAlign = "top";
-                    unitCell.style.border = "1px solid black"; // Add border
+                    unitCell.style.border = "none";
                   }
 
                   // Conditionally add the reference range cell (Hide if 2-column or 3-column layout)
@@ -1030,10 +959,10 @@ export const useReportGenerator = (
                     const rangeCell = row.insertCell(); // Only insert if 4 columns are needed
                     rangeCell.textContent = param.referenceRange || "";
                     rangeCell.style.padding = "3px 8px";
-                    rangeCell.style.textAlign = "left";
+                    rangeCell.style.textAlign = "center";
                     rangeCell.style.fontSize = "10pt";
                     rangeCell.style.verticalAlign = "top";
-                    rangeCell.style.border = "1px solid black"; // Add border
+                    rangeCell.style.border = "none";
                   }
                   // No 'else' needed, the cell is simply not created if shouldHideForThisGroup is true
                 }
@@ -1067,10 +996,7 @@ export const useReportGenerator = (
           ) {
             templateSpecificNotes =
               templateNotesMap[templateIdForNotes.toString()];
-            console.log(
-              `Notes lookup for ${templateIdForNotes}:`,
-              templateSpecificNotes,
-            ); // DEBUG NOTES LOOKUP
+// DEBUG NOTES LOOKUP
           }
 
           if (templateSpecificNotes && templateSpecificNotes.trim() !== "") {
@@ -1086,11 +1012,13 @@ export const useReportGenerator = (
         }
         // --- End Template-Specific Notes ---
 
-        pageDiv.appendChild(testGroupDiv);
+        contentWrapper.appendChild(testGroupDiv);
 
         if (printMode === "official") {
-          pageDiv.appendChild(createFooter(footerSettings));
+          contentWrapper.appendChild(createFooter(footerSettings));
         }
+
+        pageDiv.appendChild(contentWrapper);
         printContainer.appendChild(pageDiv);
       }); // End of groupedResults.forEach loop
 
@@ -1210,7 +1138,7 @@ export const useReportGenerator = (
     } else {
       setReportHtml("");
     }
-  }, [report, reportSettings, printMode]); // REMOVED hideTableHeadingAndReference from dependency array
+  }, [report, reportSettings, printMode, plainTopMargin]);
 
   return reportHtml; // Return the generated HTML string
 };
