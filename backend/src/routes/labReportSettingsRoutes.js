@@ -9,7 +9,10 @@ const { protect, authorize, checkLabAccess } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Lab report settings routes
+// Public route — no auth required (used by QR code / public report page)
+router.get('/labs/:labId/report-settings/public', getLabReportSettings);
+
+// Authenticated routes
 router.route('/labs/:labId/report-settings')
   .get(protect, checkLabAccess, getLabReportSettings)
   .put(protect, checkLabAccess, updateLabReportSettings);

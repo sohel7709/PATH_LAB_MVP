@@ -449,22 +449,15 @@ exports.testTemplate = async (req, res, next) => {
 
 exports.getPublicReportData = async (req, res) => {
   try {
-    const report = await Report.findById(req.params.id);
+    const report = await Report.findById(req.params.id)
+      .populate('lab', 'name address phone email');
 
     if (!report) {
-      return res.status(404).json({
-        success: false,
-        message: 'Report not found'
-      });
+      return res.status(404).json({ success: false, message: 'Report not found' });
     }
 
     res.status(200).json(report);
-
   } catch (error) {
-
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
