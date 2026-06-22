@@ -14,24 +14,18 @@ const LabListDebug = () => {
         
         // Get token from localStorage
         const token = localStorage.getItem('token');
-        console.log('Token from localStorage:', token ? 'Token exists' : 'No token');
-        
+                
         // Make the API call
-        console.log('Making API call to fetch labs...');
-        const response = await superAdmin.getLabs();
-        console.log('API Response:', response);
-        
+                const response = await superAdmin.getLabs();
+                
         setApiResponse(response);
         
         if (response.success) {
-          console.log('Successfully fetched labs:', response.data);
-        } else {
-          console.error('Failed to fetch labs:', response.message);
-          setError(response.message || 'Failed to fetch labs');
+                  } else {
+                    setError(response.message || 'Failed to fetch labs');
         }
       } catch (err) {
-        console.error('Error fetching labs:', err);
-        setError(err.message || 'An error occurred while fetching labs');
+                setError(err.message || 'An error occurred while fetching labs');
         setApiResponse({ error: err.toString() });
       } finally {
         setLoading(false);

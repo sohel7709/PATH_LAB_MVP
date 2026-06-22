@@ -95,13 +95,11 @@ export const injectPrintStyles = () => {
   // Append the style element to the document head
   document.head.appendChild(style);
   
-  console.log('Black-only print styles injected');
-};
+  };
 
 export const removePrintStyles = () => {
   const style = document.getElementById('black-only-print-styles');
   if (style) {
     style.remove();
-    console.log('Black-only print styles removed');
-  }
+      }
 };

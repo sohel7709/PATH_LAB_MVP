@@ -79,12 +79,6 @@ exports.createUser = async (req, res, next) => {
     const user = await User.create(userData);
     
     const createdUser = await User.findById(user._id).populate('lab', 'name');
-      id: createdUser._id,
-      name: createdUser.name,
-      email: createdUser.email,
-      role: createdUser.role,
-      lab: createdUser.lab ? { id: createdUser.lab._id, name: createdUser.lab.name } : 'No lab'
-    });
 
     res.status(201).json({
       success: true,

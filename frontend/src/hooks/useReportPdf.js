@@ -22,7 +22,7 @@ export const useReportPdf = (report, reportHtml) => {
 
   // Common PDF generation options
   const getPdfOptions = (filename) => ({
-    margin: [5, 0, 40, 0], // Top margin changed to 47mm: [Top 47mm, Right 0, Bottom 40mm, Left 0]
+    margin: [5, 0, 5, 0], // Small equal top/bottom margins; content height drives page count
     filename: filename || 'Report.pdf',
     image: { type: 'jpeg', quality: 0.98 },
     html2canvas: {
@@ -31,19 +31,16 @@ export const useReportPdf = (report, reportHtml) => {
       letterRendering: true,
       logging: false,
       onclone: (clonedDoc) => {
-        // Find the main container within the cloned document
-        const clonedPrintContainer = clonedDoc.body.firstChild; // Assuming the report div is the first child
+        const clonedPrintContainer = clonedDoc.body.firstChild;
         if (clonedPrintContainer && clonedPrintContainer.style) {
-          // Ensure the cloned container doesn't inherit fixed off-screen positioning
           clonedPrintContainer.style.position = 'static';
           clonedPrintContainer.style.top = 'auto';
           clonedPrintContainer.style.left = 'auto';
-          clonedPrintContainer.style.height = 'auto'; // Allow natural height
-          clonedPrintContainer.style.minHeight = '297mm'; // Still suggest A4 height
-        } else {
-          console.warn('Could not find cloned container or its style for PDF generation adjustments.');
+          // Let the element shrink to its actual content height so html2pdf
+          // doesn't add extra blank space that forces a second page.
+          clonedPrintContainer.style.height = 'auto';
+          clonedPrintContainer.style.minHeight = 'unset';
         }
-
       }
     },
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
@@ -92,14 +89,13 @@ export const useReportPdf = (report, reportHtml) => {
           printWindow.print();
           // Optional: Update report status after printing attempt
           // try { await apiReports.update(report._id, { status: 'completed' }); }
-          // catch (err) { console.error('Failed to update report status:', err); }
+          // catch (err) {  }
         });
       } else {
         alert('Please allow popups for this website to enable printing.');
       }
     } catch (error) {
-      console.error('Error generating or printing report:', error);
-      alert(`Failed to generate or print report: ${error.message}`);
+            alert(`Failed to generate or print report: ${error.message}`);
     } finally {
       setIsPrinting(false);
     }
@@ -141,8 +137,7 @@ export const useReportPdf = (report, reportHtml) => {
       document.body.removeChild(tempContainer); // Clean up
 
     } catch (error) {
-      console.error('Error generating PDF for download:', error);
-      alert(`Failed to generate PDF for download: ${error.message}`);
+            alert(`Failed to generate PDF for download: ${error.message}`);
     } finally {
       setIsDownloading(false);
     }

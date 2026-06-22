@@ -7,6 +7,7 @@ export const useReportGenerator = (
   reportSettings = null,
   printMode = "official",
   plainTopMargin = 40,
+  plainColorMode = "bw", // "bw" | "color"
 ) => {
   const [reportHtml, setReportHtml] = useState("");
 
@@ -157,65 +158,230 @@ export const useReportGenerator = (
   };
 
   const createPatientInfoSection = (currentReport) => {
-    const patientInfoDiv = document.createElement("div");
+    const wrapper = document.createElement("div");
 
-    patientInfoDiv.style.display = "grid";
-    patientInfoDiv.style.gridTemplateColumns = "1fr auto 1fr";
-    patientInfoDiv.style.columnGap = "5mm";
-    patientInfoDiv.style.padding = "5px 0";
-    patientInfoDiv.style.borderTop = "2px solid black";
-    patientInfoDiv.style.borderBottom = "2px solid black";
-    // patientInfoDiv.style.marginBottom = "5mm";
-    // patientInfoDiv.style.marginTop = "-5mm";
+    const sampleDate = currentReport.testInfo?.sampleCollectionDate
+      ? new Date(currentReport.testInfo.sampleCollectionDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+      : "N/A";
+    const reportDate = currentReport.createdAt
+      ? new Date(currentReport.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+      : "N/A";
+    const gender = currentReport.patientInfo?.gender || "";
+    const genderLabel = gender ? gender.charAt(0).toUpperCase() + gender.slice(1) : "N/A";
 
-    patientInfoDiv.innerHTML = `
-    <div style="display:flex;flex-direction:column;gap:2px;">
-      <div>
-        <strong>Patient Name:</strong>
-        ${currentReport.patientInfo?.designation || ""}
-        ${currentReport.patientInfo?.name || "N/A"}
-      </div>
-
-      <div>
-        <strong>Age/Gender:</strong>
-        ${currentReport.patientInfo?.age || "N/A"}
-        /
-        ${currentReport.patientInfo?.gender || "N/A"}
-      </div>
-
-      <div>
-        <strong>Patient ID:</strong>
-        ${currentReport.patientInfo?.patientId || "N/A"}
-      </div>
-    </div>
-
+    wrapper.innerHTML = `
     <div style="
-      width:20mm;
-      height:20mm;
-      display:flex;
-      align-items:center;
-      justify-content:center;
+      background: #f0f4ff;
+      border: 1.5px solid #c7d7f7;
+      border-radius: 6px;
+      margin: 3mm 0 4mm 0;
+      overflow: hidden;
     ">
-      <img
-        src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=https://labnexus.in/view-report/${currentReport._id}"
-        style="width:20mm;height:20mm;"
-      />
-    </div>
+      <!-- Title bar -->
+      <div style="
+        background: #1e40af;
+        color: white;
+        font-size: 8pt;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        padding: 2.5px 8px;
+      ">Patient & Sample Details</div>
 
-    <div style="display:flex;flex-direction:column;gap:2px;">
-      <div>
-        <strong>Report Date:</strong>
-        ${new Date(currentReport.createdAt).toLocaleDateString("en-GB")}
+      <!-- Info grid -->
+      <div style="display:grid; grid-template-columns: 1fr 1fr auto; gap: 0; padding: 4px 0;">
+
+        <!-- Left column: Patient info -->
+        <div style="padding: 4px 8px; border-right: 1px solid #c7d7f7;">
+          <table style="width:100%; border-collapse:collapse; font-size:9pt;">
+            <tr>
+              <td style="color:#475569; padding:1.5px 0; width:38%; vertical-align:top;">Patient&nbsp;Name</td>
+              <td style="padding:1.5px 0; vertical-align:top;">:&nbsp;</td>
+              <td style="font-weight:700; color:#0f172a; padding:1.5px 0; vertical-align:top;">
+                ${currentReport.patientInfo?.designation || ""} ${currentReport.patientInfo?.name || "N/A"}
+              </td>
+            </tr>
+            <tr>
+              <td style="color:#475569; padding:1.5px 0; vertical-align:top;">Age / Gender</td>
+              <td style="padding:1.5px 0; vertical-align:top;">:&nbsp;</td>
+              <td style="color:#0f172a; padding:1.5px 0; vertical-align:top;">
+                <strong>${currentReport.patientInfo?.age || "N/A"} Yrs</strong> / ${genderLabel}
+              </td>
+            </tr>
+            <tr>
+              <td style="color:#475569; padding:1.5px 0; vertical-align:top;">Patient&nbsp;ID</td>
+              <td style="padding:1.5px 0; vertical-align:top;">:&nbsp;</td>
+              <td style="color:#0f172a; font-family:monospace; font-size:8.5pt; padding:1.5px 0; vertical-align:top;">
+                ${currentReport.patientInfo?.patientId || "N/A"}
+              </td>
+            </tr>
+            ${currentReport.patientInfo?.contact?.phone ? `
+            <tr>
+              <td style="color:#475569; padding:1.5px 0; vertical-align:top;">Contact</td>
+              <td style="padding:1.5px 0; vertical-align:top;">:&nbsp;</td>
+              <td style="color:#0f172a; padding:1.5px 0; vertical-align:top;">${currentReport.patientInfo.contact.phone}</td>
+            </tr>` : ""}
+          </table>
+        </div>
+
+        <!-- Right column: Test / sample info -->
+        <div style="padding: 4px 8px; border-right: 1px solid #c7d7f7;">
+          <table style="width:100%; border-collapse:collapse; font-size:9pt;">
+            <tr>
+              <td style="color:#475569; padding:1.5px 0; width:42%; vertical-align:top;">Sample&nbsp;Date</td>
+              <td style="padding:1.5px 0; vertical-align:top;">:&nbsp;</td>
+              <td style="color:#0f172a; padding:1.5px 0; vertical-align:top;">${sampleDate}</td>
+            </tr>
+            <tr>
+              <td style="color:#475569; padding:1.5px 0; vertical-align:top;">Report&nbsp;Date</td>
+              <td style="padding:1.5px 0; vertical-align:top;">:&nbsp;</td>
+              <td style="color:#0f172a; font-weight:600; padding:1.5px 0; vertical-align:top;">${reportDate}</td>
+            </tr>
+            <tr>
+              <td style="color:#475569; padding:1.5px 0; vertical-align:top;">Ref.&nbsp;Doctor</td>
+              <td style="padding:1.5px 0; vertical-align:top;">:&nbsp;</td>
+              <td style="color:#0f172a; padding:1.5px 0; vertical-align:top;">${currentReport.testInfo?.referenceDoctor || "—"}</td>
+            </tr>
+            <tr>
+              <td style="color:#475569; padding:1.5px 0; vertical-align:top;">Sample&nbsp;ID</td>
+              <td style="padding:1.5px 0; vertical-align:top;">:&nbsp;</td>
+              <td style="color:#0f172a; font-family:monospace; font-size:8.5pt; padding:1.5px 0; vertical-align:top;">${currentReport.testInfo?.sampleId || "—"}</td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- QR code -->
+        <div style="
+          padding: 4px 8px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 2px;
+        ">
+          <img
+            src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=https://labnexus.in/view-report/${currentReport._id}"
+            style="width:18mm; height:18mm;"
+            crossorigin="anonymous"
+          />
+          <div style="font-size:6pt; color:#64748b; text-align:center;">Scan to verify</div>
+        </div>
+
       </div>
+    </div>
+    `;
+    return wrapper;
+  };
 
-      <div>
-        <strong>Ref. Doctor:</strong>
-        ${currentReport.testInfo?.referenceDoctor || "N/A"}
+  // ── Plain B&W patient info ──────────────────────────────────────────────────
+  const createPlainPatientInfoSection = (currentReport) => {
+    const wrapper = document.createElement("div");
+
+    const sampleDate = currentReport.testInfo?.sampleCollectionDate
+      ? new Date(currentReport.testInfo.sampleCollectionDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+      : "N/A";
+    const reportDate = currentReport.createdAt
+      ? new Date(currentReport.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+      : "N/A";
+    const gender = currentReport.patientInfo?.gender || "";
+    const genderLabel = gender ? gender.charAt(0).toUpperCase() + gender.slice(1) : "N/A";
+
+    wrapper.innerHTML = `
+    <div style="border: 1.5px solid #000; margin: 3mm 0 4mm 0;">
+      <!-- Header bar -->
+      <div style="
+        background: #000;
+        color: #fff;
+        font-size: 8pt;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        padding: 2px 6px;
+      ">Patient &amp; Sample Details</div>
+
+      <!-- Three-column grid: patient | sample | QR -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr auto; border-top: none;">
+
+        <!-- Left: Patient info -->
+        <div style="padding: 4px 8px; border-right: 1px solid #000;">
+          <table style="width:100%; border-collapse:collapse; font-size:9pt; color:#000;">
+            <tr>
+              <td style="padding: 1.5px 0; width:38%; font-weight:600;">Patient Name</td>
+              <td style="padding: 1.5px 0; width:5%;">:</td>
+              <td style="padding: 1.5px 0; font-weight:700; text-transform:uppercase;">
+                ${currentReport.patientInfo?.designation || ""} ${currentReport.patientInfo?.name || "N/A"}
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 1.5px 0; font-weight:600;">Age / Gender</td>
+              <td style="padding: 1.5px 0;">:</td>
+              <td style="padding: 1.5px 0;">
+                <strong>${currentReport.patientInfo?.age || "N/A"} Yrs</strong> / ${genderLabel}
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 1.5px 0; font-weight:600;">Patient ID</td>
+              <td style="padding: 1.5px 0;">:</td>
+              <td style="padding: 1.5px 0; font-family:monospace; font-size:8.5pt;">
+                ${currentReport.patientInfo?.patientId || "N/A"}
+              </td>
+            </tr>
+            ${currentReport.patientInfo?.contact?.phone ? `
+            <tr>
+              <td style="padding: 1.5px 0; font-weight:600;">Phone</td>
+              <td style="padding: 1.5px 0;">:</td>
+              <td style="padding: 1.5px 0;">${currentReport.patientInfo.contact.phone}</td>
+            </tr>` : ""}
+          </table>
+        </div>
+
+        <!-- Middle: Test / sample info -->
+        <div style="padding: 4px 8px; border-right: 1px solid #000;">
+          <table style="width:100%; border-collapse:collapse; font-size:9pt; color:#000;">
+            <tr>
+              <td style="padding: 1.5px 0; width:44%; font-weight:600;">Sample Date</td>
+              <td style="padding: 1.5px 0; width:5%;">:</td>
+              <td style="padding: 1.5px 0;">${sampleDate}</td>
+            </tr>
+            <tr>
+              <td style="padding: 1.5px 0; font-weight:600;">Report Date</td>
+              <td style="padding: 1.5px 0;">:</td>
+              <td style="padding: 1.5px 0; font-weight:700;">${reportDate}</td>
+            </tr>
+            <tr>
+              <td style="padding: 1.5px 0; font-weight:600;">Ref. Doctor</td>
+              <td style="padding: 1.5px 0;">:</td>
+              <td style="padding: 1.5px 0;">${currentReport.testInfo?.referenceDoctor || "—"}</td>
+            </tr>
+            <tr>
+              <td style="padding: 1.5px 0; font-weight:600;">Sample ID</td>
+              <td style="padding: 1.5px 0;">:</td>
+              <td style="padding: 1.5px 0; font-family:monospace; font-size:8.5pt;">${currentReport.testInfo?.sampleId || "—"}</td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- Right: QR code -->
+        <div style="
+          padding: 4px 6px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 2px;
+        ">
+          <img
+            src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&color=000000&bgcolor=ffffff&data=https://labnexus.in/view-report/${currentReport._id}"
+            style="width:19mm; height:19mm; display:block;"
+            crossorigin="anonymous"
+          />
+          <div style="font-size:6pt; color:#000; text-align:center; font-weight:600; letter-spacing:0.3px;">SCAN TO VERIFY</div>
+        </div>
+
       </div>
     </div>
-  `;
-
-    return patientInfoDiv;
+    `;
+    return wrapper;
   };
 
   const createHeader = (headerSettings) => {
@@ -489,12 +655,13 @@ export const useReportGenerator = (
 
     // Basic container styling (same as before)
     printContainer.style.width = "210mm";
-    // Do NOT set minHeight — let content determine height so PDF stays 1 page when content fits
     printContainer.style.boxSizing = "border-box";
-    printContainer.style.fontFamily = "Arial, sans-serif";
+    printContainer.style.fontFamily = "'Arial', 'Helvetica', sans-serif";
     printContainer.style.backgroundColor = "white";
     printContainer.style.position = "relative";
-    printContainer.style.fontSize = "11pt"; // Base font size
+    printContainer.style.fontSize = "10pt";
+    printContainer.style.color = "#0f172a";
+    printContainer.style.lineHeight = "1.45";
 
     // if (
     //   reportSettings?.watermark?.enabled &&
@@ -672,8 +839,14 @@ export const useReportGenerator = (
 
         if (printMode === "official") {
           contentWrapper.appendChild(createHeader(headerSettings));
+          contentWrapper.appendChild(createPatientInfoSection(report));
+        } else if (plainColorMode === "color") {
+          // Plain colour mode — same patient info as official but no header/footer
+          contentWrapper.appendChild(createPatientInfoSection(report));
+        } else {
+          // Plain B&W mode — pure black & white, printer-optimised
+          contentWrapper.appendChild(createPlainPatientInfoSection(report));
         }
-        contentWrapper.appendChild(createPatientInfoSection(report));
         // Determine formatting flags for THIS group
         const lowerCaseTemplateName = (group.templateName || "").toLowerCase();
         const isWidalTest = lowerCaseTemplateName.includes("widal test");
@@ -726,12 +899,34 @@ export const useReportGenerator = (
         //         }
 
         // Template Name Header
-        const groupHeading = document.createElement("h3");
-        groupHeading.textContent = group.templateName;
+        const groupHeading = document.createElement("div");
+        groupHeading.style.margin = "5mm 0 2mm 0";
         groupHeading.style.textAlign = "center";
-        groupHeading.style.fontWeight = "bold";
-        // groupHeading.style.margin = "10px 0 8px 0";
-        groupHeading.style.fontSize = "13pt";
+
+        const isBW = printMode === "plain" && plainColorMode === "bw";
+        groupHeading.innerHTML = isBW
+          ? `<div style="
+              display:inline-block;
+              border: 1.5px solid #000;
+              font-size: 11pt;
+              font-weight: 700;
+              letter-spacing: 0.5px;
+              padding: 2px 18px;
+              text-transform: uppercase;
+              color: #000;
+              background: #fff;
+            ">${group.templateName}</div>`
+          : `<div style="
+              display: inline-block;
+              background: #1e3a5f;
+              color: white;
+              font-size: 11pt;
+              font-weight: 700;
+              letter-spacing: 0.5px;
+              padding: 3px 20px;
+              border-radius: 3px;
+              text-transform: uppercase;
+            ">${group.templateName}</div>`;
         testGroupDiv.appendChild(groupHeading);
 
         // --- Widal Test Special Case: Render Notes BEFORE Table ---
@@ -749,14 +944,19 @@ export const useReportGenerator = (
           }
           if (templateSpecificNotes && templateSpecificNotes.trim() !== "") {
             const templateNotesDiv = document.createElement("div");
-            templateNotesDiv.style.marginTop = "5px";
-            templateNotesDiv.style.marginBottom = "10px"; // Space before table
-            templateNotesDiv.style.fontSize = "10pt";
-            templateNotesDiv.style.fontStyle = "italic";
-            templateNotesDiv.style.whiteSpace = "pre-wrap";
-            templateNotesDiv.style.textAlign = "left"; // Ensure notes are left-aligned
-            templateNotesDiv.innerHTML = `${templateSpecificNotes.replace(/\n/g, "<br>")}`; // Replace newlines with <br> for HTML
-            testGroupDiv.appendChild(templateNotesDiv); // Append notes to group div BEFORE table
+            templateNotesDiv.style.cssText = `
+              margin: 4px 0 6px 0;
+              padding: 5px 8px;
+              background: #fefce8;
+              border-left: 3px solid #f59e0b;
+              border-radius: 0 4px 4px 0;
+              font-size: 8.5pt;
+              font-style: italic;
+              color: #78350f;
+              white-space: pre-wrap;
+            `;
+            templateNotesDiv.innerHTML = `<strong style="font-style:normal;">Note:</strong> ${templateSpecificNotes.replace(/\n/g, "<br>")}`;
+            testGroupDiv.appendChild(templateNotesDiv);
           }
         }
         // --- End Widal Test Notes ---
@@ -765,39 +965,46 @@ export const useReportGenerator = (
         const table = document.createElement("table");
         table.style.width = "100%";
         table.style.borderCollapse = "collapse";
-        table.style.border = "none";
         table.style.tableLayout = "fixed";
+        table.style.marginTop = "2mm";
+        // B&W: add outer border around entire table
+        table.style.border = isBW ? "1.5px solid #000" : "none";
+
+        // Table header styles
+        const thStyle = isBW
+          ? `background:#000; color:#fff; font-size:8.5pt; font-weight:700;
+             text-transform:uppercase; letter-spacing:0.4px; padding:4px 8px;
+             text-align:center; border:1px solid #000;`
+          : `background:#1e3a5f; color:white; font-size:8.5pt; font-weight:700;
+             text-transform:uppercase; letter-spacing:0.6px; padding:5px 8px;
+             text-align:center; border:none;`;
 
         // Conditionally add the table header (Show unless in the hide list or Widal)
         if (!shouldHideHeader) {
           const thead = document.createElement("thead");
-          // Adjust header based on whether it's a 3-column or 4-column layout
           if (shouldHideOnlyReference) {
-            // 3-Column Header (Param, Result, Unit) - Center Aligned
             thead.innerHTML = `
               <tr>
-                <th style="width: 40%; text-align: center; font-weight: bold; text-transform: uppercase; font-size: 10pt; padding: 3px 8px; border: 1px solid black;">Parameter</th>
-                <th style="width: 30%; text-align: center; font-weight: bold; text-transform: uppercase; font-size: 10pt; padding: 3px 8px; border: 1px solid black;">Result</th>
-                <th style="width: 30%; text-align: center; font-weight: bold; text-transform: uppercase; font-size: 10pt; padding: 3px 8px; border: 1px solid black;">Unit</th>
-              </tr>
-            `;
+                <th style="${thStyle} width:44%; text-align:left;">Parameter</th>
+                <th style="${thStyle} width:28%;">Result</th>
+                <th style="${thStyle} width:28%;">Unit</th>
+              </tr>`;
           } else {
-            // 4-Column Header (Default) - Center Aligned
             thead.innerHTML = `
               <tr>
-                <th style="width: 40%; text-align: center; font-weight: bold; text-transform: uppercase; font-size: 10pt; padding: 3px 8px; border: 1px solid black;">Parameter</th>
-                <th style="width: 20%; text-align: center; font-weight: bold; text-transform: uppercase; font-size: 10pt; padding: 3px 8px; border: 1px solid black;">Result</th>
-                <th style="width: 10%; text-align: center; font-weight: bold; text-transform: uppercase; font-size: 10pt; padding: 3px 8px; border: 1px solid black;">Unit</th>
-                <th style="width: 30%; text-align: center; font-weight: bold; text-transform: uppercase; font-size: 10pt; padding: 3px 8px; border: 1px solid black;">Reference Range</th>
-              </tr>
-            `;
+                <th style="${thStyle} width:40%; text-align:left;">Parameter</th>
+                <th style="${thStyle} width:18%;">Result</th>
+                <th style="${thStyle} width:12%;">Unit</th>
+                <th style="${thStyle} width:30%;">Biological Ref. Interval</th>
+              </tr>`;
           }
           table.appendChild(thead);
         }
 
         const tbody = document.createElement("tbody");
+        let rowIndex = 0; // for alternating row color
+
         if (group.parameters && group.parameters.length > 0) {
-          // Group parameters by section within the template group
           const parametersBySection = group.parameters.reduce((acc, param) => {
             const sectionKey = param.section || "Default";
             if (!acc[sectionKey]) acc[sectionKey] = [];
@@ -805,152 +1012,120 @@ export const useReportGenerator = (
             return acc;
           }, {});
 
-          Object.entries(parametersBySection).forEach(
-            ([sectionTitle, sectionParams]) => {
-              // Render section title row if not 'Default'
-              if (sectionTitle && sectionTitle !== "Default") {
-                const sectionRow = tbody.insertRow();
-                const cell = sectionRow.insertCell();
-                // Adjust colspan based on hidden columns
-                cell.colSpan = shouldHideUnitAndReference
-                  ? 2
-                  : shouldHideOnlyReference
-                    ? 3
-                    : 4; // Default to 4 if no hiding
-                cell.textContent = sectionTitle;
-                cell.style.fontWeight = "bold";
-                cell.style.fontSize = "11pt";
-                cell.style.padding = "6px 8px";
-                cell.style.textAlign = "left";
-                cell.style.border = "none";
-                // cell.style.backgroundColor = '#f8f8f8'; // Removed background color
-              }
+          const colSpan = shouldHideUnitAndReference ? 2 : shouldHideOnlyReference ? 3 : 4;
 
-              // Render parameters for this section
-              sectionParams.forEach((param) => {
-                const row = tbody.insertRow();
-                if (param.isHeader) {
-                  // This is a parameter acting as a header
-                  const cell = row.insertCell();
-                  // Adjust colspan based on hidden columns
-                  cell.colSpan = shouldHideUnitAndReference
-                    ? 2
-                    : shouldHideOnlyReference
-                      ? 3
-                      : 4; // Default to 4
-                  cell.textContent = param.parameter; // Use param.parameter for header text
-                  cell.style.fontWeight = "bold";
-                  cell.style.fontSize = "11pt";
-                  cell.style.padding = "6px 8px";
-                  cell.style.textAlign = "left";
-                  // cell.style.backgroundColor = '#f0f0f0'; // Removed background color
-                } else {
-                  const isAbnormalByFlag =
-                    param.flag === "high" ||
-                    param.flag === "low" ||
-                    param.flag === "critical";
-                  const isAbnormalByRange = isOutsideRange(
-                    param.value,
-                    param.referenceRange,
-                    currentReport.patientInfo?.gender,
-                  );
-                  const isAbnormal = isAbnormalByFlag || isAbnormalByRange;
+          Object.entries(parametersBySection).forEach(([sectionTitle, sectionParams]) => {
+            // Section divider row
+            if (sectionTitle && sectionTitle !== "Default") {
+              const sectionRow = tbody.insertRow();
+              const cell = sectionRow.insertCell();
+              cell.colSpan = colSpan;
+              cell.textContent = sectionTitle;
+              cell.style.cssText = isBW
+                ? `background:#d0d0d0; font-weight:700; font-size:8.5pt; color:#000; padding:3px 8px; text-transform:uppercase; letter-spacing:0.4px; border-top:1px solid #000; border-bottom:1px solid #000;`
+                : `background:#e8edf5; font-weight:700; font-size:9pt; color:#1e3a5f; padding:4px 8px; text-transform:uppercase; letter-spacing:0.4px; border:none;`;
+            }
+
+            sectionParams.forEach((param) => {
+              const row = tbody.insertRow();
+              const isEven = rowIndex % 2 === 0;
+              rowIndex++;
+
+              if (param.isHeader) {
+                const cell = row.insertCell();
+                cell.colSpan = colSpan;
+                cell.textContent = param.parameter;
+                cell.style.cssText = isBW
+                  ? `background:#e8e8e8; font-weight:700; font-size:9.5pt; color:#000;
+                     padding:3px 8px; text-align:left; border-bottom:1px solid #000; border-top:1px solid #000;`
+                  : `background:#dbeafe; font-weight:700; font-size:9.5pt; color:#1e40af;
+                     padding:3px 8px; text-align:left; border-bottom:1px solid #bfdbfe;`;
+              } else {
+                const isAbnormalByFlag = param.flag === "high" || param.flag === "low" || param.flag === "critical";
+                const isAbnormalByRange = isOutsideRange(param.value, param.referenceRange, currentReport.patientInfo?.gender);
+                const isAbnormal = isAbnormalByFlag || isAbnormalByRange;
+                const isHigh = param.flag === "high" || (isAbnormalByRange && !isAbnormalByFlag);
+                const isCritical = param.flag === "critical";
+
+                const resultValue = param.value !== null && param.value !== undefined ? String(param.value) : "";
+                const lowerResultValue = resultValue.toLowerCase();
+                const presentPlusRegex = /^present\s*\+{1,}$/;
+                const isPositiveValue = lowerResultValue === "positive" || lowerResultValue === "reactive" || lowerResultValue === "present" || presentPlusRegex.test(lowerResultValue);
+                const shouldBoldResult = isAbnormal || isPositiveValue;
+
+                if (isBW) {
+                  // ── BLACK & WHITE row ──────────────────────────────────────
+                  // Alternating: white / very light grey stripe
+                  row.style.background = isEven ? "#fff" : "#f4f4f4";
+
+                  const bwCellBase = `color:#000; font-size:9pt; padding:3px 7px; vertical-align:middle; border-bottom:0.5px solid #bbb;`;
+
+                  // Abnormal text marker: (H) high, (L) low, (*) critical — printed in bold
+                  const abnormalMarker = isCritical
+                    ? ` <strong>(*)</strong>`
+                    : isAbnormal
+                    ? ` <strong>${isHigh ? "(H)" : "(L)"}</strong>`
+                    : "";
 
                   const nameCell = row.insertCell();
+                  nameCell.style.cssText = `${bwCellBase} ${param.isSubparameter ? "padding-left:18px;" : ""}`;
+                  nameCell.innerHTML = param.parameter || "";
+
                   const resultCell = row.insertCell();
-                  // Conditionally insert Unit cell only if Unit column should be shown
-                  let unitCell = null;
+                  resultCell.style.cssText = `${bwCellBase} text-align:center; font-weight:${shouldBoldResult ? "700" : "500"};`;
+                  resultCell.innerHTML = `${resultValue}${abnormalMarker}`;
+
                   if (!shouldHideUnitAndReference) {
-                    unitCell = row.insertCell();
-                  }
-
-                  nameCell.textContent = param.parameter; // Corrected from param.name
-                  nameCell.style.padding = "3px 8px";
-                  // Set widths based on column layout
-                  if (shouldHideUnitAndReference) {
-                    // 2 columns
-                    nameCell.style.width = "50%";
-                  } else if (shouldHideOnlyReference) {
-                    // 3 columns
-                    nameCell.style.width = "40%";
-                  } // Else: 4 columns, use default/thead widths
-                  nameCell.style.fontSize = "10pt";
-                  nameCell.style.verticalAlign = "top";
-                  if (param.isSubparameter) nameCell.style.paddingLeft = "20px";
-                  nameCell.style.border = "none";
-
-                  const resultValue =
-                    param.value !== null && param.value !== undefined
-                      ? String(param.value)
-                      : ""; // Ensure value is a string
-                  resultCell.textContent = resultValue;
-                  resultCell.style.padding = "3px 8px";
-                  resultCell.style.textAlign = "center";
-                  // Bold if abnormal OR if value is POSITIVE/REACTIVE/PRESENT (case-insensitive) or starts with "Present" and has "+"
-                  const lowerResultValue = resultValue.toLowerCase();
-                  const presentPlusRegex = /^present\s*\+{1,}$/; // Matches "present" followed by one or more "+"
-                  const shouldBoldResultText =
-                    isAbnormal ||
-                    lowerResultValue === "positive" ||
-                    lowerResultValue === "reactive" ||
-                    lowerResultValue === "present" ||
-                    presentPlusRegex.test(lowerResultValue);
-                  resultCell.style.fontWeight = shouldBoldResultText
-                    ? "bold"
-                    : "normal";
-                  resultCell.style.fontSize = "10pt";
-                  // Set widths based on column layout
-                  if (shouldHideUnitAndReference) {
-                    // 2 columns
-                    resultCell.style.width = "50%";
-                  } else if (shouldHideOnlyReference) {
-                    // 3 columns
-                    resultCell.style.width = "30%";
-                  } // Else: 4 columns, use default/thead widths
-                  resultCell.style.verticalAlign = "top";
-                  resultCell.style.border = "none";
-
-                  // Populate Unit cell only if it was created (i.e., not 2-column layout)
-                  if (unitCell) {
+                    const unitCell = row.insertCell();
+                    unitCell.style.cssText = `${bwCellBase} text-align:center;`;
                     unitCell.textContent = param.unit || "";
-                    unitCell.style.padding = "3px 8px 3px 5px";
-                    unitCell.style.textAlign = "center";
-                    unitCell.style.fontSize = "10pt";
-                    // Set width for 3-column layout
-                    if (shouldHideOnlyReference) {
-                      unitCell.style.width = "30%";
-                    } // Else: 4 columns, use default/thead widths
-                    unitCell.style.verticalAlign = "top";
-                    unitCell.style.border = "none";
                   }
 
-                  // Conditionally add the reference range cell (Hide if 2-column or 3-column layout)
                   if (!shouldHideUnitAndReference && !shouldHideOnlyReference) {
-                    const rangeCell = row.insertCell(); // Only insert if 4 columns are needed
+                    const rangeCell = row.insertCell();
+                    rangeCell.style.cssText = `${bwCellBase} text-align:center;`;
                     rangeCell.textContent = param.referenceRange || "";
-                    rangeCell.style.padding = "3px 8px";
-                    rangeCell.style.textAlign = "center";
-                    rangeCell.style.fontSize = "10pt";
-                    rangeCell.style.verticalAlign = "top";
-                    rangeCell.style.border = "none";
                   }
-                  // No 'else' needed, the cell is simply not created if shouldHideForThisGroup is true
+
+                } else {
+                  // ── COLOUR row ─────────────────────────────────────────────
+                  row.style.background = isCritical ? "#fff1f2" : isAbnormal ? "#fffbeb" : isEven ? "#ffffff" : "#f8faff";
+
+                  const arrowIndicator = isCritical
+                    ? `<span style="color:#dc2626; font-weight:900; font-size:9pt; margin-left:3px;">&#9888;</span>`
+                    : isAbnormal
+                    ? `<span style="color:#d97706; font-weight:900; font-size:8pt; margin-left:3px;">${isHigh ? "&#9650;" : "&#9660;"}</span>`
+                    : "";
+
+                  const nameCell = row.insertCell();
+                  nameCell.style.cssText = `padding:4px 8px; font-size:9.5pt; color:${isAbnormal ? "#0f172a" : "#334155"}; vertical-align:middle; border:none; border-bottom:1px solid #f1f5f9; ${param.isSubparameter ? "padding-left:20px;" : ""}`;
+                  nameCell.innerHTML = param.parameter || "";
+
+                  const resultCell = row.insertCell();
+                  resultCell.style.cssText = `padding:4px 8px; text-align:center; font-size:9.5pt; font-weight:${shouldBoldResult ? "700" : "500"}; color:${isCritical ? "#dc2626" : isAbnormal ? "#b45309" : "#0f172a"}; vertical-align:middle; border:none; border-bottom:1px solid #f1f5f9;`;
+                  resultCell.innerHTML = `${resultValue}${arrowIndicator}`;
+
+                  if (!shouldHideUnitAndReference) {
+                    const unitCell = row.insertCell();
+                    unitCell.style.cssText = `padding:4px 6px; text-align:center; font-size:8.5pt; color:#64748b; vertical-align:middle; border:none; border-bottom:1px solid #f1f5f9;`;
+                    unitCell.textContent = param.unit || "";
+                  }
+
+                  if (!shouldHideUnitAndReference && !shouldHideOnlyReference) {
+                    const rangeCell = row.insertCell();
+                    rangeCell.style.cssText = `padding:4px 8px; text-align:center; font-size:8.5pt; color:#475569; vertical-align:middle; border:none; border-bottom:1px solid #f1f5f9;`;
+                    rangeCell.textContent = param.referenceRange || "";
+                  }
                 }
-              });
-            },
-          );
+              }
+            });
+          });
         } else {
           const emptyRow = tbody.insertRow();
           const cell = emptyRow.insertCell();
-          // Adjust colspan based on hidden columns
-          cell.colSpan = shouldHideUnitAndReference
-            ? 2
-            : shouldHideOnlyReference
-              ? 3
-              : 4;
-          cell.textContent = "No parameters in this group.";
-          cell.style.textAlign = "center";
-          cell.style.padding = "3px 8px";
+          cell.colSpan = shouldHideUnitAndReference ? 2 : shouldHideOnlyReference ? 3 : 4;
+          cell.textContent = "No parameters recorded.";
+          cell.style.cssText = "text-align:center; padding:8px; color:#94a3b8; font-size:9pt; font-style:italic;";
         }
         table.appendChild(tbody);
         testGroupDiv.appendChild(table); // Append table to group div
@@ -971,13 +1146,19 @@ export const useReportGenerator = (
 
           if (templateSpecificNotes && templateSpecificNotes.trim() !== "") {
             const templateNotesDiv = document.createElement("div");
-            templateNotesDiv.style.marginTop = "5px";
-            templateNotesDiv.style.marginBottom = "10px";
-            templateNotesDiv.style.fontSize = "10pt";
-            templateNotesDiv.style.fontStyle = "italic";
-            templateNotesDiv.style.whiteSpace = "pre-wrap";
-            templateNotesDiv.innerHTML = `${templateSpecificNotes.replace(/\n/g, "<br>")}`; // Replace newlines with <br> for HTML
-            testGroupDiv.appendChild(templateNotesDiv); // Append notes to group div AFTER table
+            templateNotesDiv.style.cssText = `
+              margin: 4px 0 6px 0;
+              padding: 5px 8px;
+              background: #fefce8;
+              border-left: 3px solid #f59e0b;
+              border-radius: 0 4px 4px 0;
+              font-size: 8.5pt;
+              font-style: italic;
+              color: #78350f;
+              white-space: pre-wrap;
+            `;
+            templateNotesDiv.innerHTML = `<strong style="font-style:normal;">Note:</strong> ${templateSpecificNotes.replace(/\n/g, "<br>")}`;
+            testGroupDiv.appendChild(templateNotesDiv);
           }
         }
         // --- End Template-Specific Notes ---
@@ -1027,13 +1208,43 @@ export const useReportGenerator = (
       // Add GENERAL test notes AFTER all template groups
       if (generalTestNotes && generalTestNotes.trim() !== "") {
         const notesDiv = document.createElement("div");
-        notesDiv.style.marginTop = "15px";
-        notesDiv.style.fontSize = "10pt";
-        notesDiv.style.fontStyle = "italic";
-        notesDiv.style.whiteSpace = "pre-wrap";
+        notesDiv.style.cssText = `
+          margin: 6mm 10mm 4mm 10mm;
+          padding: 6px 10px;
+          background: #f0fdf4;
+          border-left: 3px solid #16a34a;
+          border-radius: 0 6px 6px 0;
+          font-size: 8.5pt;
+          color: #14532d;
+          white-space: pre-wrap;
+        `;
         notesDiv.innerHTML = `<strong>General Notes:</strong><br>${generalTestNotes.replace(/\n/g, "<br>")}`;
         printContainer.appendChild(notesDiv);
       }
+      // Abnormal legend — B&W uses text markers, colour uses arrows
+      const isPlainBW = printMode === "plain" && plainColorMode === "bw";
+      const legend = document.createElement("div");
+      legend.style.cssText = `
+        margin: 3mm 10mm 0 10mm;
+        font-size: 7.5pt;
+        color: ${isPlainBW ? "#000" : "#64748b"};
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        border-top: ${isPlainBW ? "1px solid #000" : "1px solid #e2e8f0"};
+        padding-top: 3px;
+      `;
+      legend.innerHTML = isPlainBW
+        ? `<span><strong>Legend:</strong></span>
+           <span><strong>(H)</strong> = Above normal range</span>
+           <span><strong>(L)</strong> = Below normal range</span>
+           <span><strong>(*)</strong> = Critical / Immediate attention required</span>`
+        : `<span>Legend:</span>
+           <span><span style="color:#d97706; font-weight:900;">&#9650;</span> Above range</span>
+           <span><span style="color:#d97706; font-weight:900;">&#9660;</span> Below range</span>
+           <span><span style="color:#dc2626; font-weight:900;">&#9888;</span> Critical</span>
+           <span style="font-style:italic;">Values in <strong style="color:#b45309;">amber bold</strong> require attention</span>`;
+      printContainer.appendChild(legend);
     } else {
       const noResults = document.createElement("div");
       noResults.textContent = "No test results available.";
@@ -1140,7 +1351,7 @@ export const useReportGenerator = (
     } else {
       setReportHtml("");
     }
-  }, [report, reportSettings, printMode, plainTopMargin]);
+  }, [report, reportSettings, printMode, plainTopMargin, plainColorMode]);
 
   return reportHtml; // Return the generated HTML string
 };

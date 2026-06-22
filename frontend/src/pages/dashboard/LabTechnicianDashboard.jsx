@@ -101,8 +101,8 @@ const LabTechnicianDashboard = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Technician Dashboard</h1>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <h1 className="text-2xl font-bold text-inherit">Technician Dashboard</h1>
+          <p className="text-sm text-inherit opacity-60 mt-0.5">
             Welcome, {user?.name || 'Lab Technician'}
             {labDetails?.name && <> &mdash; {labDetails.name}</>}
           </p>
@@ -131,8 +131,8 @@ const LabTechnicianDashboard = () => {
               <s.icon className={`h-5 w-5 ${s.iconColor}`} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-slate-500 font-medium">{s.label}</p>
-              <p className="text-2xl font-bold text-slate-900 mt-0.5">{s.value}</p>
+              <p className="text-xs text-inherit opacity-60 font-medium">{s.label}</p>
+              <p className="text-2xl font-bold text-inherit mt-0.5">{s.value}</p>
               <Link to={s.link} className="text-xs text-blue-600 hover:text-blue-700 mt-1 inline-block">View &rarr;</Link>
             </div>
           </div>
@@ -141,13 +141,13 @@ const LabTechnicianDashboard = () => {
 
       {/* Recent Patients */}
       <div className="card">
-        <div className="px-5 py-4 border-b border-slate-100">
+        <div className="px-5 py-4 border-b border-inherit">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-semibold text-slate-800">Recent Patients</h2>
+            <h2 className="text-lg font-semibold text-inherit">Recent Patients</h2>
             <Link to="/patients" className="text-sm text-blue-600 hover:text-blue-700 font-medium">View all &rarr;</Link>
           </div>
           <div className="relative">
-            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-inherit opacity-40" />
             <input
               type="text"
               value={patientSearchTerm}
@@ -175,17 +175,17 @@ const LabTechnicianDashboard = () => {
                       <div className="h-7 w-7 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 text-xs font-bold shrink-0">
                         {patient.name?.charAt(0)?.toUpperCase()}
                       </div>
-                      <span className="font-medium text-slate-900">{patient.name}</span>
+                      <span className="font-medium text-inherit">{patient.name}</span>
                     </div>
                   </td>
-                  <td className="text-slate-500">{patient.age} / {patient.gender?.charAt(0).toUpperCase() + patient.gender?.slice(1)}</td>
-                  <td className="text-slate-500">{patient.contact}</td>
+                  <td className="text-inherit opacity-60">{patient.age} / {patient.gender?.charAt(0).toUpperCase() + patient.gender?.slice(1)}</td>
+                  <td className="text-inherit opacity-60">{patient.contact}</td>
                   <td>
                     <div className="flex gap-1">
                       <Link to={`/reports/create?patientId=${patient.id}`} className="p-1 rounded hover:bg-blue-50 text-blue-600 transition-colors" title="Create Report">
                         <PencilSquareIcon className="h-4 w-4" />
                       </Link>
-                      <Link to={`/patients/${patient.id}`} className="p-1 rounded hover:bg-slate-100 text-slate-500 transition-colors" title="View Patient">
+                      <Link to={`/patients/${patient.id}`} className="p-1 rounded hover:opacity-80 text-inherit opacity-60 transition-colors" title="View Patient">
                         <UserIcon className="h-4 w-4" />
                       </Link>
                     </div>
@@ -195,7 +195,7 @@ const LabTechnicianDashboard = () => {
                 <tr>
                   <td colSpan={4}>
                     <div className="empty-state py-6">
-                      <UserIcon className="h-10 w-10 text-slate-300 mb-2" />
+                      <UserIcon className="h-10 w-10 text-inherit opacity-30 mb-2" />
                       <p className="text-sm">{patientSearchTerm ? 'No patients match your search' : 'No recent patients'}</p>
                     </div>
                   </td>
@@ -208,13 +208,13 @@ const LabTechnicianDashboard = () => {
 
       {/* Recent Reports */}
       <div className="card">
-        <div className="px-5 py-4 border-b border-slate-100">
+        <div className="px-5 py-4 border-b border-inherit">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-semibold text-slate-800">Recent Reports</h2>
+            <h2 className="text-lg font-semibold text-inherit">Recent Reports</h2>
             <div className="flex items-center gap-2">
               <button
                 onClick={handleRefresh}
-                className={`p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 transition-all ${refreshing ? 'animate-spin' : ''}`}
+                className={`p-1.5 rounded-lg hover:opacity-80 text-inherit opacity-60 transition-all ${refreshing ? 'animate-spin' : ''}`}
                 title="Refresh"
               >
                 <ArrowPathIcon className="h-4 w-4" />
@@ -223,7 +223,7 @@ const LabTechnicianDashboard = () => {
             </div>
           </div>
           <div className="relative">
-            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-inherit opacity-40" />
             <input
               type="text"
               value={reportSearchTerm}
@@ -247,8 +247,8 @@ const LabTechnicianDashboard = () => {
             <tbody>
               {filteredReports.length > 0 ? filteredReports.map(report => (
                 <tr key={report.id}>
-                  <td className="font-medium text-slate-900">{report.patientName}</td>
-                  <td className="text-slate-500 max-w-[160px] truncate" title={report.testName}>
+                  <td className="font-medium text-inherit">{report.patientName}</td>
+                  <td className="text-inherit opacity-60 max-w-[160px] truncate" title={report.testName}>
                     {truncateText(report.testName, 35)}
                   </td>
                   <td>
@@ -256,7 +256,7 @@ const LabTechnicianDashboard = () => {
                       {report.status?.charAt(0).toUpperCase() + report.status?.slice(1)}
                     </span>
                   </td>
-                  <td className="text-slate-500">{formatDate(report.date, DATE_FORMATS.DD_MM_YYYY)}</td>
+                  <td className="text-inherit opacity-60">{formatDate(report.date, DATE_FORMATS.DD_MM_YYYY)}</td>
                   <td>
                     <div className="flex gap-1">
                       <Link to={`/reports/${report.id}/print`} className="p-1 rounded hover:bg-blue-50 text-blue-600 transition-colors" title="View">
@@ -265,7 +265,7 @@ const LabTechnicianDashboard = () => {
                       <Link to={`/reports/${report.id}/edit`} className="p-1 rounded hover:bg-green-50 text-green-600 transition-colors" title="Edit">
                         <PencilSquareIcon className="h-4 w-4" />
                       </Link>
-                      <Link to={`/reports/${report.id}/print`} className="p-1 rounded hover:bg-slate-100 text-slate-500 transition-colors" title="Print">
+                      <Link to={`/reports/${report.id}/print`} className="p-1 rounded hover:opacity-80 text-inherit opacity-60 transition-colors" title="Print">
                         <PrinterIcon className="h-4 w-4" />
                       </Link>
                     </div>
@@ -275,7 +275,7 @@ const LabTechnicianDashboard = () => {
                 <tr>
                   <td colSpan={5}>
                     <div className="empty-state py-6">
-                      <DocumentTextIcon className="h-10 w-10 text-slate-300 mb-2" />
+                      <DocumentTextIcon className="h-10 w-10 text-inherit opacity-30 mb-2" />
                       <p className="text-sm">{reportSearchTerm ? 'No reports match your search' : 'No recent reports'}</p>
                     </div>
                   </td>

@@ -16,8 +16,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
-        console.log('No token found');
-        setLoading(false);
+                setLoading(false);
         return;
       }
 
@@ -27,8 +26,7 @@ export const AuthProvider = ({ children }) => {
         const tokenParts = token.split('.');
         if (tokenParts.length === 3) {
           const payload = JSON.parse(atob(tokenParts[1]));
-          console.log('Token payload:', payload);
-          
+                    
           // Set user from token payload
           setUser({
             id: payload.id,
@@ -37,24 +35,21 @@ export const AuthProvider = ({ children }) => {
             name: payload.name || 'User' // Add name from token payload
           });
           
-          console.log('User set from token payload:', payload);
-        } else {
+                  } else {
           throw new Error('Invalid token format');
         }
       } catch (error) {
-        console.log('Token verification failed:', error.message);
-        localStorage.removeItem('token');
+                localStorage.removeItem('token');
       }
     } catch (error) {
-      console.error('Auth check failed:', error);
-      localStorage.removeItem('token');
+            localStorage.removeItem('token');
     } finally {
       setLoading(false);
     }
   };
 
   const login = async (email, password) => {
-    console.log('Attempting to log in with:', { email, password }); // Log the login attempt
+// Log the login attempt
     
     try {
       // Import the API utility
@@ -63,14 +58,13 @@ export const AuthProvider = ({ children }) => {
       // Use the API utility to login
       const data = await auth.login({ email, password });
       
-      console.log('Login successful, user:', data.user);
-      console.log('Token received:', data.token); // Log the token received
+      // Log the token received
       
       if (data.token) {
         localStorage.setItem('token', data.token); // Store the token in local storage
-        console.log('Token stored in local storage'); // Log when token is successfully stored
+// Log when token is successfully stored
       } else {
-        console.log('No token received from the server'); // Log if no token is received
+// Log if no token is received
         throw new Error('No token received from the server');
       }
 
@@ -79,8 +73,7 @@ export const AuthProvider = ({ children }) => {
         const tokenParts = data.token.split('.');
         if (tokenParts.length === 3) {
           const payload = JSON.parse(atob(tokenParts[1]));
-          console.log('Token payload for setting user and navigation:', payload, 'User role:', payload.role);
-          
+                    
           // Set user state based primarily on token payload, merging other data
           const currentUser = {
             id: payload.id,
@@ -92,38 +85,30 @@ export const AuthProvider = ({ children }) => {
             // Add other fields from data.user as necessary
           };
           setUser(currentUser);
-          console.log('User state set:', currentUser);
-
+          
           // Navigate based on role from token
           const userRole = payload.role;
-          console.log('Navigating based on role:', userRole);
-          
+                    
           // Use setTimeout to ensure the user state is updated before navigation
           setTimeout(() => {
             if (userRole === 'super-admin') {
-              console.log('Navigating to super-admin dashboard');
-              navigate('/dashboard/super-admin');
+                            navigate('/dashboard/super-admin');
             } else if (userRole === 'admin') {
-              console.log('Navigating to admin dashboard');
-              navigate('/dashboard/admin');
+                            navigate('/dashboard/admin');
             } else if (userRole === 'technician') {
-              console.log('Navigating to lab-technician dashboard');
-              navigate('/dashboard/lab-technician');
+                            navigate('/dashboard/lab-technician');
             } else {
-              console.log('Navigating to default dashboard');
-              navigate('/dashboard'); // Fallback if role is not recognized
+                            navigate('/dashboard'); // Fallback if role is not recognized
             }
           }, 100);
         } else {
           throw new Error('Invalid token format');
         }
       } catch (error) {
-        console.error('Error parsing token for navigation:', error);
-        navigate('/dashboard'); // Fallback to dashboard
+                navigate('/dashboard'); // Fallback to dashboard
       }
     } catch (error) {
-      console.log('Login failed:', error.message || 'Invalid credentials');
-      throw error;
+            throw error;
     }
   };
 

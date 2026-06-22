@@ -1,346 +1,153 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { auth } from '../../utils/api';
+import { UserCircleIcon, LockClosedIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import { FormSection, FormGrid, FormField, Input, Alert } from '../../components/common/FormShell';
+
+const roleLabel = (role) => ({ 'super-admin': 'Super Admin', admin: 'Lab Admin', technician: 'Lab Technician' }[role] || role);
 
 export default function Profile() {
   const { user } = useAuth();
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
-  
-  // Form states
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: ''
-  });
-  
-  const [passwordData, setPasswordData] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
-  });
+  const [saving, setSaving] = useState(false);
+  const [changingPwd, setChangingPwd] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [showPwd, setShowPwd] = useState({ current: false, new: false, confirm: false });
+
+  const [formData, setFormData] = useState({ name: '', email: '', phone: '' });
+  const [pwdData, setPwdData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    (async () => {
       try {
-        setLoading(true);
-        const response = await auth.getProfile();
-        
-        // Add hardcoded lab information for the specific user
-        if (response.data.id === '67f93b5275901139dd9f5e22' || 
-            response.data._id === '67f93b5275901139dd9f5e22') {
-          response.data.role = 'Admin';
-          response.data.lab = {
-            id: '67f7c2e5c8397da6a620940f',
-            name: 'yash'
-          };
-        }
-        
-        setProfileData(response.data);
-        setFormData({
-          name: response.data.name || '',
-          email: response.data.email || '',
-          phone: response.data.phone || ''
-        });
-        setLoading(false);
-      } catch (err) {
-        setError('Failed to load profile data');
-        setLoading(false);
-        console.error('Error fetching profile:', err);
-      }
-    };
-
-    fetchProfile();
+        const res = await auth.getProfile();
+        setProfileData(res.data);
+        setFormData({ name: res.data.name || '', email: res.data.email || '', phone: res.data.phone || '' });
+      } catch { setError('Failed to load profile'); }
+      finally { setLoading(false); }
+    })();
   }, []);
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value
-    });
-  };
-
-  const handlePasswordChange = (e) => {
-    const { name, value } = e.target;
-    setPasswordData({
-      ...passwordData,
-      [name]: value
-    });
-  };
 
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
-    setSuccess(null);
-    
+    setSaving(true); setError(''); setSuccess('');
     try {
-      setLoading(true);
-      
-      // Create a copy of the form data
-      const dataToSubmit = { ...formData };
-      
-      // Remove email field if user is not super-admin
-      if (profileData?.role !== 'super-admin') {
-        delete dataToSubmit.email;
-      }
-      
-      await auth.updateProfile(dataToSubmit);
-      setSuccess('Profile updated successfully');
-      setLoading(false);
-    } catch (err) {
-      setError(err.message || 'Failed to update profile');
-      setLoading(false);
-      console.error('Error updating profile:', err);
-    }
+      const payload = { ...formData };
+      if (profileData?.role !== 'super-admin') delete payload.email;
+      await auth.updateProfile(payload);
+      setSuccess('Profile updated successfully.');
+    } catch (err) { setError(err.message || 'Failed to update profile'); }
+    finally { setSaving(false); }
   };
 
-  const handlePasswordSubmit = async (e) => {
+  const handlePwdSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
-    setSuccess(null);
-    
-    // Validate passwords match
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setError('New passwords do not match');
-      return;
-    }
-    
+    if (pwdData.newPassword !== pwdData.confirmPassword) { setError('New passwords do not match'); return; }
+    setChangingPwd(true); setError(''); setSuccess('');
     try {
-      setLoading(true);
-      await auth.changePassword({
-        currentPassword: passwordData.currentPassword,
-        newPassword: passwordData.newPassword
-      });
-      setSuccess('Password changed successfully');
-      setPasswordData({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-      });
-      setLoading(false);
-    } catch (err) {
-      setError(err.message || 'Failed to change password');
-      setLoading(false);
-      console.error('Error changing password:', err);
-    }
+      await auth.changePassword({ currentPassword: pwdData.currentPassword, newPassword: pwdData.newPassword });
+      setSuccess('Password changed successfully.');
+      setPwdData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (err) { setError(err.message || 'Failed to change password'); }
+    finally { setChangingPwd(false); }
   };
 
-  if (loading && !profileData) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="max-w-3xl mx-auto py-6 px-4 space-y-4">
+      {[...Array(6)].map((_, i) => <div key={i} className="skeleton h-10 rounded-lg" />)}
+    </div>
+  );
+
+  const initials = (profileData?.name || user?.name || 'U').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-md">
-      <h1 className="text-3xl font-bold mb-8 text-gray-900">My Profile</h1>
+    <div className="max-w-3xl mx-auto py-6 px-4 space-y-5 page-enter">
 
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
-          {error}
+      {/* Avatar header */}
+      <div className="flex items-center gap-4 bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+        <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-white text-2xl font-bold flex-shrink-0">
+          {initials}
         </div>
-      )}
-
-      {success && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
-          {success}
-        </div>
-      )}
-
-      <div className="mb-8">
-        <h2 className="text-2xl font-semibold mb-4 text-gray-800">Personal Information</h2>
-        <form onSubmit={handleProfileSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                Name
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
-                required
-              />
-            </div>
-
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email
-              </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                className={`w-full px-4 py-2 border rounded-md ${
-                  profileData?.role === 'super-admin'
-                    ? 'border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600'
-                    : 'border-gray-200 bg-gray-100 cursor-not-allowed'
-                }`}
-                disabled={profileData?.role !== 'super-admin'}
-                required
-              />
-              {profileData?.role !== 'super-admin' && (
-                <p className="mt-1 text-xs text-gray-500">
-                  Email can only be changed by Super Admin
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-                Phone
-              </label>
-              <input
-                type="tel"
-                id="phone"
-                name="phone"
-                value={formData.phone}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
-                Role
-              </label>
-              <input
-                type="text"
-                id="role"
-                value={profileData?.role || user?.role || ''}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100"
-                disabled
-              />
-            </div>
-
-            <div>
-              <label htmlFor="userId" className="block text-sm font-medium text-gray-700 mb-2">
-                User ID
-              </label>
-              <input
-                type="text"
-                id="userId"
-                value={profileData?.id || user?.id || ''}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100"
-                disabled
-              />
-            </div>
-
-            <div>
-              <label htmlFor="lab" className="block text-sm font-medium text-gray-700 mb-2">
-                Lab Name
-              </label>
-              <input
-                type="text"
-                id="lab"
-                value={profileData?.lab?.name || ''}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100"
-                disabled
-              />
-            </div>
-
-            <div>
-              <label htmlFor="labId" className="block text-sm font-medium text-gray-700 mb-2">
-                Lab ID
-              </label>
-              <input
-                type="text"
-                id="labId"
-                value={profileData?.lab?.id || user?.lab || ''}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100"
-                disabled
-              />
-            </div>
+        <div>
+          <h1 className="text-xl font-bold text-slate-900">{profileData?.name}</h1>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="badge badge-blue">{roleLabel(profileData?.role || user?.role)}</span>
+            {profileData?.lab?.name && (
+              <span className="text-sm text-slate-500">{profileData.lab.name}</span>
+            )}
           </div>
+          <p className="text-sm text-slate-400 mt-0.5">{profileData?.email}</p>
+        </div>
+      </div>
 
-          <div className="mt-6">
-            <button
-              type="submit"
-              className="w-full md:w-auto px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
-              disabled={loading}
-            >
-              {loading ? 'Saving...' : 'Save Changes'}
+      {error && <Alert type="error">{error}</Alert>}
+      {success && <Alert type="success">{success}</Alert>}
+
+      {/* Personal Info */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100 bg-slate-50">
+          <UserCircleIcon className="h-5 w-5 text-blue-600" />
+          <h2 className="text-base font-semibold text-slate-900">Personal Information</h2>
+        </div>
+        <form onSubmit={handleProfileSubmit}>
+          <div className="px-6 py-5">
+            <FormGrid cols={2}>
+              <FormField label="Full Name" required>
+                <Input value={formData.name} onChange={(e) => setFormData(p => ({ ...p, name: e.target.value }))} required />
+              </FormField>
+              <FormField label="Phone" hint="optional">
+                <Input type="tel" value={formData.phone} onChange={(e) => setFormData(p => ({ ...p, phone: e.target.value }))} />
+              </FormField>
+              <FormField label="Email" hint={profileData?.role !== 'super-admin' ? 'Only super-admin can change email' : ''}>
+                <Input type="email" value={formData.email}
+                  onChange={(e) => setFormData(p => ({ ...p, email: e.target.value }))}
+                  disabled={profileData?.role !== 'super-admin'}
+                  className={profileData?.role !== 'super-admin' ? 'bg-slate-50 cursor-not-allowed' : ''} />
+              </FormField>
+              <FormField label="Role">
+                <div className="input bg-slate-50 text-slate-500 cursor-not-allowed">{roleLabel(profileData?.role)}</div>
+              </FormField>
+            </FormGrid>
+          </div>
+          <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+            <button type="submit" disabled={saving} className="btn btn-primary">
+              {saving ? <><span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Saving…</> : 'Save Changes'}
             </button>
           </div>
         </form>
       </div>
 
-      <div className="bg-white shadow-md rounded-lg overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-2xl font-semibold text-gray-800">Change Password</h2>
+      {/* Change Password */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100 bg-slate-50">
+          <LockClosedIcon className="h-5 w-5 text-blue-600" />
+          <h2 className="text-base font-semibold text-slate-900">Change Password</h2>
         </div>
-
-        <form onSubmit={handlePasswordSubmit} className="p-6 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                Current Password
-              </label>
-              <input
-                type="password"
-                id="currentPassword"
-                name="currentPassword"
-                value={passwordData.currentPassword}
-                onChange={handlePasswordChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
-                required
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <div className="h-0 md:h-6"></div>
-            </div>
-
-            <div>
-              <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                New Password
-              </label>
-              <input
-                type="password"
-                id="newPassword"
-                name="newPassword"
-                value={passwordData.newPassword}
-                onChange={handlePasswordChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
-                required
-                minLength={6}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                Confirm New Password
-              </label>
-              <input
-                type="password"
-                id="confirmPassword"
-                name="confirmPassword"
-                value={passwordData.confirmPassword}
-                onChange={handlePasswordChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
-                required
-                minLength={6}
-              />
-            </div>
+        <form onSubmit={handlePwdSubmit}>
+          <div className="px-6 py-5 space-y-4">
+            {(['currentPassword', 'newPassword', 'confirmPassword']).map((field) => {
+              const labels = { currentPassword: 'Current Password', newPassword: 'New Password', confirmPassword: 'Confirm New Password' };
+              const key = field === 'currentPassword' ? 'current' : field === 'newPassword' ? 'new' : 'confirm';
+              return (
+                <FormField key={field} label={labels[field]} required>
+                  <div className="relative">
+                    <Input type={showPwd[key] ? 'text' : 'password'} value={pwdData[field]}
+                      onChange={(e) => setPwdData(p => ({ ...p, [field]: e.target.value }))}
+                      required minLength={6} className="pr-10" />
+                    <button type="button" tabIndex={-1} onClick={() => setShowPwd(p => ({ ...p, [key]: !p[key] }))}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                      {showPwd[key] ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+                    </button>
+                  </div>
+                </FormField>
+              );
+            })}
           </div>
-
-          <div>
-            <button
-              type="submit"
-              className="w-full md:w-auto px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
-              disabled={loading}
-            >
-              {loading ? 'Changing...' : 'Change Password'}
+          <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+            <button type="submit" disabled={changingPwd} className="btn btn-primary">
+              {changingPwd ? <><span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Changing…</> : 'Change Password'}
             </button>
           </div>
         </form>

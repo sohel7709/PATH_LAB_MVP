@@ -1,9 +1,27 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeftIcon, PencilIcon, DocumentTextIcon, EyeIcon, PrinterIcon } from '@heroicons/react/24/outline';
+import {
+  ArrowLeftIcon,
+  PencilIcon,
+  DocumentTextIcon,
+  EyeIcon,
+  PrinterIcon,
+  PhoneIcon,
+  EnvelopeIcon,
+  MapPinIcon,
+  UserIcon,
+  CalendarIcon,
+  ExclamationCircleIcon,
+} from '@heroicons/react/24/outline';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
-import { formatDate } from '../../utils/helpers'; // Import shared formatDate
-import { DATE_FORMATS } from '../../utils/constants'; // Import DATE_FORMATS
+import { formatDate } from '../../utils/helpers';
+import { DATE_FORMATS } from '../../utils/constants';
+
+const statusColors = {
+  verified: 'badge-green',
+  completed: 'badge-blue',
+  pending: 'badge-yellow',
+};
 
 export default function PatientDetails() {
   const { id: patientMongoId } = useParams();
@@ -19,17 +37,15 @@ export default function PatientDetails() {
       if (!patientMongoId) return;
       setIsLoading(true);
       setReportsLoading(true);
-      setError(null); // Clear previous errors
+      setError(null);
       setPatient(null);
       setReports([]);
 
       try {
         const { default: api } = await import('../../utils/api');
-        // Fetch patient details
         const patientData = await api.patients.getById(patientMongoId);
         setPatient(patientData);
 
-        // Fetch patient reports using the string patientId from patientData
         if (patientData && patientData.patientId) {
           try {
             const reportsResponse = await api.reports.getByPatientId(patientData.patientId);
@@ -37,18 +53,15 @@ export default function PatientDetails() {
             setReportsError(null);
           } catch (reportsErrInner) {
             setReportsError(reportsErrInner.message || 'Failed to fetch patient reports');
-            console.error('Error fetching patient reports:', reportsErrInner);
           }
         } else if (patientData) {
           setReports([]);
-          setReportsError('Patient string ID (patientInfo.patientId) not found in patient data to fetch reports.');
-          console.warn('Patient data fetched, but patientInfo.patientId is missing:', patientData);
-        } else { // patientData is null
-            setError('Patient not found.'); // Set error if patientData is null after fetch
+          setReportsError('Patient string ID not found.');
+        } else {
+          setError('Patient not found.');
         }
       } catch (err) {
-        setError(err.message || 'Failed to fetch patient details or reports.');
-        console.error('Error fetching patient details or reports:', err);
+        setError(err.message || 'Failed to fetch patient details.');
       } finally {
         setIsLoading(false);
         setReportsLoading(false);
@@ -60,192 +73,215 @@ export default function PatientDetails() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <LoadingSpinner />
+      <div className="page-enter max-w-4xl mx-auto px-4 py-8 space-y-4">
+        <div className="skeleton h-24 rounded-xl" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="skeleton h-40 rounded-xl" />
+          <div className="skeleton h-40 rounded-xl" />
+        </div>
+        <div className="skeleton h-48 rounded-xl" />
       </div>
     );
   }
 
-  if (error && !patient) { // If there's an error and patient data couldn't be loaded at all
+  if (error && !patient) {
     return (
-      <div className="min-h-screen bg-red-50 flex flex-col justify-center items-center p-4">
-        <div className="bg-white p-8 rounded-lg shadow-md text-center">
-          <h2 className="text-2xl font-semibold text-red-600 mb-4">Error</h2>
-          <p className="text-red-500">{error}</p>
-          <Link
-            to="/patients"
-            className="mt-6 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-          >
-            <ArrowLeftIcon className="mr-2 h-5 w-5" />
-            Back to Patient List
-          </Link>
+      <div className="page-enter max-w-4xl mx-auto px-4 py-8">
+        <div className="alert alert-error flex items-start gap-3">
+          <ExclamationCircleIcon className="h-5 w-5 shrink-0 mt-0.5" />
+          <div>
+            <p className="font-medium">Error loading patient</p>
+            <p className="text-sm mt-1">{error}</p>
+          </div>
+        </div>
+        <Link to="/patients" className="btn btn-secondary mt-4 inline-flex items-center gap-2">
+          <ArrowLeftIcon className="h-4 w-4" /> Back to Patient List
+        </Link>
+      </div>
+    );
+  }
+
+  if (!patient) {
+    return (
+      <div className="page-enter max-w-4xl mx-auto px-4 py-8">
+        <div className="empty-state">
+          <UserIcon className="h-12 w-12 mx-auto mb-3" style={{ color: 'var(--text-muted)' }} />
+          <p className="font-medium" style={{ color: 'var(--text)' }}>Patient not found</p>
+          <Link to="/patients" className="btn btn-primary mt-4">Back to Patient List</Link>
         </div>
       </div>
     );
   }
 
-  if (!patient) { // Should be caught by error state if fetch failed, but as a fallback
-    return (
-      <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center p-4">
-        <div className="bg-white p-8 rounded-lg shadow-md text-center">
-          <h2 className="text-2xl font-semibold text-gray-700 mb-4">Patient Not Found</h2>
-          <p className="text-gray-500">The requested patient could not be found.</p>
-          <Link
-            to="/patients"
-            className="mt-6 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            <ArrowLeftIcon className="mr-2 h-5 w-5" />
-            Back to Patient List
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  const initials = (patient.fullName || 'P')
+    .split(' ')
+    .map(n => n[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-100 to-blue-100 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-8">
-          <Link
-            to="/patients"
-            className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 group"
-          >
-            <ArrowLeftIcon className="mr-2 h-5 w-5 text-blue-500 group-hover:text-blue-700" />
-            Back to Patient List
-          </Link>
-        </div>
+    <div className="page-enter max-w-4xl mx-auto px-4 py-6 space-y-5">
+      {/* Back link */}
+      <Link to="/patients" className="inline-flex items-center gap-1.5 text-sm font-medium" style={{ color: 'var(--primary)' }}>
+        <ArrowLeftIcon className="h-4 w-4" /> Back to Patient List
+      </Link>
 
-        {/* Patient Information Card */}
-        <div className="bg-white shadow-xl rounded-lg overflow-hidden border border-gray-200/80">
-          <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-white">{patient.fullName}</h1>
-                <p className="text-sm text-blue-100 mt-1">Patient ID: {patient.patientId || 'N/A'}</p>
-              </div>
-              <div className="flex space-x-3 mt-4 sm:mt-0">
-                <Link
-                  to={`/patients/${patient._id}/edit`}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-indigo-700 bg-white hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
-                >
-                  <PencilIcon className="h-4 w-4 mr-1.5" /> Edit
-                </Link>
-                <Link
-                  to={`/reports/create?patientId=${patient._id}`}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-blue-700 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                >
-                  <DocumentTextIcon className="h-4 w-4 mr-1.5" /> Create Report
-                </Link>
-              </div>
+      {/* Patient header card */}
+      <div className="card p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          {/* Avatar */}
+          <div className="flex-shrink-0 h-16 w-16 rounded-full flex items-center justify-center text-xl font-bold text-white"
+            style={{ background: 'var(--primary)' }}>
+            {initials}
+          </div>
+          {/* Name + badges */}
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl font-bold truncate" style={{ color: 'var(--text)' }}>{patient.fullName}</h1>
+            <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>ID: {patient.patientId || 'N/A'}</p>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {patient.age && (
+                <span className="badge badge-gray">{patient.age} yrs</span>
+              )}
+              {patient.gender && (
+                <span className="badge badge-blue capitalize">{patient.gender}</span>
+              )}
+              {patient.phone && (
+                <span className="badge badge-gray flex items-center gap-1">
+                  <PhoneIcon className="h-3 w-3" />{patient.phone}
+                </span>
+              )}
             </div>
           </div>
-          <div className="px-6 py-5 border-t border-gray-200">
-            <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
-              <div>
-                <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">Full Name</dt>
-                <dd className="mt-1 text-sm text-gray-900">{patient.fullName}</dd>
-              </div>
-              <div>
-                <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">Email</dt>
-                <dd className="mt-1 text-sm text-gray-900">{patient.email || 'N/A'}</dd>
-              </div>
-              <div>
-                <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</dt>
-                <dd className="mt-1 text-sm text-gray-900">{patient.phone}</dd>
-              </div>
-              <div>
-                <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">Age</dt>
-                <dd className="mt-1 text-sm text-gray-900">{patient.age}</dd>
-              </div>
-              <div>
-                <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">Gender</dt>
-                <dd className="mt-1 text-sm text-gray-900 capitalize">{patient.gender}</dd>
-              </div>
-              <div>
-                <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">Registered On</dt>
-                <dd className="mt-1 text-sm text-gray-900">{formatDate(patient.createdAt, DATE_FORMATS.DD_MM_YYYY)}</dd>
-              </div>
-              <div className="sm:col-span-2 lg:col-span-3">
-                <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">Address</dt>
-                <dd className="mt-1 text-sm text-gray-900">{patient.address || 'N/A'}</dd>
-              </div>
-              <div className="sm:col-span-1">
-                <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">Referred By Dr.</dt>
-                <dd className="mt-1 text-sm text-gray-900">{patient.referringDoctor?.name || 'N/A'}</dd>
-              </div>
-            </dl>
+          {/* Action buttons */}
+          <div className="flex flex-wrap gap-2 shrink-0">
+            <Link to={`/patients/${patient._id}/edit`} className="btn btn-secondary btn-sm inline-flex items-center gap-1.5">
+              <PencilIcon className="h-4 w-4" /> Edit
+            </Link>
+            <Link to={`/reports/create?patientId=${patient._id}`} className="btn btn-primary btn-sm inline-flex items-center gap-1.5">
+              <DocumentTextIcon className="h-4 w-4" /> Create Report
+            </Link>
           </div>
         </div>
+      </div>
 
-        {/* Previous Reports Section */}
-        <div className="mt-8 bg-white shadow-xl rounded-lg overflow-hidden border border-gray-200/80">
-          <div className="bg-gradient-to-r from-teal-500 to-green-500 p-6">
-            <h2 className="text-xl sm:text-2xl font-bold text-white">Previous Reports</h2>
-          </div>
-          <div className="p-6">
-            {reportsLoading && <div className="py-6"><LoadingSpinner /></div>}
-            {reportsError && <p className="text-red-600 bg-red-50 p-3 rounded-md text-sm">{reportsError}</p>}
-            {!reportsLoading && !reportsError && reports.length === 0 && (
-              <div className="text-center py-8">
-                <DocumentTextIcon className="mx-auto h-10 w-10 text-gray-400" />
-                <p className="mt-3 text-sm text-gray-500">No reports found for this patient.</p>
-              </div>
-            )}
-            {!reportsLoading && !reportsError && reports.length > 0 && (
-              <ul className="divide-y divide-gray-200">
-                {reports.map((report) => (
-                  <li key={report._id} className="py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex-grow mb-2 sm:mb-0">
-                      <p className="text-sm font-semibold text-indigo-600 hover:text-indigo-800">
-                        <Link to={`/reports/${report._id}/print`} target="_blank" className="hover:underline">
-                          {report.testInfo?.name || `Report ID: ${report.reportId || report._id}`}
-                        </Link>
-                      </p>
-                      <p className="text-xs text-gray-500 mt-0.5">
-                        Date: {formatDate(report.testInfo?.sampleCollectionDate || report.createdAt, DATE_FORMATS.DD_MM_YYYY)}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-0.5">
-                        Status: <span className={`capitalize px-1.5 py-0.5 inline-flex text-xs leading-4 font-semibold rounded-full ${
-                          report.status === 'verified' ? 'bg-green-100 text-green-700' :
-                          report.status === 'completed' ? 'bg-blue-100 text-blue-700' :
-                          report.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-gray-100 text-gray-700'
-                        }`}>{report.status || 'N/A'}</span>
-                      </p>
-                    </div>
-                    <div className="flex space-x-2 flex-shrink-0 mt-2 sm:mt-0">
-                      <Link
-                        to={`/reports/${report._id}/print`}
-                        target="_blank"
-                        className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-full transition-colors"
-                        title="View/Print Report"
-                      >
-                        <EyeIcon className="h-5 w-5" />
-                      </Link>
-                      <Link
-                        to={`/reports/${report._id}/print`}
-                        target="_blank"
-                        className="p-1.5 text-green-500 hover:text-green-700 hover:bg-green-50 rounded-full transition-colors"
-                        title="Print Report"
-                      >
-                        <PrinterIcon className="h-5 w-5" />
-                      </Link>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-             { !reportsLoading && !reportsError && reports.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-gray-200 text-right">
-                    <Link 
-                        to={`/patients/${patientMongoId}/reports`}
-                        className="text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:underline"
+      {/* Info cards grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Contact Info */}
+        <div className="card p-5">
+          <h2 className="text-sm font-semibold uppercase tracking-wider mb-4 flex items-center gap-2" style={{ color: 'var(--text-muted)' }}>
+            <PhoneIcon className="h-4 w-4" /> Contact Info
+          </h2>
+          <dl className="space-y-3">
+            <div className="detail-row">
+              <dt className="detail-label flex items-center gap-1"><EnvelopeIcon className="h-3.5 w-3.5" /> Email</dt>
+              <dd className="detail-value">{patient.email || 'N/A'}</dd>
+            </div>
+            <div className="detail-row">
+              <dt className="detail-label flex items-center gap-1"><PhoneIcon className="h-3.5 w-3.5" /> Phone</dt>
+              <dd className="detail-value">{patient.phone || 'N/A'}</dd>
+            </div>
+            <div className="detail-row">
+              <dt className="detail-label flex items-center gap-1"><MapPinIcon className="h-3.5 w-3.5" /> Address</dt>
+              <dd className="detail-value">{patient.address || 'N/A'}</dd>
+            </div>
+          </dl>
+        </div>
+
+        {/* Medical Info */}
+        <div className="card p-5">
+          <h2 className="text-sm font-semibold uppercase tracking-wider mb-4 flex items-center gap-2" style={{ color: 'var(--text-muted)' }}>
+            <UserIcon className="h-4 w-4" /> Medical Info
+          </h2>
+          <dl className="space-y-3">
+            <div className="detail-row">
+              <dt className="detail-label">Age</dt>
+              <dd className="detail-value">{patient.age || 'N/A'}</dd>
+            </div>
+            <div className="detail-row">
+              <dt className="detail-label">Gender</dt>
+              <dd className="detail-value capitalize">{patient.gender || 'N/A'}</dd>
+            </div>
+            <div className="detail-row">
+              <dt className="detail-label flex items-center gap-1"><CalendarIcon className="h-3.5 w-3.5" /> Registered</dt>
+              <dd className="detail-value">{formatDate(patient.createdAt, DATE_FORMATS.DD_MM_YYYY)}</dd>
+            </div>
+            <div className="detail-row">
+              <dt className="detail-label">Referred By</dt>
+              <dd className="detail-value">{patient.referringDoctor?.name || 'N/A'}</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+
+      {/* Recent Reports */}
+      <div className="card overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
+          <h2 className="text-base font-semibold" style={{ color: 'var(--text)' }}>Recent Reports</h2>
+          {reports.length > 0 && (
+            <Link to={`/patients/${patientMongoId}/reports`} className="text-sm font-medium" style={{ color: 'var(--primary)' }}>
+              View All &rarr;
+            </Link>
+          )}
+        </div>
+        <div className="p-5">
+          {reportsLoading && (
+            <div className="space-y-3">
+              {[...Array(3)].map((_, i) => <div key={i} className="skeleton h-12 rounded" />)}
+            </div>
+          )}
+          {reportsError && (
+            <div className="alert alert-error text-sm">{reportsError}</div>
+          )}
+          {!reportsLoading && !reportsError && reports.length === 0 && (
+            <div className="empty-state py-8">
+              <DocumentTextIcon className="h-10 w-10 mx-auto mb-2" style={{ color: 'var(--text-muted)' }} />
+              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No reports found for this patient.</p>
+              <Link to={`/reports/create?patientId=${patient._id}`} className="btn btn-primary btn-sm mt-3">
+                Create First Report
+              </Link>
+            </div>
+          )}
+          {!reportsLoading && !reportsError && reports.length > 0 && (
+            <ul className="divide-y" style={{ borderColor: 'var(--border)' }}>
+              {reports.slice(0, 5).map(report => (
+                <li key={report._id} className="py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <div className="min-w-0">
+                    <Link
+                      to={`/reports/${report._id}`}
+                      className="text-sm font-medium hover:underline"
+                      style={{ color: 'var(--primary)' }}
                     >
-                        View All Reports &rarr;
+                      {report.testInfo?.name || `Report ID: ${report.reportId || report._id}`}
                     </Link>
-                </div>
-            )}
-          </div>
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                      {formatDate(report.testInfo?.sampleCollectionDate || report.createdAt, DATE_FORMATS.DD_MM_YYYY)}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className={`badge ${statusColors[report.status] || 'badge-gray'} capitalize`}>
+                      {report.status || 'N/A'}
+                    </span>
+                    <Link
+                      to={`/reports/${report._id}`}
+                      className="btn-icon"
+                      title="View Report"
+                    >
+                      <EyeIcon className="h-4 w-4" />
+                    </Link>
+                    <Link
+                      to={`/reports/${report._id}/print`}
+                      target="_blank"
+                      className="btn-icon"
+                      title="Print Report"
+                    >
+                      <PrinterIcon className="h-4 w-4" />
+                    </Link>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
     </div>

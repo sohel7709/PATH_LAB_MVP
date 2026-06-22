@@ -84,8 +84,8 @@ const SuperAdminDashboard = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Super Admin Dashboard</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Welcome back, {user?.name || 'Super Admin'}</p>
+          <h1 className="text-2xl font-bold text-inherit">Super Admin Dashboard</h1>
+          <p className="text-sm text-inherit opacity-60 mt-0.5">Welcome back, {user?.name || 'Super Admin'}</p>
         </div>
         <div className="flex gap-2">
           <Link to="/labs/create" className="btn btn-primary">
@@ -107,8 +107,8 @@ const SuperAdminDashboard = () => {
               <s.icon className={`h-5 w-5 ${s.iconColor}`} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-slate-500 font-medium">{s.label}</p>
-              <p className="text-2xl font-bold text-slate-900 mt-0.5">{s.value}</p>
+              <p className="text-xs text-inherit opacity-60 font-medium">{s.label}</p>
+              <p className="text-2xl font-bold text-inherit mt-0.5">{s.value}</p>
               <Link to={s.link} className="text-xs text-blue-600 hover:text-blue-700 mt-1 inline-block">
                 {s.linkLabel} &rarr;
               </Link>
@@ -119,7 +119,7 @@ const SuperAdminDashboard = () => {
 
       {/* Quick Actions */}
       <div className="card p-5">
-        <h2 className="text-lg font-semibold text-slate-800 mb-4">Quick Actions</h2>
+        <h2 className="text-lg font-semibold text-inherit mb-4">Quick Actions</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           {[
             { to: '/labs/create', label: 'Create Lab', icon: BuildingOfficeIcon },
@@ -129,9 +129,9 @@ const SuperAdminDashboard = () => {
             { to: '/templates/create', label: 'New Template', icon: PlusCircleIcon },
             { to: '/analytics', label: 'Analytics', icon: ChartBarIcon },
           ].map(a => (
-            <Link key={a.to} to={a.to} className="flex flex-col items-center gap-2 p-3 rounded-lg border border-slate-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-200 text-center">
+            <Link key={a.to} to={a.to} className="flex flex-col items-center gap-2 p-3 rounded-lg border border-inherit hover:border-blue-300 hover:bg-blue-50 transition-all duration-200 text-center">
               <a.icon className="h-5 w-5 text-blue-600" />
-              <span className="text-xs font-medium text-slate-700">{a.label}</span>
+              <span className="text-xs font-medium text-inherit">{a.label}</span>
             </Link>
           ))}
         </div>
@@ -141,8 +141,8 @@ const SuperAdminDashboard = () => {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Recent Labs */}
         <div className="card">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-            <h2 className="text-lg font-semibold text-slate-800">Recent Labs</h2>
+          <div className="flex items-center justify-between px-5 py-4 border-b border-inherit">
+            <h2 className="text-lg font-semibold text-inherit">Recent Labs</h2>
             <Link to="/labs" className="text-sm text-blue-600 hover:text-blue-700 font-medium">View all &rarr;</Link>
           </div>
           <div className="p-5">
@@ -155,15 +155,15 @@ const SuperAdminDashboard = () => {
             ) : error ? (
               <p className="text-sm text-red-500 text-center py-4">{error}</p>
             ) : recentLabs.length > 0 ? (
-              <ul className="divide-y divide-slate-100">
+              <ul className="divide-y divide-inherit">
                 {recentLabs.map(lab => (
                   <li key={lab._id} className="py-3 flex items-center gap-3">
                     <div className="h-9 w-9 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
                       <BuildingOfficeIcon className="h-5 w-5 text-blue-600" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-900 truncate">{lab.name}</p>
-                      <p className="text-xs text-slate-500 truncate">
+                      <p className="text-sm font-medium text-inherit truncate">{lab.name}</p>
+                      <p className="text-xs text-inherit opacity-60 truncate">
                         {lab.subscription?.plan?.name || 'No Plan'} &bull; {lab.status || 'Unknown'}
                       </p>
                     </div>
@@ -189,8 +189,8 @@ const SuperAdminDashboard = () => {
 
         {/* Recent Users */}
         <div className="card">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-            <h2 className="text-lg font-semibold text-slate-800">Recent Users</h2>
+          <div className="flex items-center justify-between px-5 py-4 border-b border-inherit">
+            <h2 className="text-lg font-semibold text-inherit">Recent Users</h2>
             <Link to="/users" className="text-sm text-blue-600 hover:text-blue-700 font-medium">View all &rarr;</Link>
           </div>
           <div className="p-5">
@@ -203,7 +203,7 @@ const SuperAdminDashboard = () => {
             ) : error ? (
               <p className="text-sm text-red-500 text-center py-4">{error}</p>
             ) : recentUsers.length > 0 ? (
-              <ul className="divide-y divide-slate-100">
+              <ul className="divide-y divide-inherit">
                 {recentUsers.map(u => (
                   <li key={u._id} className="py-3 flex items-center gap-3">
                     <div className="h-9 w-9 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
@@ -216,8 +216,8 @@ const SuperAdminDashboard = () => {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-900 truncate">{u.name}</p>
-                      <p className="text-xs text-slate-500 truncate">
+                      <p className="text-sm font-medium text-inherit truncate">{u.name}</p>
+                      <p className="text-xs text-inherit opacity-60 truncate">
                         {u.role.charAt(0).toUpperCase() + u.role.slice(1).replace('-', ' ')} &bull; {u.lab?.name || 'No Lab'}
                       </p>
                     </div>
@@ -245,7 +245,7 @@ const SuperAdminDashboard = () => {
       {/* Analytics Overview */}
       <div className="card p-5">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-semibold text-slate-800">Analytics Overview</h2>
+          <h2 className="text-lg font-semibold text-inherit">Analytics Overview</h2>
           <div className="flex gap-2">
             <button onClick={() => handleExport('analytics', 'csv')} className="btn btn-sm btn-secondary">
               <CloudArrowDownIcon className="h-3.5 w-3.5" />
@@ -258,47 +258,47 @@ const SuperAdminDashboard = () => {
           </div>
         </div>
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <div className="bg-slate-50 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-slate-700 mb-4">Labs by Subscription</h4>
+          <div className=" rounded-lg p-4">
+            <h4 className="text-sm font-medium text-inherit mb-4">Labs by Subscription</h4>
             <div className="space-y-3">
               {analyticsData.labsBySubscription.map(item => (
                 <div key={item._id} className="flex items-center gap-3">
-                  <span className="text-sm text-slate-700 w-24 shrink-0">
+                  <span className="text-sm text-inherit w-24 shrink-0">
                     {item._id ? (item._id.charAt(0).toUpperCase() + item._id.slice(1)) : 'Unknown'}
                   </span>
-                  <div className="flex-1 bg-slate-200 rounded-full h-2">
+                  <div className="flex-1 rounded-full h-2" style={{ background: 'var(--border)' }}>
                     <div
                       className="bg-blue-500 h-2 rounded-full"
                       style={{ width: `${stats.totalLabs ? (item.count / stats.totalLabs) * 100 : 0}%` }}
                     />
                   </div>
-                  <span className="text-xs text-slate-500 w-6 text-right">{item.count}</span>
+                  <span className="text-xs text-inherit opacity-60 w-6 text-right">{item.count}</span>
                 </div>
               ))}
               {analyticsData.labsBySubscription.length === 0 && (
-                <p className="text-sm text-slate-400 text-center py-2">No data available</p>
+                <p className="text-sm text-inherit opacity-40 text-center py-2">No data available</p>
               )}
             </div>
           </div>
-          <div className="bg-slate-50 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-slate-700 mb-4">Users by Role</h4>
+          <div className=" rounded-lg p-4">
+            <h4 className="text-sm font-medium text-inherit mb-4">Users by Role</h4>
             <div className="space-y-3">
               {analyticsData.usersByRole.map(item => (
                 <div key={item._id} className="flex items-center gap-3">
-                  <span className="text-sm text-slate-700 w-24 shrink-0">
+                  <span className="text-sm text-inherit w-24 shrink-0">
                     {item._id ? (item._id.charAt(0).toUpperCase() + item._id.slice(1).replace('-', ' ')) : 'Unknown'}
                   </span>
-                  <div className="flex-1 bg-slate-200 rounded-full h-2">
+                  <div className="flex-1 rounded-full h-2" style={{ background: 'var(--border)' }}>
                     <div
                       className="bg-purple-500 h-2 rounded-full"
                       style={{ width: `${stats.totalUsers ? (item.count / stats.totalUsers) * 100 : 0}%` }}
                     />
                   </div>
-                  <span className="text-xs text-slate-500 w-6 text-right">{item.count}</span>
+                  <span className="text-xs text-inherit opacity-60 w-6 text-right">{item.count}</span>
                 </div>
               ))}
               {analyticsData.usersByRole.length === 0 && (
-                <p className="text-sm text-slate-400 text-center py-2">No data available</p>
+                <p className="text-sm text-inherit opacity-40 text-center py-2">No data available</p>
               )}
             </div>
           </div>
@@ -313,16 +313,16 @@ const SuperAdminDashboard = () => {
 
       {/* System Health */}
       <div className="card p-5">
-        <h2 className="text-lg font-semibold text-slate-800 mb-4">System Health</h2>
+        <h2 className="text-lg font-semibold text-inherit mb-4">System Health</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           {[
-            { label: 'System Status', value: systemHealth.systemStatus, color: 'bg-green-50 text-green-800' },
-            { label: 'Database Health', value: systemHealth.databaseHealth, color: 'bg-blue-50 text-blue-800' },
-            { label: 'Last Backup', value: systemHealth.lastBackup, color: 'bg-indigo-50 text-indigo-800' },
+            { label: 'System Status', value: systemHealth.systemStatus, iconColor: 'var(--success)' },
+            { label: 'Database Health', value: systemHealth.databaseHealth, iconColor: 'var(--primary)' },
+            { label: 'Last Backup', value: systemHealth.lastBackup, iconColor: '#6366f1' },
           ].map(h => (
-            <div key={h.label} className={`rounded-lg px-4 py-4 ${h.color}`}>
-              <p className="text-xs font-medium mb-1 opacity-70">{h.label}</p>
-              <p className="text-xl font-semibold">{h.value}</p>
+            <div key={h.label} className="rounded-lg px-4 py-4" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+              <p className="text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>{h.label}</p>
+              <p className="text-xl font-semibold" style={{ color: h.iconColor }}>{h.value}</p>
             </div>
           ))}
         </div>

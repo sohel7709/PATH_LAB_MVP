@@ -366,12 +366,10 @@ export const superAdmin = {
       : `${import.meta.env.VITE_API_BASE_URL}/user-management`;
     const response = await fetch(url, { headers: getAuthHeaders() });
     const result = await handleResponse(response);
-    console.log('User management API response:', result);
-    return result;
+        return result;
   },
   createUser: async (userData) => {
-    console.log('Creating user with data in API:', userData);
-    if (userData.role !== 'super-admin' && !userData.labId) {
+        if (userData.role !== 'super-admin' && !userData.labId) {
       throw new Error('Lab ID is required for admin and technician roles');
     }
     const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/user-management`, {
@@ -380,16 +378,14 @@ export const superAdmin = {
       body: JSON.stringify(userData),
     });
     const result = await handleResponse(response);
-    console.log('User creation API response:', result);
-    return result;
+        return result;
   },
   getUser: async (id) => {
     const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/user-management/${id}`, {
       headers: getAuthHeaders(),
     });
     const result = await handleResponse(response);
-    console.log('User details API response:', result);
-    return result;
+        return result;
   },
   updateUser: async (id, userData) => {
     const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/user-management/${id}`, {
@@ -438,8 +434,7 @@ export const testTemplates = {
           role = payload.role || 'admin';
         }
       } catch (error) {
-        console.error('Error parsing token:', error);
-      }
+              }
     }
     let baseEndpoint = '/admin/test-templates';
     if (role === 'super-admin') baseEndpoint = '/super-admin/test-templates';
@@ -535,7 +530,7 @@ export const labReportSettings = {
         method: 'POST', headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify({ imageData, mimeType })
       });
       return handleResponse(response);
-    } catch (error) { console.error('Error uploading image:', error); throw error; }
+    } catch (error) {  throw error; }
   },
   generatePdf: async (reportId) => {
     const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/reports/${reportId}/generate-pdf`, {

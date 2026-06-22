@@ -21,8 +21,7 @@ const PricingPage = () => {
           setError('Failed to load plans.');
         }
       } catch (err) {
-        console.error('Error fetching plans:', err);
-        setError(err.response?.data?.message || 'An error occurred while fetching plans.');
+                setError(err.response?.data?.message || 'An error occurred while fetching plans.');
       } finally {
         setLoading(false);
       }
@@ -34,8 +33,7 @@ const PricingPage = () => {
   const handleSelectPlan = (planId) => {
     // TODO: Implement logic to initiate upgrade process
     // This might involve redirecting to a payment page or calling an API endpoint
-    console.log(`Plan selected: ${planId}`);
-    alert(`Plan selection/upgrade for ${planId} not yet implemented.`);
+        alert(`Plan selection/upgrade for ${planId} not yet implemented.`);
   };
 
   if (loading) {

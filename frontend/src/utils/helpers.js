@@ -8,8 +8,7 @@ export const formatDate = (date, formatString = DATE_FORMATS.DISPLAY) => {
     const parsedDate = typeof date === 'string' ? parseISO(date) : date;
     return format(parsedDate, formatString);
   } catch (error) {
-    console.error('Date formatting error:', error);
-    return '';
+        return '';
   }
 };
 

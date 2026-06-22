@@ -7,10 +7,8 @@ import '../../styles/AuthPage.css';
 import {useParams} from 'react-router-dom';
 
 // const ResetPasswordWrapper = () => {
-//   console.log("ResetPasswordWrapper rendered");
-//   const{token} = useParams();
-//   console.log("TOKEN:", token);
-// }
+//   //   const{token} = useParams();
+//   // }
 
 const ResetPasswordWrapper = () => {
   const navigate = useNavigate();

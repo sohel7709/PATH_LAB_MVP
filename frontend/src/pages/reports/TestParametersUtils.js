@@ -33,15 +33,13 @@ export const isValueNormal = (paramName, value, referenceRange, patientGender, p
   if (paramName === "HIV I" || paramName === "HIV II" || paramName === "RESULT") {
     const currentValue = value.toString().toLowerCase().trim();
     const isAbnormalText = currentValue === 'reactive' || currentValue === 'positive' || currentValue === 'present';
-    console.log(`Checking abnormal text param: ${paramName}, value: ${currentValue}, isAbnormal: ${isAbnormalText}`);
-    return !isAbnormalText; // Return false if it's an abnormal text value
+        return !isAbnormalText; // Return false if it's an abnormal text value
   }
 
   if (Object.prototype.hasOwnProperty.call(dropdownParams, paramName)) {
     const normalValue = referenceRange.toLowerCase().trim();
     const currentValue = value.toString().toLowerCase().trim();
-    console.log(`Checking dropdown param: ${paramName}, value: ${currentValue}, normal: ${normalValue}`);
-    return currentValue === normalValue; // For other dropdowns, match the reference range
+        return currentValue === normalValue; // For other dropdowns, match the reference range
   }
 
   // Convert value to number (remove commas if present)
@@ -88,8 +86,7 @@ export const isValueNormal = (paramName, value, referenceRange, patientGender, p
     const femaleMin = parseFloat(genderMatch[3]);
     const femaleMax = parseFloat(genderMatch[4]);
     
-    console.log(`Gender match - Male range: ${maleMin}-${maleMax}, Female range: ${femaleMin}-${femaleMax}`);
-    
+        
     // Use the appropriate range based on patient gender
     if (patientGender === 'male' && !isNaN(maleMin) && !isNaN(maleMax)) {
       return numValue >= maleMin && numValue <= maleMax;
@@ -109,10 +106,8 @@ export const isValueNormal = (paramName, value, referenceRange, patientGender, p
   // Specific check for CRP: "N -less than 6 mg/lt" means abnormal if >= 6
   if (paramName === "SERUM FOR C - REACTIVE PROTEINS" && trimmedRange.toLowerCase().includes("less than 6")) {
       const max = 6;
-      console.log(`Specific CRP check - Max: ${max}, Value: ${numValue}`);
-      const result = numValue < max; // Normal if strictly less than 6
-      console.log(`Is value normal? ${result}`);
-      return result;
+            const result = numValue < max; // Normal if strictly less than 6
+            return result;
   }
   
   // Clean the reference range by removing commas
@@ -124,12 +119,10 @@ export const isValueNormal = (paramName, value, referenceRange, patientGender, p
     const min = parseFloat(numericMatch[1]);
     const max = parseFloat(numericMatch[2]);
     
-    console.log(`Numeric match - Range: ${min}-${max}, Value: ${numValue}`);
-    
+        
     if (!isNaN(min) && !isNaN(max)) {
       const result = numValue >= min && numValue <= max;
-      console.log(`Is value normal? ${result}`);
-      return result;
+            return result;
     }
   }
   
@@ -137,11 +130,9 @@ export const isValueNormal = (paramName, value, referenceRange, patientGender, p
   const upToMatch = cleanRange.match(/Up\s*to\s+(\d+\.?\d*)/i); // Made space optional after Up
   if (upToMatch) {
     const max = parseFloat(upToMatch[1]);
-    console.log(`UpTo match for "${paramName}" - Max: ${max}, Value: ${numValue}`);
-    if (!isNaN(max)) {
+        if (!isNaN(max)) {
       const result = numValue <= max;
-      console.log(`Is value normal? ${result}`);
-      return result;
+            return result;
     }
   }
   
@@ -169,16 +160,13 @@ export const isValueNormal = (paramName, value, referenceRange, patientGender, p
   if (lessThanTextMatch) {
       const max = parseFloat(lessThanTextMatch[1]);
       if (!isNaN(max)) {
-          console.log(`Generic Less Than Text match - Max: ${max}, Value: ${numValue}`);
-          const result = numValue < max;
-          console.log(`Is value normal? ${result}`);
-          return result;
+                    const result = numValue < max;
+                    return result;
       }
   }
   
   // Debug log for unmatched reference ranges
-  console.log(`Unmatched reference range format for "${paramName}":`, referenceRange);
-  return true; // Default to normal if range format is not recognized
+    return true; // Default to normal if range format is not recognized
 };
 
 /**

@@ -24,7 +24,7 @@ export default function TestParametersTable({
       p.unit === param.unit // Assuming name+section+unit is unique within a template
     );
 
-    console.log(`Rendering Param (Index: ${index}, Global: ${globalIndex}):`, JSON.stringify(param)); // DEBUG LOG
+// DEBUG LOG
 
     const keyPrefix = isSectionedView ? `param-${param.section}` : 'param-flat';
 

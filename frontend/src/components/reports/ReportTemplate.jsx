@@ -123,8 +123,7 @@ const ReportTemplate = ({ reportData }) => {
         return !isNaN(min) && numValue <= min;
       }
     } catch (error) {
-      console.warn('Invalid reference range format or parsing error:', referenceRange, error);
-    }
+          }
     return false; // Default to not abnormal if range format is not recognized or parsing fails
   };
 

@@ -27,8 +27,7 @@ const SubscriptionManagement = () => {
       const resp = await getAllLabSubscriptions();
       if (resp.success) setLabs(resp.data);
     } catch (err) {
-      console.error(err);
-    } finally {
+          } finally {
       setLoading(false);
     }
   };

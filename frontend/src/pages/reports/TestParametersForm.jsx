@@ -9,9 +9,8 @@ import { getRowBackgroundColor } from './TestParametersUtils';
 export default function TestParametersForm({
   formData,
   setFormData,
-  // patientGender, // Removed unused prop
-  // patientAge,    // Removed unused prop
-  setError
+  setError = () => {}, // safe default — prevents "setError is not a function" crash
+  hideTestInfoFields = false, // when true, skip TestInfoFields (used in CreateReportForm)
 }) {
 
   // State variables
@@ -33,8 +32,7 @@ export default function TestParametersForm({
       try {
         response = await testTemplates.getAll();
       } catch (fetchErr) {
-        console.error("Error fetching templates:", fetchErr);
-        response = { data: [] };
+                response = { data: [] };
         setError('Failed to load test templates list.');
       }
 
@@ -42,8 +40,7 @@ export default function TestParametersForm({
         setAvailableTemplates(response.data);
         setSelectedTemplates([]);
       } else {
-        console.error("Invalid template data format received:", response);
-        setAvailableTemplates([]);
+                setAvailableTemplates([]);
         setSelectedTemplates([]);
         setError('Failed to load test templates (invalid format). Using custom test mode.');
       }
@@ -89,7 +86,7 @@ export default function TestParametersForm({
         const response = await testTemplates.getById(templateId, userRole);
         if (response && response.data) {
           const template = response.data;
-          console.log(`Raw Template Data fetched for ${templateId}:`, JSON.stringify(template)); // <<< Log raw data
+// <<< Log raw data
           const templateNoteSections = []; // Collect notes for *this* template
           const hasTemplateSections = template.sections && Array.isArray(template.sections) && template.sections.length > 0;
 
@@ -140,13 +137,10 @@ export default function TestParametersForm({
           if (!mainSampleType) mainSampleType = template.sampleType || 'Blood';
           if (template.templateName || template.name) mainTestNames.push(template.templateName || template.name);
         } else {
-           console.warn(`Template data not found or invalid for ID: ${templateId}`);
-        }
+                   }
       }
 
-      console.log("Final Mapped Parameters for Form State:", allParameters);
-      console.log("Template Notes Map:", newTemplateNotes);
-
+            
       setFormData(prev => ({
         ...prev,
         testName: mainTestNames.length > 0 ? mainTestNames.join(', ') : 'Custom Test',
@@ -158,8 +152,7 @@ export default function TestParametersForm({
         testNotes: '' // Reset general notes when templates are selected
       }));
     } catch (err) {
-      console.error("Error in fetchMultipleTemplateDetails:", err);
-      setError(`Failed to load template details: ${err.message || 'Unknown error'}`);
+            setError(`Failed to load template details: ${err.message || 'Unknown error'}`);
       setFormData(prev => ({
            ...prev,
            testParameters: [],
@@ -248,8 +241,7 @@ export default function TestParametersForm({
       }
       setFormData(prev => ({ ...prev, testParameters: newParameters }));
     } else {
-      console.error("Invalid index provided to handleParameterChange:", index);
-    }
+          }
   };
 
    // Handle changes in template-specific notes
@@ -282,14 +274,8 @@ export default function TestParametersForm({
         testParameters: prev.testParameters.filter((_, i) => i !== index)
         }));
      } else {
-         console.error("Invalid index provided to removeParameter:", index);
-     }
+              }
   };
-
-  // Fetch templates on mount
-  useEffect(() => {
-    fetchTemplates();
-  }, []);
 
   // Handle general form field changes (e.g., general notes)
   const handleChange = (e) => {
@@ -305,10 +291,12 @@ export default function TestParametersForm({
         handleTemplateSelect={handleTemplateSelect}
       />
 
-      <TestInfoFields
-        formData={formData}
-        handleChange={handleChange}
-      />
+      {!hideTestInfoFields && (
+        <TestInfoFields
+          formData={formData}
+          handleChange={handleChange}
+        />
+      )}
 
       {/* Conditionally render tables and notes based on selection */}
       {selectedTemplates && selectedTemplates.length > 0 && !selectedTemplates.includes('custom') ? (

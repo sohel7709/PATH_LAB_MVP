@@ -128,7 +128,7 @@ export default function DashboardLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen" style={{background:"var(--bg)"}}>
       {/* Mobile sidebar overlay */}
       <Transition.Root show={sidebarOpen} as={Fragment}>
         <Dialog as="div" className="relative z-50 lg:hidden" onClose={setSidebarOpen}>
@@ -240,7 +240,7 @@ export default function DashboardLayout() {
       {/* Main content area */}
       <div className={classNames('transition-all duration-300 ease-in-out', isCollapsed ? 'lg:pl-16' : 'lg:pl-64')}>
         {/* Top bar */}
-        <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-slate-200 bg-white px-4 shadow-sm sm:gap-x-6 sm:px-6">
+        <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 sm:gap-x-6 border-b px-4 sm:px-6 shadow-sm" style={{borderColor:"var(--border)",background:"var(--surface)"}}>
           <button
             type="button"
             className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors lg:hidden"
@@ -270,7 +270,7 @@ export default function DashboardLayout() {
                 leaveFrom="transform opacity-100 scale-100"
                 leaveTo="transform opacity-0 scale-95"
               >
-                <Menu.Items className="absolute right-0 z-10 mt-2 w-40 origin-top-right rounded-xl bg-white py-1 shadow-lg ring-1 ring-slate-200 focus:outline-none">
+                <Menu.Items className="absolute right-0 z-10 mt-2 w-40 origin-top-right rounded-xl py-1 shadow-lg focus:outline-none" style={{background:'var(--surface)',border:'1px solid var(--border)'}}>
                   <Menu.Item>
                     {({ active }) => (
                       <Link

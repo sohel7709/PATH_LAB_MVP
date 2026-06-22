@@ -15,16 +15,17 @@ export default function PrintReport() {
   const navigate = useNavigate();
   const [report, setReport] = useState(null);
   const [printMode, setPrintMode] = useState("official");
+  const [plainTopMargin, setPlainTopMargin] = useState(40);
+  const [plainColorMode, setPlainColorMode] = useState("bw"); // "bw" | "color"
   const [reportSettings, setReportSettings] = useState(null);
-  // const [labSettings, setLabSettings] = useState(null); // No longer needed directly here
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const reportRef = useRef(null); // Ref for the container div (keep if needed for other purposes)
 
   // Use the custom hooks
   // REMOVED hideTableHeadingAndReference variable definition
-  // console.log('PrintReport.jsx - hideTableHeadingAndReference:', hideTableHeadingAndReference); // REMOVED log
-  const reportHtml = useReportGenerator(report, reportSettings, printMode); // REMOVED flag from hook call
+  //  // REMOVED log
+  const reportHtml = useReportGenerator(report, reportSettings, printMode, plainTopMargin, plainColorMode);
   const {
     printPdf: originalPrintPdf,
     downloadPdf,
@@ -35,10 +36,8 @@ export default function PrintReport() {
   const printPdf = async () => {
     try {
       await apiReports.update(id, { status: "completed" });
-      console.log("Report status updated to completed");
-    } catch (error) {
-      console.error("Error updating report status:", error);
-    }
+          } catch (error) {
+          }
     originalPrintPdf();
   };
 
@@ -50,12 +49,9 @@ export default function PrintReport() {
 
       // Fetch the report data
       const reportResponse = await apiReports.getById(id);
-      console.log("PrintReport - Raw API response:", reportResponse); // DEBUG LOG 1
+// DEBUG LOG 1
       const reportData = reportResponse.data || reportResponse;
-      console.log(
-        "PrintReport - Extracted reportData:",
-        JSON.stringify(reportData, null, 2),
-      ); // DEBUG LOG 2
+// DEBUG LOG 2
 
       // Fetch the lab settings - STILL NEEDED for useReportGenerator implicitly via report object
       // const labId = reportData.lab; // Assuming reportData contains lab ID
@@ -67,8 +63,7 @@ export default function PrintReport() {
       //   // we might need to pass them separately or adjust the hook.
       //   // For now, assuming 'report' contains all necessary info.
       // } else {
-      //   console.warn("Lab ID not found in report data, cannot fetch settings.");
-      // }
+      //         // }
 
       setReport(reportData);
 
@@ -77,21 +72,12 @@ export default function PrintReport() {
       if (labId) {
         try {
           const settingsResponse = await labReportSettings.getSettings(labId);
-
           const settingsData = settingsResponse.data || settingsResponse;
-
-          console.log("Report Settings:", settingsData);
-
           setReportSettings(settingsData);
-          console.log("HEADER SETTINGS:", settingsData?.header);
-
-          console.log("FOOTER SETTINGS:", settingsData?.footer);
-        } catch (err) {
-          console.error("Error loading report settings:", err);
-        }
-      } // setLabSettings(settingsData); // No longer needed here
+        } catch (err) {}
+      }
     } catch (err) {
-      console.error("Error fetching report:", err); // Updated error message
+// Updated error message
       setError(err.message || "Failed to load report");
     } finally {
       setIsLoading(false);
@@ -202,27 +188,121 @@ export default function PrintReport() {
         <div className="mb-4">
           <label className="block text-sm font-medium mb-2">Print Style</label>
 
-          <div className="flex gap-6">
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                value="official"
-                checked={printMode === "official"}
-                onChange={() => setPrintMode("official")}
-              />
-              Official Report
-            </label>
-
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                value="plain"
-                checked={printMode === "plain"}
-                onChange={() => setPrintMode("plain")}
-              />
-              Plain Report
-            </label>
+          {/* Print mode selector */}
+          <div className="flex gap-3">
+            {[
+              { value: "official", label: "Official", desc: "With header, footer & watermark", icon: "🏛️" },
+              { value: "plain",    label: "Plain",    desc: "For pre-printed letterhead",     icon: "📄" },
+            ].map((m) => (
+              <button
+                key={m.value}
+                type="button"
+                onClick={() => setPrintMode(m.value)}
+                className={`flex-1 text-left rounded-xl border-2 px-4 py-3 transition-all ${
+                  printMode === m.value
+                    ? "border-blue-600 bg-blue-50"
+                    : "border-gray-200 hover:border-blue-300 bg-white"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">{m.icon}</span>
+                  <div>
+                    <div className={`text-sm font-semibold ${printMode === m.value ? "text-blue-700" : "text-gray-800"}`}>{m.label}</div>
+                    <div className="text-xs text-gray-500">{m.desc}</div>
+                  </div>
+                </div>
+              </button>
+            ))}
           </div>
+
+          {/* Plain mode sub-options */}
+          {printMode === "plain" && (
+            <div className="mt-4 space-y-4 bg-gray-50 rounded-xl p-4 border border-gray-200">
+
+              {/* Color mode */}
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Print Type</p>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setPlainColorMode("bw")}
+                    className={`flex-1 rounded-lg border-2 px-3 py-2.5 text-left transition-all ${
+                      plainColorMode === "bw"
+                        ? "border-gray-800 bg-gray-100"
+                        : "border-gray-200 bg-white hover:border-gray-400"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded border-2 border-gray-800 bg-white flex items-center justify-center">
+                        <div className="w-3 h-3 bg-gray-900 rounded-sm" />
+                      </div>
+                      <div>
+                        <div className={`text-sm font-semibold ${plainColorMode === "bw" ? "text-gray-900" : "text-gray-700"}`}>
+                          Black &amp; White
+                        </div>
+                        <div className="text-xs text-gray-500">Optimised for mono laser/inkjet printers</div>
+                      </div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPlainColorMode("color")}
+                    className={`flex-1 rounded-lg border-2 px-3 py-2.5 text-left transition-all ${
+                      plainColorMode === "color"
+                        ? "border-blue-600 bg-blue-50"
+                        : "border-gray-200 bg-white hover:border-blue-300"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded border-2 border-blue-500 bg-gradient-to-br from-blue-400 to-blue-600" />
+                      <div>
+                        <div className={`text-sm font-semibold ${plainColorMode === "color" ? "text-blue-700" : "text-gray-700"}`}>
+                          Colour
+                        </div>
+                        <div className="text-xs text-gray-500">Full colour for inkjet / colour laser</div>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Top margin */}
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                  Top Margin for Pre-printed Header
+                </p>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="range"
+                    min="10"
+                    max="80"
+                    step="5"
+                    value={plainTopMargin}
+                    onChange={(e) => setPlainTopMargin(Number(e.target.value))}
+                    className="w-40 accent-blue-600"
+                  />
+                  <span className="text-sm font-medium text-gray-700 w-12">{plainTopMargin} mm</span>
+                  <div className="flex gap-1">
+                    {[30, 40, 50, 60].map((v) => (
+                      <button
+                        key={v}
+                        type="button"
+                        onClick={() => setPlainTopMargin(v)}
+                        className={`px-2 py-0.5 text-xs rounded border transition-all ${
+                          plainTopMargin === v
+                            ? "bg-blue-600 text-white border-blue-600"
+                            : "bg-white text-gray-600 border-gray-300 hover:border-blue-400"
+                        }`}
+                      >
+                        {v}mm
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          )}
         </div>
       </div>
 

@@ -2,28 +2,75 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { testTemplates } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
-import { 
-  ArrowLeftIcon, 
-  PencilSquareIcon, 
-  TrashIcon, 
+import {
+  ArrowLeftIcon,
+  PencilSquareIcon,
+  TrashIcon,
   BeakerIcon,
   DocumentDuplicateIcon,
   ExclamationCircleIcon,
   CalendarDaysIcon,
-  BuildingOfficeIcon
+  BuildingOfficeIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+  PlusIcon,
 } from '@heroicons/react/24/outline';
 
-// Helper function to format dates (consider moving to a utils file later)
 const formatDate = (dateString) => {
   if (!dateString) return 'N/A';
   try {
     return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+      year: 'numeric', month: 'long', day: 'numeric',
     });
   } catch (error) {
-    console.error("Error formatting date:", error);
     return 'Invalid Date';
   }
+};
+
+const ParametersTable = ({ fields }) => (
+  <div className="table-wrapper">
+    <table className="table">
+      <thead>
+        <tr>
+          <th className="w-10">#</th>
+          <th>Parameter Name</th>
+          <th>Unit</th>
+          <th>Reference Range</th>
+        </tr>
+      </thead>
+      <tbody>
+        {fields.map((field, index) => (
+          <tr key={index}>
+            <td className="text-sm" style={{ color: 'var(--text-muted)' }}>{index + 1}</td>
+            <td className="text-sm font-medium" style={{ color: 'var(--text)' }}>{field.parameter}</td>
+            <td className="text-sm" style={{ color: 'var(--text-2)' }}>{field.unit || '—'}</td>
+            <td className="text-sm" style={{ color: 'var(--text-2)' }}>{field.reference_range || '—'}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+);
+
+const CollapsibleSection = ({ name, fields }) => {
+  const [open, setOpen] = useState(true);
+  return (
+    <div className="card overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-5 py-3 text-left transition-colors hover:opacity-80"
+        style={{ background: 'var(--surface-2)' }}
+      >
+        <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{name}</span>
+        {open
+          ? <ChevronDownIcon className="h-4 w-4" style={{ color: 'var(--text-muted)' }} />
+          : <ChevronRightIcon className="h-4 w-4" style={{ color: 'var(--text-muted)' }} />
+        }
+      </button>
+      {open && <ParametersTable fields={fields} />}
+    </div>
+  );
 };
 
 const ViewTestTemplate = () => {
@@ -33,8 +80,6 @@ const ViewTestTemplate = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { user } = useAuth();
-  
-  // Check if user is a super-admin
   const isSuperAdmin = user?.role === 'super-admin';
 
   useEffect(() => {
@@ -42,20 +87,14 @@ const ViewTestTemplate = () => {
       try {
         setLoading(true);
         setError(null);
-        
-        // The API returns the data directly, not wrapped in a success property
         const data = await testTemplates.getById(id);
-        
-        // If we get here, the request was successful
         setTemplate(data);
       } catch (err) {
-        console.error('Error fetching template details:', err);
         setError('Failed to load template details. Please try again later.');
       } finally {
         setLoading(false);
       }
     };
-
     fetchTemplate();
   }, [id]);
 
@@ -63,14 +102,9 @@ const ViewTestTemplate = () => {
     if (window.confirm('Are you sure you want to delete this template? This action cannot be undone.')) {
       try {
         setLoading(true);
-        
-        // The delete method returns the response directly
         await testTemplates.delete(id);
-        
-        // If we get here, the delete was successful
         navigate('/templates');
       } catch (err) {
-        console.error('Error deleting template:', err);
         setError('Failed to delete template. Please try again later.');
         setLoading(false);
       }
@@ -79,30 +113,41 @@ const ViewTestTemplate = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      <div className="page-enter max-w-5xl mx-auto px-4 py-6 space-y-4">
+        <div className="skeleton h-10 rounded-lg w-1/3" />
+        <div className="card p-6 space-y-3">
+          <div className="skeleton h-5 rounded w-1/4" />
+          <div className="skeleton h-4 rounded w-3/4" />
+          <div className="skeleton h-4 rounded w-1/2" />
+        </div>
+        <div className="card overflow-hidden">
+          <div className="skeleton h-12 rounded-none" />
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="flex gap-4 px-5 py-3 border-t" style={{ borderColor: 'var(--border)' }}>
+              <div className="skeleton h-4 rounded flex-1" />
+              <div className="skeleton h-4 rounded w-20" />
+              <div className="skeleton h-4 rounded w-28" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 p-4 rounded-md">
-        <div className="flex">
-          <div className="flex-shrink-0">
-            <ExclamationCircleIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
-          </div>
-          <div className="ml-3">
-            <h3 className="text-sm font-medium text-red-800">{error}</h3>
-            <div className="mt-4">
-              <button
-                type="button"
-                onClick={() => navigate('/templates')}
-                className="inline-flex items-center rounded-md border border-transparent bg-red-100 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-              >
-                Back to Templates
-              </button>
-            </div>
+      <div className="page-enter max-w-5xl mx-auto px-4 py-6">
+        <div className="alert alert-error flex items-start gap-3">
+          <ExclamationCircleIcon className="h-5 w-5 shrink-0 mt-0.5" />
+          <div>
+            <p className="font-medium">{error}</p>
+            <button
+              type="button"
+              onClick={() => navigate('/templates')}
+              className="btn btn-secondary btn-sm mt-3"
+            >
+              Back to Templates
+            </button>
           </div>
         </div>
       </div>
@@ -111,16 +156,17 @@ const ViewTestTemplate = () => {
 
   if (!template) {
     return (
-      <div className="text-center py-12">
-        <h3 className="text-lg font-medium text-gray-900">Template not found</h3>
-        <p className="mt-2 text-sm text-gray-500">
-          The template you're looking for doesn't exist or you don't have permission to view it.
-        </p>
-        <div className="mt-6">
+      <div className="page-enter max-w-5xl mx-auto px-4 py-6">
+        <div className="empty-state py-16">
+          <BeakerIcon className="h-12 w-12 mx-auto mb-3" style={{ color: 'var(--text-muted)' }} />
+          <p className="font-medium" style={{ color: 'var(--text)' }}>Template not found</p>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
+            The template you're looking for doesn't exist or you don't have permission to view it.
+          </p>
           <button
             type="button"
             onClick={() => navigate('/templates')}
-            className="inline-flex items-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            className="btn btn-primary btn-sm mt-4"
           >
             Back to Templates
           </button>
@@ -129,255 +175,160 @@ const ViewTestTemplate = () => {
     );
   }
 
-  // Main content structure
+  const hasFields = template.fields && template.fields.length > 0;
+  const hasSections = template.sections && Object.keys(template.sections).length > 0;
+
   return (
-    <div className="py-6">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-        {/* Header */}
-        <div className="pb-5 border-b border-gray-200 sm:flex sm:items-center sm:justify-between mb-6">
-          <div className="flex items-center">
-             <BeakerIcon className="h-8 w-8 text-blue-600 mr-3" />
-            <div>
-              <h1 className="text-2xl font-bold leading-6 text-gray-900">{template.name}</h1>
-              <p className="mt-1 text-sm text-gray-500">
-                Viewing details for test template ID: {template._id}
-              </p>
-            </div>
+    <div className="page-enter max-w-5xl mx-auto px-4 py-6 space-y-5">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-3 flex-wrap">
+            <BeakerIcon className="h-7 w-7 shrink-0" style={{ color: 'var(--primary)' }} />
+            <h1 className="text-2xl font-bold truncate" style={{ color: 'var(--text)' }}>{template.name}</h1>
+            {template.isDefault && <span className="badge badge-green">Default</span>}
           </div>
-          <div className="mt-4 flex items-center space-x-3 sm:mt-0">
-            <button
-              type="button"
-              onClick={() => navigate('/templates')}
-              className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-            >
-              <ArrowLeftIcon className="-ml-1 mr-2 h-5 w-5 text-gray-400" aria-hidden="true" />
-              Back to List
-            </button>
-            {/* Actions for Super Admin */}
-            {isSuperAdmin && (
-              <>
-                <Link
-                  to={`/templates/${id}/edit`}
-                  className="inline-flex items-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                >
-                  <PencilSquareIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-                  Edit
-                </Link>
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  className="inline-flex items-center rounded-md border border-transparent bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-                >
-                  <TrashIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-                  Delete
-                </button>
-              </>
+          <div className="flex flex-wrap gap-2 mt-2 ml-10">
+            {template.category && (
+              <span className="badge badge-blue capitalize">{template.category}</span>
+            )}
+            {template.sampleType && (
+              <span className="badge badge-gray">{template.sampleType}</span>
             )}
           </div>
         </div>
+        <div className="flex flex-wrap gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => navigate('/templates')}
+            className="btn btn-secondary btn-sm inline-flex items-center gap-1.5"
+          >
+            <ArrowLeftIcon className="h-4 w-4" /> Back
+          </button>
+          <Link
+            to={`/reports/create?templateId=${id}`}
+            className="btn btn-primary btn-sm inline-flex items-center gap-1.5"
+          >
+            <PlusIcon className="h-4 w-4" /> Use Template
+          </Link>
+          {isSuperAdmin && (
+            <>
+              <Link
+                to={`/templates/${id}/edit`}
+                className="btn btn-secondary btn-sm inline-flex items-center gap-1.5"
+              >
+                <PencilSquareIcon className="h-4 w-4" /> Edit
+              </Link>
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="btn btn-danger btn-sm inline-flex items-center gap-1.5"
+              >
+                <TrashIcon className="h-4 w-4" /> Delete
+              </button>
+            </>
+          )}
+        </div>
+      </div>
 
-        {/* Main Details Card */}
-        <div className="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
-          <div className="px-4 py-5 sm:px-6">
-            <h3 className="text-lg leading-6 font-medium text-gray-900">Template Details</h3>
-            <p className="mt-1 max-w-2xl text-sm text-gray-500">
-              General information about this test template.
+      {/* Template details card */}
+      <div className="card p-5">
+        <h2 className="text-sm font-semibold uppercase tracking-wider mb-4" style={{ color: 'var(--text-muted)' }}>
+          Template Details
+        </h2>
+        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="detail-row">
+            <dt className="detail-label">Template Name</dt>
+            <dd className="detail-value font-medium">{template.name}</dd>
+          </div>
+          <div className="detail-row">
+            <dt className="detail-label">Category</dt>
+            <dd className="detail-value capitalize">{template.category || 'N/A'}</dd>
+          </div>
+          <div className="detail-row">
+            <dt className="detail-label">Sample Type</dt>
+            <dd className="detail-value">{template.sampleType || 'N/A'}</dd>
+          </div>
+          <div className="detail-row">
+            <dt className="detail-label">Created By</dt>
+            <dd className="detail-value">{template.createdBy?.name || 'System'}</dd>
+          </div>
+          <div className="detail-row">
+            <dt className="detail-label flex items-center gap-1">
+              <CalendarDaysIcon className="h-3.5 w-3.5" /> Created
+            </dt>
+            <dd className="detail-value">{formatDate(template.createdAt)}</dd>
+          </div>
+          <div className="detail-row">
+            <dt className="detail-label flex items-center gap-1">
+              <CalendarDaysIcon className="h-3.5 w-3.5" /> Last Updated
+            </dt>
+            <dd className="detail-value">{formatDate(template.updatedAt)}</dd>
+          </div>
+          {isSuperAdmin && template.lab && (
+            <div className="detail-row sm:col-span-2">
+              <dt className="detail-label flex items-center gap-1">
+                <BuildingOfficeIcon className="h-3.5 w-3.5" /> Associated Lab
+              </dt>
+              <dd className="detail-value">{template.lab.name || 'Unknown Lab'}</dd>
+            </div>
+          )}
+          {template.description && (
+            <div className="sm:col-span-2">
+              <dt className="detail-label mb-1">Description</dt>
+              <dd className="text-sm whitespace-pre-wrap" style={{ color: 'var(--text-2)' }}>{template.description}</dd>
+            </div>
+          )}
+        </dl>
+      </div>
+
+      {/* Parameters section */}
+      {hasFields && (
+        <div className="card overflow-hidden">
+          <div className="px-5 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
+            <h2 className="text-base font-semibold" style={{ color: 'var(--text)' }}>Test Parameters</h2>
+            <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
+              Standard parameters included in this template
             </p>
           </div>
-          <div className="border-t border-gray-200 px-4 py-5 sm:p-0">
-            <dl className="sm:divide-y sm:divide-gray-200">
-              {/* Template Name */}
-              <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500">Template Name</dt>
-                <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{template.name}</dd>
-              </div>
-              {/* Category */}
-              <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500">Category</dt>
-                <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                  <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-                    {template.category ? template.category.charAt(0).toUpperCase() + template.category.slice(1) : 'N/A'}
-                  </span>
-                </dd>
-              </div>
-              {/* Sample Type */}
-              <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500">Sample Type</dt>
-                <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{template.sampleType || 'N/A'}</dd>
-              </div>
-              {/* Associated Lab (if exists and user is super admin) */}
-              {isSuperAdmin && template.lab && (
-                <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500 flex items-center">
-                    <BuildingOfficeIcon className="h-4 w-4 mr-1 text-gray-400" /> Associated Lab
-                  </dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{template.lab.name || 'Unknown Lab'}</dd>
-                </div>
-              )}
-              {/* Created By */}
-              <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500">Created By</dt>
-                <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                  {template.createdBy?.name || 'System'}
-                  {template.isDefault && (
-                    <span className="ml-2 inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                      Default Template
-                    </span>
-                  )}
-                </dd>
-              </div>
-              {/* Created At */}
-              <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                 <dt className="text-sm font-medium text-gray-500 flex items-center">
-                   <CalendarDaysIcon className="h-4 w-4 mr-1 text-gray-400" /> Created At
-                 </dt>
-                 <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{formatDate(template.createdAt)}</dd>
-              </div>
-              {/* Last Updated */}
-              <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                 <dt className="text-sm font-medium text-gray-500 flex items-center">
-                   <CalendarDaysIcon className="h-4 w-4 mr-1 text-gray-400" /> Last Updated
-                 </dt>
-                 <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{formatDate(template.updatedAt)}</dd>
-              </div>
-              {/* Description */}
-              <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500">Description</dt>
-                <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2 whitespace-pre-wrap">
-                  {template.description || <span className="text-gray-400 italic">No description provided</span>}
-                </dd>
-              </div>
-            </dl>
-          </div>
-        </div>
-
-        {/* Parameters Card (Regular Fields) */}
-        {template.fields && template.fields.length > 0 && (
-          <div className="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
-            <div className="px-4 py-5 sm:px-6">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">Test Parameters</h3>
-              <p className="mt-1 max-w-2xl text-sm text-gray-500">
-                Standard parameters included in this test template.
-              </p>
-            </div>
-            <div className="border-t border-gray-200 overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Parameter
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Unit
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Reference Range
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {template.fields.map((field, index) => (
-                  <tr key={index}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {field.parameter}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {field.unit || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {field.reference_range || '-'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ParametersTable fields={template.fields} />
         </div>
       )}
 
-        {/* Parameters Card (Sections) */}
-        {template.sections && Object.keys(template.sections).length > 0 && (
-          <div className="space-y-6">
-            <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-              <div className="px-4 py-5 sm:px-6">
-                <h3 className="text-lg leading-6 font-medium text-gray-900">Test Sections</h3>
-                <p className="mt-1 max-w-2xl text-sm text-gray-500">
-                  This template is organized into the following sections.
-                </p>
-              </div>
-            </div>
-
-            {Object.entries(template.sections).map(([sectionName, fields], sectionIndex) => (
-              <div key={sectionIndex} className="bg-white shadow overflow-hidden sm:rounded-lg">
-                <div className="px-4 py-5 sm:px-6 bg-gray-50 border-b border-gray-200">
-                  <h3 className="text-md font-medium text-gray-900">{sectionName}</h3>
-                </div>
-                <div className="border-t border-gray-200 overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Parameter
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Unit
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Reference Range
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {fields.map((field, fieldIndex) => (
-                      <tr key={fieldIndex}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {field.parameter}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {field.unit || '-'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {field.reference_range || '-'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+      {/* Sections */}
+      {hasSections && (
+        <div className="space-y-3">
+          <h2 className="text-base font-semibold" style={{ color: 'var(--text)' }}>Test Sections</h2>
+          {Object.entries(template.sections).map(([sectionName, fields], sectionIndex) => (
+            <CollapsibleSection key={sectionIndex} name={sectionName} fields={fields} />
           ))}
         </div>
       )}
 
-      {/* Show message if no parameters or sections */}
-      {(!template.fields || template.fields.length === 0) && 
-         (!template.sections || Object.keys(template.sections).length === 0) && (
-          <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-            <div className="px-4 py-5 sm:px-6">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">Test Parameters</h3>
-            </div>
-            <div className="border-t border-gray-200 p-6 text-center">
-              <BeakerIcon className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No Parameters Defined</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                This test template currently has no parameters or sections defined.
-              </p>
-              {isSuperAdmin && (
-                 <div className="mt-6">
-                   <Link
-                     to={`/templates/${id}/edit`}
-                     className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                   >
-                     <PencilSquareIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-                     Edit Template to Add Parameters
-                   </Link>
-                 </div>
-              )}
-            </div>
+      {/* No parameters */}
+      {!hasFields && !hasSections && (
+        <div className="card overflow-hidden">
+          <div className="px-5 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
+            <h2 className="text-base font-semibold" style={{ color: 'var(--text)' }}>Test Parameters</h2>
           </div>
-        )}
-      </div> {/* Closing tag for max-w-7xl container */}
-    </div> // Closing tag for py-6 container
+          <div className="empty-state py-12">
+            <BeakerIcon className="h-10 w-10 mx-auto mb-2" style={{ color: 'var(--text-muted)' }} />
+            <p className="font-medium" style={{ color: 'var(--text)' }}>No Parameters Defined</p>
+            <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
+              This test template has no parameters or sections defined.
+            </p>
+            {isSuperAdmin && (
+              <Link
+                to={`/templates/${id}/edit`}
+                className="btn btn-primary btn-sm mt-4 inline-flex items-center gap-1.5"
+              >
+                <PencilSquareIcon className="h-4 w-4" /> Edit Template to Add Parameters
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

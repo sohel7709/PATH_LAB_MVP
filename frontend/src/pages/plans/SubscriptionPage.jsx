@@ -27,11 +27,9 @@ const SubscriptionPage = () => {
           // Handle cases where no subscription is found (e.g., new lab, failed trial)
           setSubscription(null);
           setPlan(null);
-          console.log(response.data?.message || 'No active subscription found.');
-        }
+                  }
       } catch (err) {
-        console.error('Error fetching subscription:', err);
-        setError(err.response?.data?.message || 'An error occurred while fetching subscription details.');
+                setError(err.response?.data?.message || 'An error occurred while fetching subscription details.');
       } finally {
         setLoading(false);
       }

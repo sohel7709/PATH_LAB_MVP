@@ -97,8 +97,7 @@ function PlanForm({ planData, onClose, onSuccess }) {
                  setError(response.message || 'An unknown error occurred.');
             }
         } catch (err) {
-            console.error("Error saving plan:", err);
-            setError(err.response?.data?.message || 'Failed to save plan. Please check the details and try again.');
+                        setError(err.response?.data?.message || 'Failed to save plan. Please check the details and try again.');
         } finally {
             setLoading(false);
         }

@@ -46,8 +46,7 @@ const WhatsAppNotificationSettings = () => {
       }
       setLoading(false);
     } catch (err) {
-      console.error('Failed to load WhatsApp settings:', err);
-      setError('Failed to load WhatsApp notification settings');
+            setError('Failed to load WhatsApp notification settings');
       setLoading(false);
     }
   };
@@ -74,8 +73,7 @@ const WhatsAppNotificationSettings = () => {
       setSuccess(true);
       setSaving(false);
     } catch (err) {
-      console.error('Failed to save settings:', err);
-      setError('Failed to save WhatsApp notification settings');
+            setError('Failed to save WhatsApp notification settings');
       setSaving(false);
     }
   };

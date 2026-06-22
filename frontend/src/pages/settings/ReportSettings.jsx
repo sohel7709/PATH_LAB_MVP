@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { labReportSettings } from "../../utils/api";
 import {
@@ -6,30 +6,126 @@ import {
   ArrowUpTrayIcon,
   CheckCircleIcon,
   ExclamationCircleIcon,
+  XCircleIcon,
+  PhotoIcon,
+  PencilSquareIcon,
+  SwatchIcon,
+  EyeIcon,
 } from "@heroicons/react/24/outline";
 import ReportPreview from "../../components/reports/ReportPreview";
+
+// ── reusable primitives ──────────────────────────────────────────────────────
+
+const SectionCard = ({ icon: Icon, title, subtitle, children }) => (
+  <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+    <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100 bg-gray-50">
+      {Icon && <Icon className="h-5 w-5 text-blue-600 flex-shrink-0" />}
+      <div>
+        <h3 className="text-base font-semibold text-gray-900">{title}</h3>
+        {subtitle && <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>}
+      </div>
+    </div>
+    <div className="px-6 py-5">{children}</div>
+  </div>
+);
+
+const Field = ({ label, hint, children, span = "col-span-1" }) => (
+  <div className={span}>
+    <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+    {children}
+    {hint && <p className="mt-1 text-xs text-gray-400">{hint}</p>}
+  </div>
+);
+
+const inputCls =
+  "w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none transition";
+
+const selectCls =
+  "w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none transition";
+
+// ── image upload widget ───────────────────────────────────────────────────────
+
+const ImageUpload = ({ label, hint, value, onUpload, onRemove, uploading }) => {
+  const ref = useRef(null);
+  return (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
+      <div className="flex items-start gap-4">
+        <div className="flex-shrink-0">
+          {value ? (
+            <div className="relative inline-block">
+              <img
+                src={value}
+                alt={label}
+                className="h-20 max-w-[160px] object-contain rounded-lg border border-gray-200 bg-gray-50 p-1"
+              />
+              <button
+                type="button"
+                onClick={onRemove}
+                className="absolute -top-2 -right-2 bg-white rounded-full border border-red-200 text-red-500 hover:bg-red-50 p-0.5 shadow-sm"
+              >
+                <XCircleIcon className="h-4 w-4" />
+              </button>
+            </div>
+          ) : (
+            <div className="h-20 w-36 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 bg-gray-50">
+              <PhotoIcon className="h-7 w-7 mb-1" />
+              <span className="text-xs">No image</span>
+            </div>
+          )}
+        </div>
+        <div className="flex flex-col gap-2">
+          <input
+            type="file"
+            ref={ref}
+            className="hidden"
+            accept="image/png,image/jpeg,image/jpg"
+            onChange={(e) => onUpload(e.target.files[0])}
+          />
+          <button
+            type="button"
+            onClick={() => ref.current.click()}
+            disabled={uploading}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-50 transition"
+          >
+            <ArrowUpTrayIcon className="h-4 w-4" />
+            {uploading ? "Uploading…" : "Upload"}
+          </button>
+          {hint && <p className="text-xs text-gray-400 max-w-xs">{hint}</p>}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── main component ────────────────────────────────────────────────────────────
 
 const ReportSettings = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [previewMode, setPreviewMode] = useState(false);
 
-  // Form state
   const [settings, setSettings] = useState({
     header: {
+      headerMode: "generated",
+      headerDesign: "classic",
       labName: "",
       doctorName: "",
+      registrationNo: "",
+      technicianName: "",
+      technicianDesignation: "",
       address: "",
       phone: "",
       email: "",
-      logo: "",
       headerImage: "",
       headerImageType: "",
     },
     footer: {
+      footerMode: "generated",
       verifiedBy: "",
       designation: "Consultant Pathologist",
       signature: "",
@@ -37,290 +133,144 @@ const ReportSettings = () => {
       footerImage: "",
       footerImageType: "",
     },
-    watermark: {
-      image: "",
-      imageType: "",
-      enabled: true,
-    },
+    watermark: { image: "", imageType: "", enabled: true },
     styling: {
-      primaryColor: "#3b82f6",
+      primaryColor: "#2563eb",
       secondaryColor: "#1e40af",
       fontFamily: "Arial, sans-serif",
       fontSize: 12,
     },
   });
 
-  // File input references
-  const headerInputRef = React.useRef(null);
-  const footerInputRef = React.useRef(null);
-  const signatureInputRef = React.useRef(null);
-
-  // Fetch lab report settings
   useEffect(() => {
-    const fetchSettings = async () => {
+    const fetch = async () => {
       try {
         setLoading(true);
-        setError("");
-
-        if (!user || !user.lab) {
-          setError("No lab associated with your account");
-          setLoading(false);
-          return;
-        }
-
-        const response = await labReportSettings.getSettings(user.lab);
-
-        if (response.success) {
-          setSettings(response.data);
-        } else {
-          setError("Failed to fetch report settings");
-        }
-      } catch (err) {
-        console.error("Error fetching report settings:", err);
-        setError("Failed to load report settings. Please try again later.");
-      } finally {
-        setLoading(false);
-      }
+        if (!user?.lab) { setError("No lab associated with your account"); return; }
+        const res = await labReportSettings.getSettings(user.lab);
+        if (res.success) setSettings(res.data);
+        else setError("Failed to fetch report settings");
+      } catch { setError("Failed to load report settings. Please try again later."); }
+      finally { setLoading(false); }
     };
-
-    fetchSettings();
+    fetch();
   }, [user]);
 
-  // Handle form input changes
-  const handleChange = (section, field, value) => {
-    setSettings((prev) => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        [field]: value,
-      },
-    }));
-  };
+  const handleChange = (section, field, value) =>
+    setSettings((p) => ({ ...p, [section]: { ...p[section], [field]: value } }));
 
-  // Handle color changes
-  const handleColorChange = (colorField, value) => {
-    setSettings((prev) => ({
-      ...prev,
-      styling: {
-        ...prev.styling,
-        [colorField]: value,
-      },
-    }));
-  };
-
-  // Handle file upload (logo, header, footer, or signature)
   const handleFileUpload = async (type, file) => {
+    if (!file) return;
+    const valid = ["image/png", "image/jpeg", "image/jpg"];
+    if (!valid.includes(file.type)) { setError("Please upload a PNG or JPG image."); return; }
+    setError(""); setUploading(true);
     try {
-      if (!file) {
-        return;
-      }
-
-      // Validate file type
-      const validTypes = ["image/png", "image/jpeg", "image/jpg"];
-      if (!validTypes.includes(file.type)) {
-        setError(`Invalid file type. Please upload a PNG or JPG image.`);
-        return;
-      }
-
-      setError("");
-      setSaving(true);
-
-      const response = await labReportSettings.uploadImage(
-        user.lab,
-        file,
-        type,
-      );
-
-      if (response.success) {
-        if (type === "header") {
-          setSettings((prev) => ({
-            ...prev,
-            header: {
-              ...prev.header,
-              headerImage: response.data.url,
-              headerImageType: response.data.mimeType,
-            },
-          }));
-        } else if (type === "footer") {
-          setSettings((prev) => ({
-            ...prev,
-            footer: {
-              ...prev.footer,
-              footerImage: response.data.url,
-              footerImageType: response.data.mimeType,
-            },
-          }));
-        } else if (type === "signature") {
-          setSettings((prev) => ({
-            ...prev,
-            footer: {
-              ...prev.footer,
-              signature: response.data.url,
-              signatureType: response.data.mimeType,
-            },
-          }));
-        } else if (type === "watermark") {
-          setSettings((prev) => ({
-            ...prev,
-            watermark: {
-              ...prev.watermark,
-              image: response.data.url,
-              imageType: response.data.mimeType,
-            },
-          }));
-        }
-
-        setSuccess(
-          `${type.charAt(0).toUpperCase() + type.slice(1)} uploaded successfully`,
-        );
+      const res = await labReportSettings.uploadImage(user.lab, file, type);
+      if (res.success) {
+        if (type === "header")
+          setSettings((p) => ({ ...p, header: { ...p.header, headerImage: res.data.url, headerImageType: res.data.mimeType } }));
+        else if (type === "footer")
+          setSettings((p) => ({ ...p, footer: { ...p.footer, footerImage: res.data.url, footerImageType: res.data.mimeType } }));
+        else if (type === "signature")
+          setSettings((p) => ({ ...p, footer: { ...p.footer, signature: res.data.url, signatureType: res.data.mimeType } }));
+        else if (type === "watermark")
+          setSettings((p) => ({ ...p, watermark: { ...p.watermark, image: res.data.url, imageType: res.data.mimeType } }));
+        setSuccess(`${type.charAt(0).toUpperCase() + type.slice(1)} uploaded successfully`);
         setTimeout(() => setSuccess(""), 3000);
-      } else {
-        setError(`Failed to upload ${type}`);
-      }
-    } catch (err) {
-      console.error(`Error uploading ${type}:`, err);
-      setError(`Failed to upload ${type}. Please try again.`);
-    } finally {
-      setSaving(false);
-    }
+      } else setError(`Failed to upload ${type}`);
+    } catch { setError(`Failed to upload ${type}. Please try again.`); }
+    finally { setUploading(false); }
   };
 
-  // Save settings
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+    setError(""); setSuccess(""); setSaving(true);
     try {
-      setError("");
-      setSuccess("");
-      setSaving(true);
-
-      // Create a simplified version of the settings object to avoid potential issues
-      const settingsToSave = {
+      const payload = {
         header: {
           headerMode: settings.header.headerMode,
+          headerDesign: settings.header.headerDesign || "classic",
           labName: settings.header.labName,
           doctorName: settings.header.doctorName,
           registrationNo: settings.header.registrationNo,
           technicianName: settings.header.technicianName,
+          technicianDesignation: settings.header.technicianDesignation,
           address: settings.header.address,
           phone: settings.header.phone,
           email: settings.header.email,
-
           headerImage: settings.header.headerImage,
           headerImageType: settings.header.headerImageType,
         },
-
         footer: {
           footerMode: settings.footer.footerMode,
-
           verifiedBy: settings.footer.verifiedBy,
           designation: settings.footer.designation,
-
           signature: settings.footer.signature,
           signatureType: settings.footer.signatureType,
-
           footerImage: settings.footer.footerImage,
           footerImageType: settings.footer.footerImageType,
         },
-
-        watermark: {
-          image: settings.watermark.image,
-          imageType: settings.watermark.imageType,
-          enabled: settings.watermark.enabled,
-        },
-
-        styling: {
-          primaryColor: settings.styling.primaryColor,
-          secondaryColor: settings.styling.secondaryColor,
-          fontFamily: settings.styling.fontFamily,
-          fontSize: settings.styling.fontSize,
-        },
+        watermark: { image: settings.watermark.image, imageType: settings.watermark.imageType, enabled: settings.watermark.enabled },
+        styling: { primaryColor: settings.styling.primaryColor, secondaryColor: settings.styling.secondaryColor, fontFamily: settings.styling.fontFamily, fontSize: settings.styling.fontSize },
       };
-      console.log("Saving settings:", settingsToSave);
-      const response = await labReportSettings.updateSettings(
-        user.lab,
-        settingsToSave,
-      );
-
-      if (response.success) {
-        setSuccess("Report settings saved successfully");
-        setTimeout(() => setSuccess(""), 3000);
-      } else {
-        setError("Failed to save report settings");
-      }
-    } catch (err) {
-      console.error("Error saving report settings:", err);
-      setError("Failed to save report settings. Please try again.");
-    } finally {
-      setSaving(false);
-    }
+      const res = await labReportSettings.updateSettings(user.lab, payload);
+      if (res.success) { setSuccess("Settings saved successfully!"); setTimeout(() => setSuccess(""), 3000); }
+      else setError("Failed to save settings");
+    } catch { setError("Failed to save settings. Please try again."); }
+    finally { setSaving(false); }
   };
 
-  // Toggle preview mode
-  const togglePreview = () => {
-    setPreviewMode(!previewMode);
-  };
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+  if (loading) return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex flex-col items-center gap-3">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+        <p className="text-sm text-gray-500">Loading settings…</p>
       </div>
-    );
-  }
+    </div>
+  );
+
+  const headerDesigns = [
+    { value: "classic",  label: "Classic",  desc: "Lab left · Doctor right",  preview: "🏛️" },
+    { value: "centered", label: "Centered", desc: "Centered layout",           preview: "📄" },
+    { value: "modern",   label: "Modern",   desc: "Blue banner + info bar",    preview: "🎨" },
+    { value: "minimal",  label: "Minimal",  desc: "Clean single line",         preview: "✨" },
+  ];
 
   return (
-    <div className="space-y-6">
-      <div className="sm:flex sm:items-center sm:justify-between">
+    <div className="max-w-4xl mx-auto space-y-6 pb-10">
+
+      {/* ── Page header ── */}
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center">
-            <DocumentTextIcon className="h-8 w-8 text-blue-500 mr-2" />
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <DocumentTextIcon className="h-7 w-7 text-blue-600" />
             Report Settings
           </h1>
-          <p className="mt-2 text-sm text-gray-700">
-            Customize how your lab reports look when printed or exported as PDF
+          <p className="mt-1 text-sm text-gray-500">
+            Customize how your lab reports look when printed or exported as PDF.
           </p>
         </div>
-        <div className="mt-4 flex space-x-3 sm:mt-0">
-          <button
-            type="button"
-            onClick={togglePreview}
-            className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          >
-            {previewMode ? "Edit Settings" : "Preview Report"}
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => setPreviewMode((p) => !p)}
+          className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition"
+        >
+          <EyeIcon className="h-4 w-4" />
+          {previewMode ? "Back to Edit" : "Preview Report"}
+        </button>
       </div>
 
+      {/* ── Alerts ── */}
       {error && (
-        <div className="rounded-md bg-red-50 p-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <ExclamationCircleIcon
-                className="h-5 w-5 text-red-400"
-                aria-hidden="true"
-              />
-            </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">{error}</h3>
-            </div>
-          </div>
+        <div className="flex items-start gap-3 rounded-xl bg-red-50 border border-red-200 px-4 py-3">
+          <ExclamationCircleIcon className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-red-700">{error}</p>
         </div>
       )}
-
       {success && (
-        <div className="rounded-md bg-green-50 p-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <CheckCircleIcon
-                className="h-5 w-5 text-green-400"
-                aria-hidden="true"
-              />
-            </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-green-800">{success}</h3>
-            </div>
-          </div>
+        <div className="flex items-start gap-3 rounded-xl bg-green-50 border border-green-200 px-4 py-3">
+          <CheckCircleIcon className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-green-700">{success}</p>
         </div>
       )}
 
@@ -328,510 +278,240 @@ const ReportSettings = () => {
         <ReportPreview settings={settings} />
       ) : (
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Header Settings */}
-          <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-            <div className="px-4 py-5 sm:p-6">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">
-                Header Settings
-              </h3>
-              <div className="sm:col-span-3">
-                <label className="block text-sm font-medium text-gray-700">
-                  Header Type
-                </label>
 
+          {/* ── HEADER ── */}
+          <SectionCard icon={PencilSquareIcon} title="Header Settings" subtitle="Appears at the top of every report page">
+
+            {/* Header type */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-6">
+              <Field label="Header Type">
                 <select
                   value={settings.header.headerMode || "generated"}
-                  onChange={(e) =>
-                    handleChange("header", "headerMode", e.target.value)
-                  }
-                  className="mt-1 block w-full rounded-md border-gray-300"
+                  onChange={(e) => handleChange("header", "headerMode", e.target.value)}
+                  className={selectCls}
                 >
-                  <option value="generated">Generated Header</option>
-
-                  <option value="image">Header Image</option>
-
+                  <option value="generated">Generated (text-based)</option>
+                  <option value="image">Custom Image</option>
                   <option value="none">No Header</option>
                 </select>
-              </div>
-              <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-                <div className="sm:col-span-3">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Lab Name
-                  </label>
-
-                  <input
-                    type="text"
-                    value={settings.header.labName || ""}
-                    onChange={(e) =>
-                      handleChange("header", "labName", e.target.value)
-                    }
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                  />
-                </div>
-
-                <div className="sm:col-span-3">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Doctor Name
-                  </label>
-
-                  <input
-                    type="text"
-                    value={settings.header.doctorName || ""}
-                    onChange={(e) =>
-                      handleChange("header", "doctorName", e.target.value)
-                    }
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                  />
-                </div>
-
-                <div className="sm:col-span-3">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Registration Number
-                  </label>
-
-                  <input
-                    type="text"
-                    value={settings.header.registrationNo || ""}
-                    onChange={(e) =>
-                      handleChange("header", "registrationNo", e.target.value)
-                    }
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                  />
-                </div>
-
-                <div className="sm:col-span-3">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Technician Name
-                  </label>
-
-                  <input
-                    type="text"
-                    value={settings.header.technicianName || ""}
-                    onChange={(e) =>
-                      handleChange("header", "technicianName", e.target.value)
-                    }
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                  />
-                </div>
-
-                <div className="sm:col-span-6">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Address
-                  </label>
-
-                  <textarea
-                    rows="2"
-                    value={settings.header.address || ""}
-                    onChange={(e) =>
-                      handleChange("header", "address", e.target.value)
-                    }
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                  />
-                </div>
-
-                <div className="sm:col-span-3">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Phone
-                  </label>
-
-                  <input
-                    type="text"
-                    value={settings.header.phone || ""}
-                    onChange={(e) =>
-                      handleChange("header", "phone", e.target.value)
-                    }
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                  />
-                </div>
-
-                <div className="sm:col-span-3">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Email
-                  </label>
-
-                  <input
-                    type="text"
-                    value={settings.header.email || ""}
-                    onChange={(e) =>
-                      handleChange("header", "email", e.target.value)
-                    }
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                  />
-                </div>
-
-                <div className="sm:col-span-6">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Header Image
-                  </label>
-                  <div className="mt-1 flex items-center">
-                    {settings.header.headerImage ? (
-                      <div className="relative">
-                        <img
-                          src={settings.header.headerImage}
-                          alt="Header Image"
-                          className="h-16 w-auto object-contain"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            handleChange("header", "headerImage", "");
-                            handleChange("header", "headerImageType", "");
-                          }}
-                          className="absolute -top-2 -right-2 bg-red-100 rounded-full p-1 text-red-600 hover:bg-red-200"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-4 w-4"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="h-16 w-32 bg-gray-200 flex items-center justify-center text-gray-500 text-sm">
-                        No Header Image
-                      </div>
-                    )}
-                    <input
-                      type="file"
-                      ref={headerInputRef}
-                      className="hidden"
-                      accept="image/png,image/jpeg,image/jpg"
-                      onChange={(e) =>
-                        handleFileUpload("header", e.target.files[0])
-                      }
-                    />
-                    <button
-                      type="button"
-                      onClick={() => headerInputRef.current.click()}
-                      className="ml-5 rounded-md border border-gray-300 bg-white py-2 px-3 text-sm font-medium leading-4 text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                    >
-                      <ArrowUpTrayIcon className="h-4 w-4 inline mr-1" />
-                      Upload Header
-                    </button>
-                  </div>
-                  <p className="mt-2 text-sm text-gray-500">
-                    <span className="font-semibold text-blue-600">
-                      Required size: 2480x480 pixels @ 300 DPI
-                    </span>
-                    , PNG or JPEG format. This image will be displayed at the
-                    top of the report. The header area is fixed and will be
-                    reserved even if no image is provided.
-                  </p>
-                </div>
-              </div>
+              </Field>
             </div>
-          </div>
 
-          {/* Footer Settings */}
-          <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-            <div className="px-4 py-5 sm:p-6">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">
-                Footer Settings
-              </h3>
-              <div className="sm:col-span-3">
-                <label className="block text-sm font-medium text-gray-700">
-                  Footer Type
-                </label>
-
-                <select
-                  value={settings.footer.footerMode || "generated"}
-                  onChange={(e) =>
-                    handleChange("footer", "footerMode", e.target.value)
-                  }
-                  className="mt-1 block w-full rounded-md border-gray-300"
-                >
-                  <option value="generated">Generated Footer</option>
-
-                  <option value="image">Footer Image</option>
-
-                  <option value="none">No Footer</option>
-                </select>
-              </div>
-              <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-                <div className="sm:col-span-3">
-                  <label
-                    htmlFor="verifiedBy"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    Verified By
-                  </label>
-                  <div className="mt-1">
-                    <input
-                      type="text"
-                      name="verifiedBy"
-                      id="verifiedBy"
-                      value={settings.footer.verifiedBy}
-                      onChange={(e) =>
-                        handleChange("footer", "verifiedBy", e.target.value)
-                      }
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                    />
-                  </div>
-                </div>
-
-                <div className="sm:col-span-3">
-                  <label
-                    htmlFor="designation"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    Designation
-                  </label>
-                  <div className="mt-1">
-                    <input
-                      type="text"
-                      name="designation"
-                      id="designation"
-                      value={settings.footer.designation}
-                      onChange={(e) =>
-                        handleChange("footer", "designation", e.target.value)
-                      }
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                    />
-                  </div>
-                </div>
-
-                <div className="sm:col-span-6">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Signature
-                  </label>
-                  <div className="mt-1 flex items-center">
-                    {settings.footer.signature ? (
-                      <div className="relative">
-                        <img
-                          src={settings.footer.signature}
-                          alt="Signature"
-                          className="h-16 w-auto object-contain"
-                        />
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleChange("footer", "signature", "")
-                          }
-                          className="absolute -top-2 -right-2 bg-red-100 rounded-full p-1 text-red-600 hover:bg-red-200"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-4 w-4"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="h-16 w-32 bg-gray-200 flex items-center justify-center text-gray-500 text-sm">
-                        No Signature
-                      </div>
-                    )}
-                    <input
-                      type="file"
-                      ref={signatureInputRef}
-                      className="hidden"
-                      accept="image/png,image/jpeg,image/jpg"
-                      onChange={(e) =>
-                        handleFileUpload("signature", e.target.files[0])
-                      }
-                    />
-                    <button
-                      type="button"
-                      onClick={() => signatureInputRef.current.click()}
-                      className="ml-5 rounded-md border border-gray-300 bg-white py-2 px-3 text-sm font-medium leading-4 text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                    >
-                      <ArrowUpTrayIcon className="h-4 w-4 inline mr-1" />
-                      Upload Signature
-                    </button>
-                  </div>
-                  <p className="mt-2 text-sm text-gray-500">
-                    Recommended size: 200x100 pixels, PNG or JPEG format with
-                    transparent background.
-                  </p>
-                </div>
-
-                <div className="sm:col-span-6">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Footer Image
-                  </label>
-                  <div className="mt-1 flex items-center">
-                    {settings.footer.footerImage ? (
-                      <div className="relative">
-                        <img
-                          src={settings.footer.footerImage}
-                          alt="Footer Image"
-                          className="h-16 w-auto object-contain"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            handleChange("footer", "footerImage", "");
-                            handleChange("footer", "footerImageType", "");
-                          }}
-                          className="absolute -top-2 -right-2 bg-red-100 rounded-full p-1 text-red-600 hover:bg-red-200"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-4 w-4"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="h-16 w-32 bg-gray-200 flex items-center justify-center text-gray-500 text-sm">
-                        No Footer Image
-                      </div>
-                    )}
-                    <input
-                      type="file"
-                      ref={footerInputRef}
-                      className="hidden"
-                      accept="image/png,image/jpeg,image/jpg"
-                      onChange={(e) =>
-                        handleFileUpload("footer", e.target.files[0])
-                      }
-                    />
-                    <button
-                      type="button"
-                      onClick={() => footerInputRef.current.click()}
-                      className="ml-5 rounded-md border border-gray-300 bg-white py-2 px-3 text-sm font-medium leading-4 text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                    >
-                      <ArrowUpTrayIcon className="h-4 w-4 inline mr-1" />
-                      Upload Footer
-                    </button>
-                  </div>
-                  <p className="mt-2 text-sm text-gray-500">
-                    <span className="font-semibold text-blue-600">
-                      Required size: 2480x200 pixels @ 300 DPI
-                    </span>
-                    , PNG or JPEG format. This image will be displayed at the
-                    bottom of the report. The footer area is fixed and will be
-                    reserved even if no image is provided.
-                  </p>
+            {/* Design picker — only for generated mode */}
+            {(settings.header.headerMode === "generated" || !settings.header.headerMode) && (
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Header Design</label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {headerDesigns.map((d) => {
+                    const active = (settings.header.headerDesign || "classic") === d.value;
+                    return (
+                      <button
+                        key={d.value}
+                        type="button"
+                        onClick={() => handleChange("header", "headerDesign", d.value)}
+                        className={`rounded-xl border-2 p-3 text-left transition-all ${
+                          active
+                            ? "border-blue-600 bg-blue-50 shadow-sm"
+                            : "border-gray-200 hover:border-blue-300 hover:bg-gray-50"
+                        }`}
+                      >
+                        <div className="text-2xl mb-1">{d.preview}</div>
+                        <div className={`text-sm font-semibold ${active ? "text-blue-700" : "text-gray-800"}`}>{d.label}</div>
+                        <div className="text-xs text-gray-500 mt-0.5">{d.desc}</div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
-            </div>
-          </div>
-
-          {/* Watermark Settings */}
-          <div className="bg-white rounded-lg shadow p-6 mt-6">
-            <h3 className="text-lg font-semibold mb-4">Watermark Settings</h3>
-
-            <label className="flex items-center gap-2 mb-4">
-              <input
-                type="checkbox"
-                checked={settings.watermark.enabled}
-                onChange={(e) =>
-                  setSettings({
-                    ...settings,
-                    watermark: {
-                      ...settings.watermark,
-                      enabled: e.target.checked,
-                    },
-                  })
-                }
-              />
-              Enable Watermark
-            </label>
-
-            {settings.watermark.image && (
-              <img
-                src={settings.watermark.image}
-                alt="Watermark"
-                className="h-32 object-contain mb-4"
-              />
             )}
 
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => handleFileUpload("watermark", e.target.files[0])}
-            />
-          </div>
+            {/* Lab & Doctor info */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              <Field label="Lab Name" hint="Displayed prominently in the header">
+                <input type="text" className={inputCls} placeholder="e.g. City Diagnostic Lab"
+                  value={settings.header.labName || ""}
+                  onChange={(e) => handleChange("header", "labName", e.target.value)} />
+              </Field>
+              <Field label="Doctor / Pathologist Name">
+                <input type="text" className={inputCls} placeholder="e.g. Dr. Priya Sharma"
+                  value={settings.header.doctorName || ""}
+                  onChange={(e) => handleChange("header", "doctorName", e.target.value)} />
+              </Field>
+              <Field label="Registration Number">
+                <input type="text" className={inputCls} placeholder="e.g. MCI-12345"
+                  value={settings.header.registrationNo || ""}
+                  onChange={(e) => handleChange("header", "registrationNo", e.target.value)} />
+              </Field>
+              <Field label="Phone">
+                <input type="text" className={inputCls} placeholder="e.g. +91 98765 43210"
+                  value={settings.header.phone || ""}
+                  onChange={(e) => handleChange("header", "phone", e.target.value)} />
+              </Field>
+              <Field label="Email">
+                <input type="email" className={inputCls} placeholder="e.g. lab@example.com"
+                  value={settings.header.email || ""}
+                  onChange={(e) => handleChange("header", "email", e.target.value)} />
+              </Field>
+            </div>
 
-          {/* Styling Settings */}
-          <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-            <div className="px-4 py-5 sm:p-6">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">
-                Styling Settings
-              </h3>
-              <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-                <div className="sm:col-span-3">
-                  <label
-                    htmlFor="primaryColor"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    Primary Color
-                  </label>
-                  <div className="mt-1 flex items-center">
-                    <input
-                      type="color"
-                      name="primaryColor"
-                      id="primaryColor"
-                      value={settings.styling.primaryColor}
-                      onChange={(e) =>
-                        handleColorChange("primaryColor", e.target.value)
-                      }
-                      className="h-8 w-8 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    />
-                    <span className="ml-2 text-sm text-gray-500">
-                      {settings.styling.primaryColor}
-                    </span>
-                  </div>
-                </div>
+            {/* Address full-width */}
+            <div className="mb-6">
+              <Field label="Address">
+                <textarea rows={2} className={inputCls} placeholder="123, Main Street, City, State - 400001"
+                  value={settings.header.address || ""}
+                  onChange={(e) => handleChange("header", "address", e.target.value)} />
+              </Field>
+            </div>
 
-                <div className="sm:col-span-3">
-                  <label
-                    htmlFor="secondaryColor"
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    Secondary Color
-                  </label>
-                  <div className="mt-1 flex items-center">
-                    <input
-                      type="color"
-                      name="secondaryColor"
-                      id="secondaryColor"
-                      value={settings.styling.secondaryColor}
-                      onChange={(e) =>
-                        handleColorChange("secondaryColor", e.target.value)
-                      }
-                      className="h-8 w-8 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    />
-                    <span className="ml-2 text-sm text-gray-500">
-                      {settings.styling.secondaryColor}
-                    </span>
-                  </div>
-                </div>
+            {/* Technician */}
+            <div className="rounded-xl bg-blue-50 border border-blue-100 px-4 py-4 mb-6">
+              <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-3">Technician Details</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field label="Technician Name">
+                  <input type="text" className={inputCls} placeholder="e.g. Rahul Verma"
+                    value={settings.header.technicianName || ""}
+                    onChange={(e) => handleChange("header", "technicianName", e.target.value)} />
+                </Field>
+                <Field label="Technician Designation">
+                  <input type="text" className={inputCls} placeholder="e.g. Lab Technician, DMLT"
+                    value={settings.header.technicianDesignation || ""}
+                    onChange={(e) => handleChange("header", "technicianDesignation", e.target.value)} />
+                </Field>
               </div>
             </div>
-          </div>
 
-          <div className="flex justify-end">
+            {/* Header image upload */}
+            <ImageUpload
+              label="Header Image (used when mode is 'Custom Image')"
+              hint="Recommended: 2480 × 480 px @ 300 DPI · PNG or JPG"
+              value={settings.header.headerImage}
+              uploading={uploading}
+              onUpload={(f) => handleFileUpload("header", f)}
+              onRemove={() => { handleChange("header", "headerImage", ""); handleChange("header", "headerImageType", ""); }}
+            />
+          </SectionCard>
+
+          {/* ── FOOTER ── */}
+          <SectionCard icon={DocumentTextIcon} title="Footer Settings" subtitle="Appears at the bottom of every report page">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-6">
+              <Field label="Footer Type">
+                <select
+                  value={settings.footer.footerMode || "generated"}
+                  onChange={(e) => handleChange("footer", "footerMode", e.target.value)}
+                  className={selectCls}
+                >
+                  <option value="generated">Generated (text-based)</option>
+                  <option value="image">Custom Image</option>
+                  <option value="none">No Footer</option>
+                </select>
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+              <Field label="Verified By">
+                <input type="text" className={inputCls} placeholder="e.g. Dr. Priya Sharma"
+                  value={settings.footer.verifiedBy || ""}
+                  onChange={(e) => handleChange("footer", "verifiedBy", e.target.value)} />
+              </Field>
+              <Field label="Designation">
+                <input type="text" className={inputCls} placeholder="e.g. Consultant Pathologist"
+                  value={settings.footer.designation || ""}
+                  onChange={(e) => handleChange("footer", "designation", e.target.value)} />
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <ImageUpload
+                label="Signature"
+                hint="Recommended: 200 × 100 px · PNG with transparent background"
+                value={settings.footer.signature}
+                uploading={uploading}
+                onUpload={(f) => handleFileUpload("signature", f)}
+                onRemove={() => handleChange("footer", "signature", "")}
+              />
+              <ImageUpload
+                label="Footer Image (used when mode is 'Custom Image')"
+                hint="Recommended: 2480 × 200 px @ 300 DPI · PNG or JPG"
+                value={settings.footer.footerImage}
+                uploading={uploading}
+                onUpload={(f) => handleFileUpload("footer", f)}
+                onRemove={() => { handleChange("footer", "footerImage", ""); handleChange("footer", "footerImageType", ""); }}
+              />
+            </div>
+          </SectionCard>
+
+          {/* ── WATERMARK ── */}
+          <SectionCard icon={PhotoIcon} title="Watermark" subtitle="Semi-transparent background image on each page">
+            <div className="flex items-center gap-3 mb-5">
+              <button
+                type="button"
+                onClick={() => handleChange("watermark", "enabled", !settings.watermark.enabled)}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${
+                  settings.watermark.enabled ? "bg-blue-600" : "bg-gray-200"
+                }`}
+              >
+                <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ${settings.watermark.enabled ? "translate-x-5" : "translate-x-0"}`} />
+              </button>
+              <span className="text-sm font-medium text-gray-700">
+                {settings.watermark.enabled ? "Watermark enabled" : "Watermark disabled"}
+              </span>
+            </div>
+            <ImageUpload
+              label="Watermark Image"
+              hint="Use a light-coloured or greyscale logo · PNG recommended"
+              value={settings.watermark.image}
+              uploading={uploading}
+              onUpload={(f) => handleFileUpload("watermark", f)}
+              onRemove={() => { handleChange("watermark", "image", ""); handleChange("watermark", "imageType", ""); }}
+            />
+          </SectionCard>
+
+          {/* ── STYLING ── */}
+          <SectionCard icon={SwatchIcon} title="Styling" subtitle="Colors applied to the generated header design">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {[
+                { id: "primaryColor", label: "Primary Color", hint: "Used for lab name and accents" },
+                { id: "secondaryColor", label: "Secondary Color", hint: "Used for sub-headings" },
+              ].map(({ id, label, hint }) => (
+                <div key={id}>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={settings.styling[id]}
+                      onChange={(e) => setSettings((p) => ({ ...p, styling: { ...p.styling, [id]: e.target.value } }))}
+                      className="h-10 w-10 rounded-lg border border-gray-300 cursor-pointer p-0.5"
+                    />
+                    <span className="font-mono text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded-md">{settings.styling[id]}</span>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-400">{hint}</p>
+                </div>
+              ))}
+            </div>
+          </SectionCard>
+
+          {/* ── Save button ── */}
+          <div className="flex items-center justify-end gap-3 pt-2">
+            {saving && <span className="text-sm text-gray-500">Saving…</span>}
             <button
               type="submit"
               disabled={saving}
-              className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-60 transition"
             >
-              {saving ? "Saving..." : "Save Settings"}
+              {saving ? (
+                <>
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  Saving…
+                </>
+              ) : (
+                <>
+                  <CheckCircleIcon className="h-4 w-4" />
+                  Save Settings
+                </>
+              )}
             </button>
           </div>
+
         </form>
       )}
     </div>

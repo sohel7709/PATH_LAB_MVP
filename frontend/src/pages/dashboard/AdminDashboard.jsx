@@ -118,11 +118,11 @@ const AdminDashboard = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--text)' }}>
             {getGreeting()}, {user?.name || 'Admin'}
           </h1>
           {labDetails?.name && (
-            <p className="text-sm text-slate-500 mt-0.5">{labDetails.name}</p>
+            <p className="text-sm mt-0.5" style={{ color: 'var(--text-2)' }}>{labDetails.name}</p>
           )}
         </div>
         <div className="flex gap-2">
@@ -145,8 +145,8 @@ const AdminDashboard = () => {
               <s.icon className={`h-5 w-5 ${s.iconColor}`} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-slate-500 font-medium">{s.label}</p>
-              <p className="text-2xl font-bold text-slate-900 mt-0.5">{s.value}</p>
+              <p className="text-xs font-medium" style={{ color: 'var(--text-2)' }}>{s.label}</p>
+              <p className="text-2xl font-bold mt-0.5" style={{ color: 'var(--text)' }}>{s.value}</p>
               <Link to={s.link} className="text-xs text-blue-600 hover:text-blue-700 mt-1 inline-block">
                 {s.linkLabel} &rarr;
               </Link>
@@ -157,7 +157,7 @@ const AdminDashboard = () => {
 
       {/* Quick actions */}
       <div className="card p-5">
-        <h2 className="text-lg font-semibold text-slate-800 mb-4">Quick Actions</h2>
+        <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--text)' }}>Quick Actions</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
             { to: '/patients/add', label: 'Add Patient', icon: UserIcon },
@@ -165,9 +165,9 @@ const AdminDashboard = () => {
             { to: '/doctors', label: 'Manage Doctors', icon: UserGroupIcon },
             { to: '/finance/revenue', label: 'Financial Report', icon: ChartBarIcon },
           ].map(action => (
-            <Link key={action.to} to={action.to} className="flex flex-col items-center gap-2 p-3 rounded-lg border border-slate-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-200 text-center">
-              <action.icon className="h-6 w-6 text-blue-600" />
-              <span className="text-xs font-medium text-slate-700">{action.label}</span>
+            <Link key={action.to} to={action.to} className="flex flex-col items-center gap-2 p-3 rounded-lg transition-all duration-200 text-center hover:opacity-80" style={{ border: '1px solid var(--border)', background: 'var(--surface-2)' }}>
+              <action.icon className="h-6 w-6" style={{ color: 'var(--primary)' }} />
+              <span className="text-xs font-medium" style={{ color: 'var(--text-2)' }}>{action.label}</span>
             </Link>
           ))}
         </div>
@@ -176,8 +176,8 @@ const AdminDashboard = () => {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Recent Reports */}
         <div className="card">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-            <h2 className="text-lg font-semibold text-slate-800">Recent Reports</h2>
+          <div className="flex items-center justify-between px-5 py-4 border-b">
+            <h2 className="text-lg font-semibold">Recent Reports</h2>
             <Link to="/reports/create" className="btn btn-sm btn-primary">
               <PlusIcon className="h-3.5 w-3.5" />
               New
@@ -197,8 +197,8 @@ const AdminDashboard = () => {
               <tbody>
                 {recentReports.length > 0 ? recentReports.map((report, i) => (
                   <tr key={report.id || i}>
-                    <td className="font-medium text-slate-900">{report.patientName}</td>
-                    <td className="text-slate-500 max-w-[140px] truncate" title={report.testName}>
+                    <td className="font-medium" style={{ color: 'var(--text)' }}>{report.patientName}</td>
+                    <td className="max-w-[140px] truncate" style={{ color: 'var(--text-2)' }} title={report.testName}>
                       {truncateText(report.testName, 30)}
                     </td>
                     <td>
@@ -206,7 +206,7 @@ const AdminDashboard = () => {
                         {report.status?.charAt(0).toUpperCase() + report.status?.slice(1)}
                       </span>
                     </td>
-                    <td className="text-slate-500">{formatDate(report.date, DATE_FORMATS.DD_MM_YYYY)}</td>
+                    <td style={{ color: 'var(--text-2)' }}>{formatDate(report.date, DATE_FORMATS.DD_MM_YYYY)}</td>
                     <td>
                       <div className="flex gap-1">
                         <Link to={`/reports/${report.id}/print`} className="p-1 rounded hover:bg-blue-50 text-blue-600 hover:text-blue-800 transition-colors">
@@ -231,15 +231,15 @@ const AdminDashboard = () => {
               </tbody>
             </table>
           </div>
-          <div className="px-5 py-3 border-t border-slate-100">
+          <div className="px-5 py-3 border-t">
             <Link to="/reports" className="text-sm text-blue-600 hover:text-blue-700 font-medium">View all reports &rarr;</Link>
           </div>
         </div>
 
         {/* Recent Patients */}
         <div className="card">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-            <h2 className="text-lg font-semibold text-slate-800">Recent Patients</h2>
+          <div className="flex items-center justify-between px-5 py-4 border-b">
+            <h2 className="text-lg font-semibold">Recent Patients</h2>
             <Link to="/patients/add" className="btn btn-sm btn-primary">
               <PlusIcon className="h-3.5 w-3.5" />
               Add
@@ -260,16 +260,16 @@ const AdminDashboard = () => {
                   <tr key={patient.id}>
                     <td>
                       <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 text-xs font-bold shrink-0">
+                        <div className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0" style={{ background: 'var(--primary-bg)', color: 'var(--primary)' }}>
                           {patient.name?.charAt(0)?.toUpperCase()}
                         </div>
-                        <span className="font-medium text-slate-900">{patient.name}</span>
+                        <span className="font-medium" style={{ color: 'var(--text)' }}>{patient.name}</span>
                       </div>
                     </td>
-                    <td className="text-slate-500">
+                    <td style={{ color: 'var(--text-2)' }}>
                       {patient.age} / {patient.gender?.charAt(0).toUpperCase() + patient.gender?.slice(1)}
                     </td>
-                    <td className="text-slate-500">{patient.contact}</td>
+                    <td style={{ color: 'var(--text-2)' }}>{patient.contact}</td>
                     <td>
                       <div className="flex gap-1">
                         <Link to={`/patients/${patient.id}/edit`} className="p-1 rounded hover:bg-green-50 text-green-600 hover:text-green-800 transition-colors">
@@ -294,7 +294,7 @@ const AdminDashboard = () => {
               </tbody>
             </table>
           </div>
-          <div className="px-5 py-3 border-t border-slate-100">
+          <div className="px-5 py-3 border-t">
             <Link to="/patients" className="text-sm text-blue-600 hover:text-blue-700 font-medium">View all patients &rarr;</Link>
           </div>
         </div>

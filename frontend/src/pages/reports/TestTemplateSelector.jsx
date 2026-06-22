@@ -11,8 +11,7 @@ export default function TestTemplateSelector({
 
   // Handler for adding a template to selection
   const addTemplate = (templateId) => {
-    console.log("Adding template:", templateId);
-    if (!selectedTemplates.includes(templateId)) {
+        if (!selectedTemplates.includes(templateId)) {
       handleTemplateSelect([...selectedTemplates, templateId]);
       setSearchQuery("");
       setShowDropdown(false);
@@ -21,8 +20,7 @@ export default function TestTemplateSelector({
 
   // Handler for removing a template from selection
   const removeTemplate = (templateId) => {
-    console.log("Removing template:", templateId);
-    handleTemplateSelect(selectedTemplates.filter(id => id !== templateId));
+        handleTemplateSelect(selectedTemplates.filter(id => id !== templateId));
   };
 
   // Filter templates based on search query (case-insensitive)

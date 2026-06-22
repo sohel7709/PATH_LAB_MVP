@@ -12,16 +12,10 @@ const LabSubscriptions = () => {
   const [filter, setFilter] = useState('all');
   const [manageModal, setManageModal] = useState(null);
   const [selectedLab, setSelectedLab] = useState(null);
-  const [actionData, setActionData] = useState({
-    planId: '',
-    days: 30,
-    reason: '',
-  });
+  const [actionData, setActionData] = useState({ planId: '', days: 30, reason: '' });
   const [history, setHistory] = useState([]);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
     setLoading(true);
@@ -30,7 +24,6 @@ const LabSubscriptions = () => {
         subscriptionsApi.getAllLabSubscriptions(),
         plans.getAll(),
       ]);
-
       if (labsRes.success) setLabs(labsRes.data || []);
       if (plansRes.success) setAllPlans(plansRes.data || []);
     } catch (err) {
@@ -42,155 +35,130 @@ const LabSubscriptions = () => {
 
   const openManage = async (lab) => {
     setSelectedLab(lab);
-    setActionData({
-      planId: lab.subscriptionPlan?._id || '',
-      days: 30,
-      reason: '',
-    });
+    setActionData({ planId: lab.subscriptionPlan?._id || '', days: 30, reason: '' });
     setManageModal(true);
-
-    // Fetch history
     try {
       const hist = await subscriptionsApi.getHistory(lab._id);
       if (hist.success) setHistory(hist.data || []);
-    } catch (e) {
-      setHistory([]);
-    }
+    } catch (e) { setHistory([]); }
   };
 
   const handleActivate = async () => {
-    if (!actionData.planId) {
-      setError('Please select a plan');
-      return;
-    }
+    if (!actionData.planId) { setError('Please select a plan'); return; }
     try {
-      const resp = await subscriptionsApi.activateSubscription(
-        selectedLab._id,
-        actionData.planId,
-        actionData.days
-      );
-      if (resp.success) {
-        setSuccessMsg(`Subscription activated for ${selectedLab.name}`);
-        setManageModal(false);
-        fetchData();
-      }
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to activate');
-    }
+      const resp = await subscriptionsApi.activateSubscription(selectedLab._id, actionData.planId, actionData.days);
+      if (resp.success) { setSuccessMsg(`Subscription activated for ${selectedLab.name}`); setManageModal(false); fetchData(); }
+    } catch (err) { setError(err.response?.data?.message || 'Failed to activate'); }
   };
 
   const handleExtend = async () => {
     try {
-      const resp = await subscriptionsApi.extendSubscription(
-        selectedLab._id,
-        actionData.days,
-        actionData.reason
-      );
-      if (resp.success) {
-        setSuccessMsg(`Subscription extended by ${actionData.days} days`);
-        setManageModal(false);
-        fetchData();
-      }
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to extend');
-    }
+      const resp = await subscriptionsApi.extendSubscription(selectedLab._id, actionData.days, actionData.reason);
+      if (resp.success) { setSuccessMsg(`Subscription extended by ${actionData.days} days`); setManageModal(false); fetchData(); }
+    } catch (err) { setError(err.response?.data?.message || 'Failed to extend'); }
   };
 
   const handleChangePlan = async () => {
-    if (!actionData.planId) {
-      setError('Please select a plan');
-      return;
-    }
+    if (!actionData.planId) { setError('Please select a plan'); return; }
     try {
-      const resp = await subscriptionsApi.changePlan(
-        selectedLab._id,
-        actionData.planId,
-        actionData.reason
-      );
-      if (resp.success) {
-        setSuccessMsg(`Plan changed for ${selectedLab.name}`);
-        setManageModal(false);
-        fetchData();
-      }
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to change plan');
-    }
+      const resp = await subscriptionsApi.changePlan(selectedLab._id, actionData.planId, actionData.reason);
+      if (resp.success) { setSuccessMsg(`Plan changed for ${selectedLab.name}`); setManageModal(false); fetchData(); }
+    } catch (err) { setError(err.response?.data?.message || 'Failed to change plan'); }
   };
 
   const handleCancel = async () => {
     if (!window.confirm(`Are you sure you want to cancel the subscription for ${selectedLab.name}?`)) return;
     try {
-      const resp = await subscriptionsApi.cancelSubscription(
-        selectedLab._id,
-        actionData.reason
-      );
-      if (resp.success) {
-        setSuccessMsg(`Subscription cancelled for ${selectedLab.name}`);
-        setManageModal(false);
-        fetchData();
-      }
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to cancel');
-    }
+      const resp = await subscriptionsApi.cancelSubscription(selectedLab._id, actionData.reason);
+      if (resp.success) { setSuccessMsg(`Subscription cancelled for ${selectedLab.name}`); setManageModal(false); fetchData(); }
+    } catch (err) { setError(err.response?.data?.message || 'Failed to cancel'); }
   };
 
-  const getStatusBadge = (status) => {
-    const badges = {
-      active: 'bg-green-100 text-green-800',
-      trial: 'bg-blue-100 text-blue-800',
-      expired: 'bg-red-100 text-red-800',
-      pending: 'bg-yellow-100 text-yellow-800',
-      cancelled: 'bg-gray-100 text-gray-800',
-    };
-    return badges[status] || 'bg-gray-100 text-gray-800';
+  const statusConfig = {
+    active: { class: 'badge-green', label: 'Active' },
+    trial: { class: 'badge-blue', label: 'Trial' },
+    expired: { class: 'badge-red', label: 'Expired' },
+    pending: { class: 'badge-yellow', label: 'Pending' },
+    cancelled: { class: 'badge-gray', label: 'Cancelled' },
   };
+
+  const getStatusBadge = (status) => statusConfig[status]?.class || 'badge-gray';
+  const getStatusLabel = (status) => statusConfig[status]?.label || (status ? status.charAt(0).toUpperCase() + status.slice(1) : 'N/A');
 
   const filteredLabs = labs.filter((lab) => {
-    const matchesSearch =
-      lab.name?.toLowerCase().includes(search.toLowerCase()) ||
-      lab.adminName?.toLowerCase().includes(search.toLowerCase());
-    const matchesFilter =
-      filter === 'all' || lab.subscriptionStatus === filter;
+    const matchesSearch = lab.name?.toLowerCase().includes(search.toLowerCase()) || lab.adminName?.toLowerCase().includes(search.toLowerCase());
+    const matchesFilter = filter === 'all' || lab.subscriptionStatus === filter;
     return matchesSearch && matchesFilter;
   });
+
+  const stats = {
+    total: labs.length,
+    active: labs.filter(l => l.subscriptionStatus === 'active' || l.subscriptionStatus === 'trial').length,
+    expiringSoon: labs.filter(l => {
+      if (!l.subscriptionExpiry) return false;
+      const days = (new Date(l.subscriptionExpiry) - new Date()) / 86400000;
+      return days > 0 && days <= 7;
+    }).length,
+    noPlan: labs.filter(l => !l.subscriptionPlan).length,
+  };
 
   if (loading) return <LoadingSpinner />;
 
   return (
-    <div className="p-4 sm:p-6 max-w-7xl mx-auto">
+    <div className="page-enter space-y-6">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Lab Subscriptions</h1>
-        <p className="mt-1 text-sm text-gray-500">Manage subscriptions for all labs</p>
+      <div>
+        <h1 className="text-2xl font-bold" style={{ color: 'var(--text)' }}>Lab Subscriptions</h1>
+        <p className="text-sm mt-0.5" style={{ color: 'var(--text-2)' }}>Manage subscriptions for all labs</p>
+      </div>
+
+      {/* Stats Row */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {[
+          { label: 'Total Labs', value: stats.total, color: 'var(--primary)' },
+          { label: 'Active Subs', value: stats.active, color: 'var(--success)' },
+          { label: 'Expiring Soon', value: stats.expiringSoon, color: 'var(--warning)' },
+          { label: 'No Plan', value: stats.noPlan, color: 'var(--danger)' },
+        ].map(s => (
+          <div key={s.label} className="card p-4">
+            <p className="text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>{s.label}</p>
+            <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
+          </div>
+        ))}
       </div>
 
       {/* Messages */}
       {error && (
-        <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4 flex justify-between items-center">
-          <p className="text-sm text-red-700">{error}</p>
-          <button onClick={() => setError(null)} className="text-red-500 hover:text-red-700">&times;</button>
+        <div className="alert alert-error flex items-center justify-between">
+          <span>{error}</span>
+          <button onClick={() => setError(null)}>&times;</button>
         </div>
       )}
       {successMsg && (
-        <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-4 flex justify-between items-center">
-          <p className="text-sm text-green-700">{successMsg}</p>
-          <button onClick={() => setSuccessMsg(null)} className="text-green-500 hover:text-green-700">&times;</button>
+        <div className="alert alert-success flex items-center justify-between">
+          <span>{successMsg}</span>
+          <button onClick={() => setSuccessMsg(null)}>&times;</button>
         </div>
       )}
 
-      {/* Filters */}
-      <div className="mb-4 flex flex-col sm:flex-row gap-3">
-        <input
-          type="text"
-          placeholder="Search labs or admin..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm focus:ring-blue-500 focus:border-blue-500"
-        />
+      {/* Search & Filter */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: 'var(--text-muted)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search labs or admin..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="input pl-9 w-full"
+          />
+        </div>
         <select
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm focus:ring-blue-500 focus:border-blue-500"
+          className="select"
         >
           <option value="all">All Status</option>
           <option value="active">Active</option>
@@ -201,51 +169,44 @@ const LabSubscriptions = () => {
         </select>
       </div>
 
-      {/* Labs Table */}
-      <div className="bg-white shadow-sm rounded-lg overflow-hidden border border-gray-200">
+      {/* Table */}
+      <div className="table-wrapper">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="table">
+            <thead>
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lab Name</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admin</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expiry</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th>Lab Name</th>
+                <th>Admin</th>
+                <th>Plan</th>
+                <th>Start</th>
+                <th>Expiry</th>
+                <th>Status</th>
+                <th>Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody>
               {filteredLabs.map((lab) => (
-                <tr key={lab._id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <p className="text-sm font-medium text-gray-900">{lab.name}</p>
+                <tr key={lab._id}>
+                  <td className="font-medium" style={{ color: 'var(--text)' }}>{lab.name}</td>
+                  <td style={{ color: 'var(--text-2)' }}>{lab.adminName || 'N/A'}</td>
+                  <td style={{ color: 'var(--text-2)' }}>{lab.subscriptionPlan?.name || <span style={{ color: 'var(--text-muted)' }}>No Plan</span>}</td>
+                  <td style={{ color: 'var(--text-2)' }}>
+                    {lab.subscriptionStart
+                      ? new Date(lab.subscriptionStart).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })
+                      : '-'}
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <p className="text-sm text-gray-600">{lab.adminName || 'N/A'}</p>
+                  <td style={{ color: 'var(--text-2)' }}>
+                    {lab.subscriptionExpiry
+                      ? new Date(lab.subscriptionExpiry).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })
+                      : '-'}
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <p className="text-sm text-gray-600">
-                      {lab.subscriptionPlan?.name || 'No Plan'}
-                    </p>
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(lab.subscriptionStatus)}`}>
-                      {(lab.subscriptionStatus || 'N/A').charAt(0).toUpperCase() + (lab.subscriptionStatus || 'N/A').slice(1)}
+                  <td>
+                    <span className={`badge ${getStatusBadge(lab.subscriptionStatus)}`}>
+                      {getStatusLabel(lab.subscriptionStatus)}
                     </span>
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <p className="text-sm text-gray-600">
-                      {lab.subscriptionExpiry
-                        ? new Date(lab.subscriptionExpiry).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })
-                        : '-'}
-                    </p>
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <button
-                      onClick={() => openManage(lab)}
-                      className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                    >
+                  <td>
+                    <button onClick={() => openManage(lab)} className="btn btn-secondary btn-sm">
                       Manage
                     </button>
                   </td>
@@ -253,8 +214,13 @@ const LabSubscriptions = () => {
               ))}
               {filteredLabs.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-sm text-gray-500">
-                    No labs found matching your criteria.
+                  <td colSpan={7}>
+                    <div className="empty-state py-10">
+                      <svg className="h-10 w-10 mb-2" style={{ color: 'var(--text-faint)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                      </svg>
+                      <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No labs found matching your criteria.</p>
+                    </div>
                   </td>
                 </tr>
               )}
@@ -265,175 +231,129 @@ const LabSubscriptions = () => {
 
       {/* Manage Modal */}
       {manageModal && selectedLab && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen px-4">
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={() => setManageModal(false)} />
-            <div className="relative bg-white rounded-lg max-w-lg w-full p-6 shadow-xl max-h-[90vh] overflow-y-auto">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Manage Subscription: {selectedLab.name}
+        <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4">
+          <div className="fixed inset-0" style={{ background: 'rgba(0,0,0,0.5)' }} onClick={() => setManageModal(false)} />
+          <div className="relative rounded-xl shadow-2xl max-w-lg w-full p-6 z-10 max-h-[90vh] overflow-y-auto" style={{ background: 'var(--surface)' }}>
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-lg font-semibold" style={{ color: 'var(--text)' }}>
+                Manage: {selectedLab.name}
               </h3>
+              <button onClick={() => setManageModal(false)} style={{ color: 'var(--text-muted)' }}>
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
 
-              {/* Current Status */}
-              <div className="bg-gray-50 rounded p-4 mb-4 space-y-2">
-                <p className="text-sm"><span className="font-medium">Admin:</span> {selectedLab.adminName || 'N/A'}</p>
-                <p className="text-sm"><span className="font-medium">Current Plan:</span> {selectedLab.subscriptionPlan?.name || 'None'}</p>
-                <p className="text-sm">
-                  <span className="font-medium">Status:</span>{' '}
-                  <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(selectedLab.subscriptionStatus)}`}>
-                    {(selectedLab.subscriptionStatus || 'N/A').charAt(0).toUpperCase() + (selectedLab.subscriptionStatus || 'N/A').slice(1)}
+            {/* Current Status */}
+            <div className="rounded-lg p-4 mb-5 space-y-2" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <span style={{ color: 'var(--text-muted)' }}>Admin: </span>
+                  <span style={{ color: 'var(--text)' }}>{selectedLab.adminName || 'N/A'}</span>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--text-muted)' }}>Plan: </span>
+                  <span style={{ color: 'var(--text)' }}>{selectedLab.subscriptionPlan?.name || 'None'}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span style={{ color: 'var(--text-muted)' }}>Status: </span>
+                  <span className={`badge ${getStatusBadge(selectedLab.subscriptionStatus)}`}>
+                    {getStatusLabel(selectedLab.subscriptionStatus)}
                   </span>
-                </p>
-                <p className="text-sm">
-                  <span className="font-medium">Expiry:</span>{' '}
-                  {selectedLab.subscriptionExpiry
-                    ? new Date(selectedLab.subscriptionExpiry).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })
-                    : 'Not set'}
-                </p>
-                <p className="text-sm"><span className="font-medium">Total Patients:</span> {selectedLab.totalPatientsCreated || 0}</p>
-                <p className="text-sm"><span className="font-medium">Total Reports:</span> {selectedLab.totalReportsCreated || 0}</p>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--text-muted)' }}>Expiry: </span>
+                  <span style={{ color: 'var(--text)' }}>
+                    {selectedLab.subscriptionExpiry
+                      ? new Date(selectedLab.subscriptionExpiry).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })
+                      : 'Not set'}
+                  </span>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--text-muted)' }}>Patients: </span>
+                  <span style={{ color: 'var(--text)' }}>{selectedLab.totalPatientsCreated || 0}</span>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--text-muted)' }}>Reports: </span>
+                  <span style={{ color: 'var(--text)' }}>{selectedLab.totalReportsCreated || 0}</span>
+                </div>
               </div>
+            </div>
 
-              {/* Activate / Change Plan */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Select Plan</label>
+            {/* Form fields */}
+            <div className="space-y-4 mb-5">
+              <div>
+                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-2)' }}>Select Plan</label>
                 <select
                   value={actionData.planId}
                   onChange={(e) => setActionData({ ...actionData, planId: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="select w-full"
                 >
                   <option value="">-- Select a Plan --</option>
                   {allPlans.map((p) => (
-                    <option key={p._id} value={p._id}>
-                      {p.name} - ₹{p.price}/{p.duration} days
-                    </option>
+                    <option key={p._id} value={p._id}>{p.name} - ₹{p.price}/{p.duration} days</option>
                   ))}
                 </select>
               </div>
-
-              {/* Duration */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Duration (days)</label>
+              <div>
+                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-2)' }}>Duration (days)</label>
                 <input
-                  type="number"
-                  min="1"
-                  value={actionData.days}
+                  type="number" min="1" value={actionData.days}
                   onChange={(e) => setActionData({ ...actionData, days: parseInt(e.target.value) || 0 })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="input w-full"
                 />
               </div>
-
-              {/* Reason */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Reason / Notes</label>
+              <div>
+                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-2)' }}>Reason / Notes</label>
                 <input
-                  type="text"
-                  value={actionData.reason}
+                  type="text" value={actionData.reason}
                   onChange={(e) => setActionData({ ...actionData, reason: e.target.value })}
                   placeholder="e.g., Payment received via WhatsApp"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="input w-full"
                 />
               </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-wrap gap-2 mb-4">
-                <button
-                  onClick={handleActivate}
-                  className="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700"
-                >
-                  Activate Subscription
-                </button>
-                <button
-                  onClick={handleExtend}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700"
-                >
-                  Extend Subscription
-                </button>
-                <button
-                  onClick={handleChangePlan}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700"
-                >
-                  Change Plan
-                </button>
-                <button
-                  onClick={handleCancel}
-                  className="px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700"
-                >
-                  Cancel Subscription
-                </button>
-              </div>
-
-              {/* Subscription History */}
-              {history.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-semibold text-gray-700 mb-2">Subscription History</h4>
-                  <div className="max-h-40 overflow-y-auto border rounded">
-                    <table className="min-w-full text-xs">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-2 py-1 text-left">Date</th>
-                          <th className="px-2 py-1 text-left">Status</th>
-                          <th className="px-2 py-1 text-left">By</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {history.map((h) => (
-                          <tr key={h._id} className="border-t">
-                            <td className="px-2 py-1">
-                              {new Date(h.createdAt).toLocaleDateString('en-IN')}
-                            </td>
-                            <td className="px-2 py-1">
-                              <span className={`inline-flex px-1.5 py-0.5 rounded-full text-xs ${getStatusBadge(h.status)}`}>
-                                {h.status}
-                              </span>
-                            </td>
-                            <td className="px-2 py-1">{h.createdBy?.name || 'System'}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              {/* Close Button */}
-              <div className="mt-4 flex justify-end">
-                <button
-                  onClick={() => setManageModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
-                  Close
-                </button>
-              </div>
             </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-wrap gap-2 mb-5">
+              <button onClick={handleActivate} className="btn btn-primary btn-sm">Activate</button>
+              <button onClick={handleExtend} className="btn btn-secondary btn-sm">Extend</button>
+              <button onClick={handleChangePlan} className="btn btn-secondary btn-sm">Change Plan</button>
+              <button onClick={handleCancel} className="btn btn-danger btn-sm">Cancel Sub</button>
+            </div>
+
+            {/* History */}
+            {history.length > 0 && (
+              <div>
+                <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--text)' }}>Subscription History</h4>
+                <div className="max-h-40 overflow-y-auto rounded-lg" style={{ border: '1px solid var(--border)' }}>
+                  <table className="table text-xs">
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>By</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {history.map((h) => (
+                        <tr key={h._id}>
+                          <td style={{ color: 'var(--text-2)' }}>{new Date(h.createdAt).toLocaleDateString('en-IN')}</td>
+                          <td>
+                            <span className={`badge ${getStatusBadge(h.status)}`}>{getStatusLabel(h.status)}</span>
+                          </td>
+                          <td style={{ color: 'var(--text-2)' }}>{h.createdBy?.name || 'System'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
-
-      {/* Stats Summary */}
-      <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <p className="text-sm text-gray-500">Total Labs</p>
-          <p className="text-2xl font-bold text-gray-900">{labs.length}</p>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <p className="text-sm text-gray-500">Active</p>
-          <p className="text-2xl font-bold text-green-600">
-            {labs.filter((l) => l.subscriptionStatus === 'active' || l.subscriptionStatus === 'trial').length}
-          </p>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <p className="text-sm text-gray-500">Expired</p>
-          <p className="text-2xl font-bold text-red-600">
-            {labs.filter((l) => l.subscriptionStatus === 'expired').length}
-          </p>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <p className="text-sm text-gray-500">Pending</p>
-          <p className="text-2xl font-bold text-yellow-600">
-            {labs.filter((l) => l.subscriptionStatus === 'pending').length}
-          </p>
-        </div>
-      </div>
     </div>
   );
 };

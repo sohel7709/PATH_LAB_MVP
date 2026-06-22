@@ -28,3 +28,4 @@ backend/uploads/
 
 # Windows temp files
 CUsers*
+.gstack/
