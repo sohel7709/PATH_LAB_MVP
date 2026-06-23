@@ -29,9 +29,8 @@ export const useReportGenerator = (
           acc[key] = {
             templateName:
               param.templateName ||
-              (key !== "unknown"
-                ? `Test Group (ID: ${key})`
-                : currentReport.testInfo?.name || "Test Results"),
+              currentReport.testInfo?.name ||
+              "Test Results",
             templateId: key, // Store templateId for notes lookup
             parameters: [],
           };

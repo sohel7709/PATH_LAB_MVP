@@ -456,6 +456,28 @@ exports.getPublicReportData = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Report not found' });
     }
 
+    // Ensure each result carries a human-readable templateName so the public/QR
+    // report never falls back to the raw "Test Group (ID: ...)" label. Older
+    // reports (or some creation paths) may have stored results without it.
+    const missingName = (report.results || []).some(r => r.templateId && !r.templateName);
+    if (missingName) {
+      const templateIds = [...new Set(
+        (report.results || [])
+          .filter(r => r.templateId && !r.templateName)
+          .map(r => r.templateId.toString())
+      )];
+      if (templateIds.length > 0) {
+        const templates = await TestTemplate.find({ _id: { $in: templateIds } }).select('templateName name');
+        const nameMap = {};
+        templates.forEach(t => { nameMap[t._id.toString()] = t.templateName || t.name; });
+        report.results.forEach(r => {
+          if (r.templateId && !r.templateName) {
+            r.templateName = nameMap[r.templateId.toString()] || report.testInfo?.name || 'Test Results';
+          }
+        });
+      }
+    }
+
     res.status(200).json(report);
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

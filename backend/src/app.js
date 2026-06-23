@@ -147,6 +147,11 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // Mount routes
 app.use('/api/auth', authLimiter, authRoutes);  // strict rate limit on all auth endpoints
 app.use('/api/lab-management', labManagementRoutes);
+// Must be mounted BEFORE '/api/labs' (labRoutes applies `protect` to everything),
+// otherwise the public QR report-settings route '/api/labs/:labId/report-settings/public'
+// is intercepted by labRoutes' auth guard and returns 401. Its non-matching paths
+// fall through to labRoutes below.
+app.use('/api', labReportSettingsRoutes);
 app.use('/api/labs', labRoutes);
 app.use('/api/user-management', userManagementRoutes);
 app.use('/api/reports', reportRoutes);
@@ -154,7 +159,6 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/patients', patientRoutes);
 app.use('/api/export', exportRoutes);
 app.use('/api', testTemplateRoutes);
-app.use('/api', labReportSettingsRoutes);
 app.use('/api/doctors', doctorRoutes);
 app.use('/api/test', testRoutes);
 app.use('/api/plans', planRoutes);
