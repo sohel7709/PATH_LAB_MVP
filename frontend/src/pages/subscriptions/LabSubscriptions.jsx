@@ -1,4 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import {
+  BuildingOffice2Icon,
+  CheckBadgeIcon,
+  ClockIcon,
+  ExclamationTriangleIcon,
+} from '@heroicons/react/24/outline';
 import { subscriptions as subscriptionsApi, plans } from '../../utils/api';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 
@@ -105,24 +111,34 @@ const LabSubscriptions = () => {
   if (loading) return <LoadingSpinner />;
 
   return (
-    <div className="page-enter space-y-6">
+    <div className="page-wrapper page-enter space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold" style={{ color: 'var(--text)' }}>Lab Subscriptions</h1>
-        <p className="text-sm mt-0.5" style={{ color: 'var(--text-2)' }}>Manage subscriptions for all labs</p>
+      <div className="flex items-center gap-3">
+        <div className="stat-icon" style={{ background: 'var(--primary-bg)' }}>
+          <BuildingOffice2Icon className="h-5 w-5" style={{ color: 'var(--primary)' }} />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--text)' }}>Lab Subscriptions</h1>
+          <p className="text-sm mt-0.5" style={{ color: 'var(--text-2)' }}>Manage subscriptions across all labs</p>
+        </div>
       </div>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total Labs', value: stats.total, color: 'var(--primary)' },
-          { label: 'Active Subs', value: stats.active, color: 'var(--success)' },
-          { label: 'Expiring Soon', value: stats.expiringSoon, color: 'var(--warning)' },
-          { label: 'No Plan', value: stats.noPlan, color: 'var(--danger)' },
-        ].map(s => (
-          <div key={s.label} className="card p-4">
-            <p className="text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>{s.label}</p>
-            <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
+          { label: 'Total Labs', value: stats.total, color: 'var(--primary)', bg: 'var(--primary-bg)', Icon: BuildingOffice2Icon },
+          { label: 'Active Subs', value: stats.active, color: 'var(--success)', bg: 'var(--success-bg)', Icon: CheckBadgeIcon },
+          { label: 'Expiring Soon', value: stats.expiringSoon, color: 'var(--warning)', bg: 'var(--warning-bg)', Icon: ClockIcon },
+          { label: 'No Plan', value: stats.noPlan, color: 'var(--danger)', bg: 'var(--danger-bg)', Icon: ExclamationTriangleIcon },
+        ].map(({ label, value, color, bg, Icon }) => (
+          <div key={label} className="stat-card">
+            <div className="stat-icon" style={{ background: bg }}>
+              <Icon className="h-5 w-5" style={{ color }} />
+            </div>
+            <div>
+              <p className="text-2xl font-bold leading-none" style={{ color }}>{value}</p>
+              <p className="text-xs font-medium mt-1" style={{ color: 'var(--text-muted)' }}>{label}</p>
+            </div>
           </div>
         ))}
       </div>

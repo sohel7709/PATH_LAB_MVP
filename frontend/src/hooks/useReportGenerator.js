@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { getDisplayFlag } from "../utils/reportUtils";
 
 // Custom hook to generate the report HTML structure
 // REMOVED hideTableHeadingAndReference parameter
@@ -11,99 +12,6 @@ export const useReportGenerator = (
 ) => {
   const [reportHtml, setReportHtml] = useState("");
 
-  // Function to check if a value is outside the reference range
-  // (Copied and adapted from ReportTemplate.jsx)
-  const isOutsideRange = (value, referenceRange, patientGender) => {
-    
-    if (!value || !referenceRange) {
-            return false;
-    }
-
-    const cleanValue = value.toString().replace(/,/g, "");
-    let cleanRange = referenceRange.toString().replace(/,/g, "");
-    const numValue = parseFloat(cleanValue);
-
-    if (isNaN(numValue)) {
-            return false;
-    }
-    
-    // Attempt to parse gender-specific ranges
-    const maleRegex = /Male:\s*([\d.]+)\s*-\s*([\d.]+)/i;
-    const femaleRegex = /Female:\s*([\d.]+)\s*-\s*([\d.]+)/i;
-    const maleRangeMatch = cleanRange.match(maleRegex);
-    const femaleRangeMatch = cleanRange.match(femaleRegex);
-
-    
-    let targetRange = null;
-
-    if (
-      patientGender &&
-      patientGender.toLowerCase() === "male" &&
-      maleRangeMatch
-    ) {
-      targetRange = `${maleRangeMatch[1]}-${maleRangeMatch[2]}`;
-          } else if (
-      patientGender &&
-      patientGender.toLowerCase() === "female" &&
-      femaleRangeMatch
-    ) {
-      targetRange = `${femaleRangeMatch[1]}-${femaleRangeMatch[2]}`;
-          }
-
-    if (targetRange) {
-      cleanRange = targetRange; // Use the gender-specific range
-    } else {
-          }
-    
-    try {
-      if (cleanRange.includes("-") || cleanRange.includes("–")) {
-        const separator = cleanRange.includes("-") ? "-" : "–";
-        const parts = cleanRange.split(separator);
-        if (parts.length >= 2) {
-          const minStr = parts[0].trim();
-          const maxStr = parts[1].trim();
-          const min = parseFloat(minStr);
-          const max = parseFloat(maxStr);
-                    if (!isNaN(min) && !isNaN(max)) {
-            const result = numValue < min || numValue > max;
-                        return result;
-          } else {
-                      }
-        } else {
-                  }
-      } else if (cleanRange.startsWith("<")) {
-        const max = parseFloat(cleanRange.substring(1).trim());
-        const result = !isNaN(max) && numValue >= max;
-                return result;
-      } else if (cleanRange.startsWith("≤")) {
-        const max = parseFloat(cleanRange.substring(1).trim());
-        const result = !isNaN(max) && numValue > max;
-                return result;
-      } else if (cleanRange.startsWith(">")) {
-        const min = parseFloat(cleanRange.substring(1).trim());
-        const result = !isNaN(min) && numValue <= min;
-                return result;
-      } else if (cleanRange.startsWith("≥")) {
-        const min = parseFloat(cleanRange.substring(1).trim());
-        const result = !isNaN(min) && numValue < min;
-                return result;
-      } else if (cleanRange.toLowerCase().includes("less than")) {
-        const max = parseFloat(
-          cleanRange.toLowerCase().replace("less than", "").trim(),
-        );
-        const result = !isNaN(max) && numValue >= max;
-                return result;
-      } else if (cleanRange.toLowerCase().includes("greater than")) {
-        const min = parseFloat(
-          cleanRange.toLowerCase().replace("greater than", "").trim(),
-        );
-        const result = !isNaN(min) && numValue <= min;
-                return result;
-      }
-    } catch (error) {
-          }
-        return false;
-  };
 
   // Prepare data structure needed by the build function
   const prepareReportData = (currentReport) => {
@@ -1041,11 +949,13 @@ export const useReportGenerator = (
                   : `background:#dbeafe; font-weight:700; font-size:9.5pt; color:#1e40af;
                      padding:3px 8px; text-align:left; border-bottom:1px solid #bfdbfe;`;
               } else {
-                const isAbnormalByFlag = param.flag === "high" || param.flag === "low" || param.flag === "critical";
-                const isAbnormalByRange = isOutsideRange(param.value, param.referenceRange, currentReport.patientInfo?.gender);
-                const isAbnormal = isAbnormalByFlag || isAbnormalByRange;
-                const isHigh = param.flag === "high" || (isAbnormalByRange && !isAbnormalByFlag);
-                const isCritical = param.flag === "critical";
+                // Gender-aware, stale-flag-resilient: recompute direction from the
+                // patient's gender-specific range, falling back to the stored flag
+                // only for non-numeric results and preserving "critical".
+                const displayFlag = getDisplayFlag(param.value, param.referenceRange, currentReport.patientInfo?.gender, param.flag);
+                const isCritical = displayFlag === "critical";
+                const isHigh = displayFlag === "high";
+                const isAbnormal = displayFlag !== "normal";
 
                 const resultValue = param.value !== null && param.value !== undefined ? String(param.value) : "";
                 const lowerResultValue = resultValue.toLowerCase();

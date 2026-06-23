@@ -148,7 +148,7 @@ export default function CreateReportForm() {
 
   // ── Quick add patient ─────────────────────────────────────────────────────
   const handleQuickAdd = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!newPt.fullName.trim() || !newPt.age || !newPt.gender || !newPt.designation) {
       setAddPatientError('Name, age, gender and title are required.'); return;
     }
@@ -171,7 +171,17 @@ export default function CreateReportForm() {
       if (err.response?.data?.code === 'SUBSCRIPTION_REQUIRED' || err.response?.data?.code === 'MAX_PATIENTS_REACHED') {
         setSubscriptionErrorData(err.response.data); setSubscriptionModal(true); setShowAddPatient(false);
       } else if (err.response?.data?.duplicate) {
-        setAddPatientError('Patient already exists — search and select them instead.');
+        // Patient already exists in this lab — the backend returns the existing
+        // record, so just select it instead of dead-ending on an error.
+        const existing = err.response.data.patient;
+        if (existing && (existing._id || existing.id)) {
+          selectPatient(existing);
+          setShowAddPatient(false);
+          setNewPt({ designation: '', fullName: '', age: '', gender: '', phone: '' });
+          loadPatients();
+        } else {
+          setAddPatientError('Patient already exists — search and select them instead.');
+        }
       } else {
         setAddPatientError(err.response?.data?.message || err.message || 'Failed to add patient.');
       }
@@ -361,7 +371,12 @@ export default function CreateReportForm() {
                   </button>
                 </div>
                 {addPatientError && <Alert type="error">{addPatientError}</Alert>}
-                <form onSubmit={handleQuickAdd} className="space-y-3">
+                <div
+                  className="space-y-3"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') { e.preventDefault(); handleQuickAdd(); }
+                  }}
+                >
                   <div className="grid grid-cols-12 gap-2">
                     <div className="col-span-2">
                       <label className={labelCls}>Title<span className="text-red-500">*</span></label>
@@ -398,11 +413,11 @@ export default function CreateReportForm() {
                   </div>
                   <div className="flex gap-2 justify-end">
                     <button type="button" onClick={() => setShowAddPatient(false)} className="btn btn-secondary btn-sm">Cancel</button>
-                    <button type="submit" disabled={addingPatient} className="btn btn-primary btn-sm">
+                    <button type="button" onClick={() => handleQuickAdd()} disabled={addingPatient} className="btn btn-primary btn-sm">
                       {addingPatient ? 'Adding…' : 'Add & Select'}
                     </button>
                   </div>
-                </form>
+                </div>
               </div>
             )}
           </div>
@@ -478,23 +493,6 @@ export default function CreateReportForm() {
               patientGender={formData.patientGender}
               setError={setError}
               hideTestInfoFields={true}
-            />
-          </div>
-        </div>
-
-        {/* ── STEP 4: Notes ── */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="flex items-center gap-2 px-5 py-3.5 border-b border-slate-100 bg-slate-50">
-            <span className="w-6 h-6 rounded-full bg-slate-300 text-white text-xs font-bold flex items-center justify-center">4</span>
-            <h2 className="text-sm font-semibold text-slate-800">Notes <span className="text-slate-400 font-normal">(optional)</span></h2>
-          </div>
-          <div className="px-5 py-4">
-            <textarea
-              rows={2}
-              className={inputCls}
-              placeholder="General notes or observations printed at bottom of report…"
-              value={formData.testNotes}
-              onChange={(e) => setFormData(p => ({ ...p, testNotes: e.target.value }))}
             />
           </div>
         </div>

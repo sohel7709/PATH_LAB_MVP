@@ -1,5 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import { getDisplayFlag } from '../../utils/reportUtils';
 
 const ReportTemplate = ({ reportData }) => {
   const {
@@ -45,87 +46,6 @@ const ReportTemplate = ({ reportData }) => {
     }
   } = reportData || {};
 
-  // Function to check if a value is outside the reference range
-  const isOutsideRange = (value, referenceRange, patientGender) => {
-    if (!value || !referenceRange) return false;
-
-    const cleanValue = value.toString().replace(/,/g, '');
-    let cleanRange = referenceRange.toString().replace(/,/g, '');
-    const numValue = parseFloat(cleanValue);
-    if (isNaN(numValue)) return false;
-
-    // Attempt to parse gender-specific ranges
-    const maleRangeMatch = cleanRange.match(/Male:\s*([\d.]+)\s*-\s*([\d.]+)/i);
-    const femaleRangeMatch = cleanRange.match(/Female:\s*([\d.]+)\s*-\s*([\d.]+)/i);
-
-    let targetRange = null;
-
-    if (patientGender && patientGender.toLowerCase() === 'male' && maleRangeMatch) {
-      targetRange = `${maleRangeMatch[1]}-${maleRangeMatch[2]}`;
-    } else if (patientGender && patientGender.toLowerCase() === 'female' && femaleRangeMatch) {
-      targetRange = `${femaleRangeMatch[1]}-${femaleRangeMatch[2]}`;
-    }
-
-    if (targetRange) {
-      cleanRange = targetRange; // Use the gender-specific range
-    }
-    // If no gender-specific range matched or patientGender is not provided,
-    // cleanRange remains the original (or already parsed if it was simple)
-
-    try {
-      // Handle range format: "10-20" or "10–20" (with en dash)
-      // This part now processes either the original range or the extracted gender-specific range
-      if (cleanRange.includes('-') || cleanRange.includes('–')) {
-        const separator = cleanRange.includes('-') ? '-' : '–';
-        const parts = cleanRange.split(separator);
-        // Ensure we only take the first two parts if there are multiple hyphens (e.g. in "Male: X-Y Female: A-B")
-        // and a gender-specific range wasn't successfully extracted above.
-        if (parts.length >= 2) {
-            const min = parseFloat(parts[0].trim());
-            const max = parseFloat(parts[1].trim());
-            if (!isNaN(min) && !isNaN(max)) {
-              return numValue < min || numValue > max;
-            }
-        }
-        // If not a simple X-Y after potential gender parsing, or if parsing failed, it might be a complex string not meant for this logic.
-        // Or, if it was a gendered string and no specific gender matched, we might not want to evaluate.
-        // For now, if it's not a simple X-Y after this point, return false (not abnormal by this check)
-        // unless it's a single-sided range like <X or >X.
-      }
-      // Handle less than format: "<10"
-      else if (cleanRange.startsWith('<')) {
-        const max = parseFloat(cleanRange.substring(1).trim());
-        return !isNaN(max) && numValue >= max;
-      }
-      // Handle less than or equal format: "≤10"
-      else if (cleanRange.startsWith('≤')) {
-        const max = parseFloat(cleanRange.substring(1).trim());
-        return !isNaN(max) && numValue > max;
-      }
-      // Handle greater than format: ">20"
-      else if (cleanRange.startsWith('>')) {
-        const min = parseFloat(cleanRange.substring(1).trim());
-        return !isNaN(min) && numValue <= min;
-      }
-      // Handle greater than or equal format: "≥5"
-      else if (cleanRange.startsWith('≥')) {
-        const min = parseFloat(cleanRange.substring(1).trim());
-        return !isNaN(min) && numValue < min;
-      }
-      // Handle "less than" text format
-      else if (cleanRange.toLowerCase().includes('less than')) {
-        const max = parseFloat(cleanRange.toLowerCase().replace('less than', '').trim());
-        return !isNaN(max) && numValue >= max;
-      }
-      // Handle "greater than" text format
-      else if (cleanRange.toLowerCase().includes('greater than')) {
-        const min = parseFloat(cleanRange.toLowerCase().replace('greater than', '').trim());
-        return !isNaN(min) && numValue <= min;
-      }
-    } catch (error) {
-          }
-    return false; // Default to not abnormal if range format is not recognized or parsing fails
-  };
 
   // Define print styles
   const printStyles = `
@@ -492,8 +412,10 @@ const ReportTemplate = ({ reportData }) => {
                       </tr>
                     );
                   } else {
-                    // Determine if the result is abnormal based on flags or range check
-                    const abnormal = param.flag === 'high' || param.flag === 'low' || param.flag === 'critical' || isOutsideRange(param.value, param.referenceRange, patientGender);
+                    // Determine if the result is abnormal — gender-aware and
+                    // resilient to stale stored flags (recomputes direction from
+                    // the patient's gender-specific range when numeric).
+                    const abnormal = getDisplayFlag(param.value, param.referenceRange, patientGender, param.flag) !== 'normal';
                     const isSub = param.isSubparameter; // Check if it's a subparameter for indentation
 
                     return (
