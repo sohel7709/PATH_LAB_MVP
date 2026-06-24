@@ -1,26 +1,23 @@
 const Patient = require('../models/Patient');
 const Lab = require('../models/Lab');
 const asyncHandler = require('express-async-handler');
+const { createAuditLog } = require('../services/auditService');
 
 // Helper function to generate patient ID (2 characters + dash + 6 digits)
 const generatePatientId = async (labCodePrefix) => {
-  // labCodePrefix is already derived and passed in
   let labCode = labCodePrefix;
   
-  // Find the highest existing patient ID for this lab prefix
   const highestPatient = await Patient.find({ patientId: new RegExp(`^${labCode}-\\d{6}$`) })
     .sort({ patientId: -1 })
     .limit(1);
   
   let nextNumber = 1;
   if (highestPatient.length > 0) {
-    // Extract the number part and increment
     const lastId = highestPatient[0].patientId;
     const lastNumber = parseInt(lastId.split('-')[1]);
     nextNumber = lastNumber + 1;
   }
   
-  // Format with leading zeros to ensure 6 digits
   const numberPart = nextNumber.toString().padStart(6, '0');
   return `${labCode}-${numberPart}`;
 };
@@ -29,59 +26,40 @@ const generatePatientId = async (labCodePrefix) => {
 // @route   POST /api/patients
 // @access  Private (super-admin, admin, technician)
 exports.createPatient = asyncHandler(async (req, res) => {
-  // Add lab ID from user if not provided
   if (!req.body.labId && req.user.lab) {
     req.body.labId = req.user.lab;
   }
 
-  // Validate lab ID
   if (!req.body.labId) {
     return res.status(400).json({ message: 'Lab ID is required' });
   }
 
-  // Check if lab exists
-  const labInstance = await Lab.findById(req.body.labId); // Renamed variable
+  const labInstance = await Lab.findById(req.body.labId);
   if (!labInstance) {
     return res.status(404).json({ message: 'Lab not found' });
   }
-  // Derive labCodePrefix from the fetched labInstance
   const labCodePrefix = labInstance.name.substring(0, 2).toUpperCase();
 
-  // Destructure all necessary fields from req.body at a higher scope
-  // Renamed 'fullName' from destructuring to 'originalFullName' to avoid confusion
   let { fullName: originalFullName, phone, age, gender, email, designation, address, lastTestType, whatsappNotificationEnabled } = req.body;
-  let processedFullName = originalFullName; // Initialize processedFullName
+  let processedFullName = originalFullName;
 
-  // Format fullName: Capitalize the first letter (if it exists)
   if (processedFullName && typeof processedFullName === 'string' && processedFullName.length > 0) {
     processedFullName = processedFullName.charAt(0).toUpperCase() + processedFullName.slice(1);
   }
 
   try {
-    // Check for duplicate patient
     const duplicateQuery = {
-      fullName: processedFullName, // Use the processed (capitalized) fullName
+      fullName: processedFullName,
       labId: req.body.labId
     };
-    // Use variables from the higher scope (phone, age, gender, email)
     if (phone && phone.trim() !== "") { 
         duplicateQuery.phone = phone.trim();
-    } else {
-        // If phone is not provided, we might want to be more careful about declaring duplicates
-        // For now, if phone is not provided, we won't use it in the duplicate check.
-        // This means two patients with same name, age, gender, email but different/no phone will not be caught as duplicates by this logic.
-        // Consider if this is the desired behavior.
     }
-    
-    // Add additional fields to query if they exist
     if (age) duplicateQuery.age = parseInt(age);
     if (gender) duplicateQuery.gender = gender;
-    // Email is optional, so only add to duplicate check if provided
     if (email && email.trim() !== "") duplicateQuery.email = email.trim().toLowerCase();
     
-    // Only perform duplicate check if essential fields for it are present
-    // (e.g., fullName and labId are always there based on prior checks)
-    if (fullName) { // fullName is required by schema, so it should be present
+    if (fullName) {
         const existingPatient = await Patient.findOne(duplicateQuery);
         if (existingPatient) {
             return res.status(400).json({ 
@@ -92,23 +70,19 @@ exports.createPatient = asyncHandler(async (req, res) => {
         }
     }
   } catch (error) {
-    // Don't stop creation for an error in duplicate check, but log it.
-    // Proceed to attempt creation.
+    // Don't stop creation for an error in duplicate check
   }
 
   try {
-    // Generate patient ID using the derived labCodePrefix
     const patientId = await generatePatientId(labCodePrefix);
     
     const patientDataForCreation = {
         patientId, 
-        designation: designation, // Use destructured designation from higher scope
-        fullName: processedFullName, // Use the processed fullName from higher scope
-        age: age, // Use destructured age from higher scope
-        gender: gender, // Use destructured gender from higher scope
+        designation: designation,
+        fullName: processedFullName,
+        age: age,
+        gender: gender,
         labId: req.body.labId, 
-        
-        // Optional fields - use destructured variables from higher scope
         phone: (phone && phone.trim() !== "") ? phone.trim() : null,
         email: (email && email.trim() !== "") ? email.trim().toLowerCase() : null,
         address: (address && address.trim() !== "") ? address.trim() : null,
@@ -116,12 +90,23 @@ exports.createPatient = asyncHandler(async (req, res) => {
         whatsappNotificationEnabled: whatsappNotificationEnabled === true || whatsappNotificationEnabled === 'true',
     };
     
-    // Create patient
     const patient = await Patient.create(patientDataForCreation);
 
-    // Increment total patients count on lab
     await Lab.findByIdAndUpdate(req.body.labId, {
       $inc: { 'totalPatientsCreated': 1, 'stats.totalPatients': 1 }
+    });
+
+    // Audit Log
+    createAuditLog({
+      user: req.user._id,
+      role: req.user.role,
+      module: 'PATIENTS',
+      action: 'CREATE',
+      entityId: patient._id,
+      entityType: 'Patient',
+      description: `${req.user.name} created patient ${patient.patientId} (${processedFullName})`,
+      newData: { patientId, fullName: processedFullName, age, gender, phone },
+      req,
     });
 
     res.status(201).json(patient);
@@ -130,7 +115,6 @@ exports.createPatient = asyncHandler(async (req, res) => {
         const messages = Object.values(error.errors).map(val => val.message);
         return res.status(400).json({ success: false, message: messages.join(', '), details: error.errors });
     }
-    // For other types of errors, provide a more generic server error message but log details
     return res.status(500).json({ success: false, message: 'Server error occurred while creating patient.', error: error.message });
   }
 });
@@ -141,17 +125,14 @@ exports.createPatient = asyncHandler(async (req, res) => {
 exports.getPatients = asyncHandler(async (req, res) => {
   let query = {};
 
-  // For non-super-admins (admin/technician), filter by their associated lab
   if (req.user.role !== 'super-admin') {
     query.labId = req.user.lab;
   } 
-  // For super-admins, check if lab query param is provided
   else if (req.query.lab) {
     query.labId = req.query.lab;
   }
 
   try {
-    // Sort by creation date in descending order to show recent patients first
     const patients = await Patient.find(query).sort({ createdAt: -1 }); 
     res.json(patients);
   } catch (err) {
@@ -163,7 +144,6 @@ exports.getPatients = asyncHandler(async (req, res) => {
 // @route   GET /api/patients/:id
 // @access  Private (super-admin, admin, technician)
 exports.getPatient = asyncHandler(async (req, res) => {
-
   try {
     const patient = await Patient.findById(req.params.id);
 
@@ -171,7 +151,6 @@ exports.getPatient = asyncHandler(async (req, res) => {
       return res.status(404).json({ message: 'Patient not found' });
     }
 
-    // Check if user has access to this patient's lab
     if (req.user.role !== 'super-admin' && 
         (!patient.labId || !req.user.lab || patient.labId.toString() !== req.user.lab.toString())) {
       return res.status(403).json({ message: 'Not authorized to access this patient' });
@@ -193,17 +172,22 @@ exports.updatePatient = asyncHandler(async (req, res) => {
     return res.status(404).json({ message: 'Patient not found' });
   }
 
-  // Check if user has access to this patient's lab
   if (req.user.role !== 'super-admin' && patient.labId.toString() !== req.user.lab.toString()) {
     return res.status(403).json({ message: 'Not authorized to update this patient' });
   }
 
-  // Don't allow changing the lab ID
   if (req.body.labId && req.body.labId.toString() !== patient.labId.toString()) {
     return res.status(400).json({ message: 'Cannot change patient lab assignment' });
   }
 
-  // Prepare update data, ensuring optional fields are handled (empty string to null)
+  const oldData = {
+    fullName: patient.fullName,
+    phone: patient.phone,
+    age: patient.age,
+    gender: patient.gender,
+    email: patient.email,
+  };
+
   const updateData = { ...req.body };
   if (updateData.phone !== undefined) {
     updateData.phone = (updateData.phone && updateData.phone.trim() !== "") ? updateData.phone.trim() : null;
@@ -218,10 +202,34 @@ exports.updatePatient = asyncHandler(async (req, res) => {
     updateData.lastTestType = (updateData.lastTestType && updateData.lastTestType.trim() !== "") ? updateData.lastTestType.trim() : null;
   }
 
-
   patient = await Patient.findByIdAndUpdate(req.params.id, updateData, {
     new: true,
     runValidators: true
+  });
+
+  // Determine what changed for audit description
+  const changes = [];
+  if (updateData.phone !== undefined && updateData.phone !== oldData.phone) changes.push('phone');
+  if (updateData.email !== undefined && updateData.email !== oldData.email) changes.push('email');
+  if (updateData.address !== undefined && updateData.address !== oldData.address) changes.push('address');
+  if (updateData.fullName !== undefined && updateData.fullName !== oldData.fullName) changes.push('name');
+  if (updateData.age !== undefined && updateData.age !== oldData.age) changes.push('age');
+  if (updateData.gender !== undefined && updateData.gender !== oldData.gender) changes.push('gender');
+
+  const changeDesc = changes.length > 0 ? `Updated: ${changes.join(', ')}` : 'Updated patient details';
+
+  // Audit Log
+  createAuditLog({
+    user: req.user._id,
+    role: req.user.role,
+    module: 'PATIENTS',
+    action: 'UPDATE',
+    entityId: patient._id,
+    entityType: 'Patient',
+    description: `${req.user.name} updated patient ${patient.patientId} — ${changeDesc}`,
+    oldData,
+    newData: { fullName: patient.fullName, phone: patient.phone, email: patient.email, age: patient.age, gender: patient.gender },
+    req,
   });
 
   res.json(patient);
@@ -232,19 +240,35 @@ exports.updatePatient = asyncHandler(async (req, res) => {
 // @access  Private (super-admin, admin)
 exports.deletePatient = asyncHandler(async (req, res) => {
   try {
-    
     const patient = await Patient.findById(req.params.id);
 
     if (!patient) {
       return res.status(404).json({ message: 'Patient not found' });
     }
 
-
-    // Check if user has access to this patient's lab
-    // Allow super-admin or admin of the same lab to delete
     if (req.user.role === 'super-admin' || 
         (req.user.role === 'admin' && patient.labId?.toString() === req.user.lab?.toString())) {
+      
+      const patientData = {
+        patientId: patient.patientId,
+        fullName: patient.fullName,
+      };
+
       await Patient.deleteOne({ _id: req.params.id });
+
+      // Audit Log
+      createAuditLog({
+        user: req.user._id,
+        role: req.user.role,
+        module: 'PATIENTS',
+        action: 'DELETE',
+        entityId: req.params.id,
+        entityType: 'Patient',
+        description: `${req.user.name} deleted patient ${patientData.patientId} (${patientData.fullName})`,
+        oldData: patientData,
+        req,
+      });
+
       return res.json({ message: 'Patient removed' });
     } else {
       return res.status(403).json({ message: 'Not authorized to delete this patient' });

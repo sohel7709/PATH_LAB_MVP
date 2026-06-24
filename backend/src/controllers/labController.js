@@ -1,6 +1,7 @@
 const Lab = require('../models/Lab');
 const User = require('../models/User');
 const Report = require('../models/Report');
+const { createAuditLog } = require('../services/auditService');
 const Plan = require('../models/Plan'); // Import Plan model
 const SubscriptionHistory = require('../models/SubscriptionHistory'); // Import SubscriptionHistory model
 const mongoose = require('mongoose'); // Needed for ObjectId validation
@@ -435,6 +436,20 @@ exports.updateLabSettings = async (req, res, next) => {
     if (!lab) {
       return res.status(404).json({ success: false, message: 'Lab not found' });
     }
+
+    // Audit Log
+    createAuditLog({
+      user: req.user._id,
+      role: req.user.role,
+      module: 'SETTINGS',
+      action: 'UPDATE',
+      entityId: lab._id,
+      entityType: 'Lab',
+      description: `${req.user.name} updated lab settings for ${lab.name}`,
+      newData: update,
+      req,
+    });
+
     res.status(200).json({ success: true, data: lab });
   } catch (error) {
     next(error);

@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const Lab = require('../models/Lab');
+const { createAuditLog } = require('../services/auditService');
 
 // @desc    Create new user
 // @route   POST /api/users
@@ -13,7 +14,6 @@ exports.createUser = async (req, res, next) => {
     let finalLabId = labId;
 
     if (isAdmin) {
-      // ADMIN CAN ONLY CREATE TECHNICIANS FOR THEIR OWN LAB
       if (role && role !== 'technician') {
         return res.status(403).json({
           success: false,
@@ -36,8 +36,6 @@ exports.createUser = async (req, res, next) => {
         });
       }
     } else {
-      // SUPER ADMIN FLOW
-
       if (!['super-admin', 'admin', 'technician'].includes(role)) {
         return res.status(400).json({ success: false, message: 'Invalid role' });
       }
@@ -55,7 +53,6 @@ exports.createUser = async (req, res, next) => {
           return res.status(400).json({ success: false, message: 'Lab not found' });
         }
 
-        // Enforce: ONE LAB = ONE ADMIN
         if (role === 'admin') {
           const existingAdmin = await User.findOne({ role: 'admin', lab: labId });
           if (existingAdmin) {
@@ -80,6 +77,21 @@ exports.createUser = async (req, res, next) => {
     
     const createdUser = await User.findById(user._id).populate('lab', 'name');
 
+    // Audit Log
+    const roleLabel = finalRole.charAt(0).toUpperCase() + finalRole.slice(1).replace('-', ' ');
+    const labName = createdUser.lab?.name || '';
+    createAuditLog({
+      user: req.user._id,
+      role: req.user.role,
+      module: 'USERS',
+      action: 'CREATE',
+      entityId: user._id,
+      entityType: 'User',
+      description: `${req.user.name} created ${roleLabel} ${name}${labName ? ` for ${labName}` : ''}`,
+      newData: { name, email, role: finalRole, labName },
+      req,
+    });
+
     res.status(201).json({
       success: true,
       data: createdUser
@@ -96,7 +108,6 @@ exports.getUsers = async (req, res, next) => {
   try {
     let query = {};
     
-    // Admin sees only their own lab's users; super-admin sees all
     if (req.user.role === 'admin') {
       query.lab = req.user.lab;
     } else if (req.query.lab) {
@@ -106,7 +117,6 @@ exports.getUsers = async (req, res, next) => {
     if (req.query.role) {
       query.role = req.query.role;
     }
-    
     
     const users = await User.find(query).populate({
       path: 'lab',
@@ -137,7 +147,6 @@ exports.getUser = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    // Admin can only view users from their own lab
     if (req.user.role === 'admin' && user.lab && user.lab._id.toString() !== req.user.lab.toString()) {
       return res.status(403).json({ success: false, message: 'Not authorized to view this user' });
     }
@@ -159,12 +168,16 @@ exports.updateUser = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    // Admin can only update users from their own lab
+    const oldData = {
+      name: existingUser.name,
+      email: existingUser.email,
+      role: existingUser.role,
+    };
+
     if (req.user.role === 'admin') {
       if (!existingUser.lab || existingUser.lab.toString() !== req.user.lab.toString()) {
         return res.status(403).json({ success: false, message: 'Not authorized to update this user' });
       }
-      // Admin cannot change role
       delete req.body.role;
     }
 
@@ -207,6 +220,31 @@ exports.updateUser = async (req, res, next) => {
     const user = await User.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true
+    }).populate('lab', 'name');
+
+    // Audit Log
+    let action = 'UPDATE';
+    let description = `${req.user.name} updated user ${user.name}`;
+
+    // Check if role changed
+    if (req.body.role && req.body.role !== oldData.role) {
+      action = 'ROLE_CHANGE';
+      const oldRoleLabel = oldData.role.charAt(0).toUpperCase() + oldData.role.slice(1).replace('-', ' ');
+      const newRoleLabel = req.body.role.charAt(0).toUpperCase() + req.body.role.slice(1).replace('-', ' ');
+      description = `${req.user.name} changed user role: ${oldRoleLabel} → ${newRoleLabel} for ${user.name}`;
+    }
+
+    createAuditLog({
+      user: req.user._id,
+      role: req.user.role,
+      module: 'USERS',
+      action,
+      entityId: user._id,
+      entityType: 'User',
+      description,
+      oldData: action === 'ROLE_CHANGE' ? { role: oldData.role } : oldData,
+      newData: { name: user.name, email: user.email, role: user.role },
+      req,
     });
 
     res.status(200).json({ success: true, data: user });
@@ -220,24 +258,44 @@ exports.updateUser = async (req, res, next) => {
 // @access  Private/Admin, Super Admin
 exports.deleteUser = async (req, res, next) => {
   try {
-    const user = await User.findById(req.params.id);
+    const user = await User.findById(req.params.id).populate('lab', 'name');
 
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    // Admin can only delete users from their own lab
     if (req.user.role === 'admin') {
       if (!user.lab || user.lab.toString() !== req.user.lab.toString()) {
         return res.status(403).json({ success: false, message: 'Not authorized to delete this user' });
       }
-      // Admin cannot delete other admins or super-admins
       if (user.role !== 'technician') {
         return res.status(403).json({ success: false, message: 'Admins can only delete technicians' });
       }
     }
 
+    // Store data for audit before deletion
+    const userData = {
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      labName: user.lab?.name || '',
+    };
+
     await User.findByIdAndDelete(req.params.id);
+
+    // Audit Log
+    const roleLabel = userData.role.charAt(0).toUpperCase() + userData.role.slice(1).replace('-', ' ');
+    createAuditLog({
+      user: req.user._id,
+      role: req.user.role,
+      module: 'USERS',
+      action: 'DELETE',
+      entityId: req.params.id,
+      entityType: 'User',
+      description: `${req.user.name} deleted ${roleLabel} ${userData.name}`,
+      oldData: userData,
+      req,
+    });
 
     res.status(200).json({ success: true, message: 'User deleted successfully' });
   } catch (error) {

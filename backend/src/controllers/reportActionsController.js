@@ -1,5 +1,6 @@
 const Report = require('../models/Report');
-const User = require('../models/User'); // Potentially needed for populating user info in comments
+const User = require('../models/User');
+const { createAuditLog } = require('../services/auditService');
 
 // @desc    Verify report
 // @route   PUT /api/admin/reports/:id/verify
@@ -15,7 +16,6 @@ exports.verifyReport = async (req, res, next) => {
       });
     }
 
-    // Check if user has access to verify this report
     if (report.lab.toString() !== req.user.lab.toString()) {
       return res.status(403).json({
         success: false,
@@ -23,7 +23,6 @@ exports.verifyReport = async (req, res, next) => {
       });
     }
 
-    // Check if the user performing the action is an Admin
     if (req.user.role !== 'admin') {
         return res.status(403).json({
             success: false,
@@ -31,22 +30,35 @@ exports.verifyReport = async (req, res, next) => {
         });
     }
 
+    const oldStatus = report.status;
     report.status = 'verified';
     report.verifiedBy = req.user.id;
-    // Ensure reportMeta exists before updating
     report.reportMeta = report.reportMeta || {};
     report.reportMeta.lastModifiedAt = Date.now();
     report.reportMeta.lastModifiedBy = req.user.id;
-    report.reportMeta.verifiedAt = Date.now(); // Add verification timestamp
+    report.reportMeta.verifiedAt = Date.now();
 
     await report.save();
 
-    // Populate verifiedBy before sending response
+    // Audit Log
+    createAuditLog({
+      user: req.user._id,
+      role: req.user.role,
+      module: 'REPORTS',
+      action: 'VERIFY',
+      entityId: report._id,
+      entityType: 'Report',
+      description: `${req.user.name} verified report for ${report.patientInfo?.name || 'Unknown'}`,
+      oldData: { status: oldStatus },
+      newData: { status: 'verified' },
+      req,
+    });
+
     const populatedReport = await Report.findById(report._id).populate('verifiedBy', 'name email');
 
     res.status(200).json({
       success: true,
-      data: populatedReport // Send populated report
+      data: populatedReport
     });
   } catch (error) {
     next(error);
@@ -67,7 +79,6 @@ exports.addComment = async (req, res, next) => {
       });
     }
 
-    // Check if user has access to this report
     if (report.lab.toString() !== req.user.lab.toString()) {
       return res.status(403).json({
         success: false,
@@ -78,27 +89,24 @@ exports.addComment = async (req, res, next) => {
     const comment = {
       user: req.user.id,
       text: req.body.text,
-      createdAt: Date.now() // Add timestamp to comment
+      createdAt: Date.now()
     };
 
-    // Ensure comments array exists
     report.comments = report.comments || [];
     report.comments.push(comment);
 
-    // Update report metadata for modification tracking
     report.reportMeta = report.reportMeta || {};
     report.reportMeta.lastModifiedAt = Date.now();
     report.reportMeta.lastModifiedBy = req.user.id;
 
     await report.save();
 
-    // Populate user details in the comments before sending response
     const populatedReport = await Report.findById(report._id)
-        .populate('comments.user', 'name email role'); // Populate user details in comments
+        .populate('comments.user', 'name email role');
 
     res.status(200).json({
       success: true,
-      data: populatedReport // Send report with populated comments
+      data: populatedReport
     });
   } catch (error) {
     next(error);

@@ -66,6 +66,16 @@ const PlanManagement = lazy(() => import("./pages/plans/PlanManagement"));
 const AdminSubscriptionPlans = lazy(() => import("./pages/subscriptions/AdminSubscriptionPlans"));
 const LabSubscriptions = lazy(() => import("./pages/subscriptions/LabSubscriptions"));
 
+// Feedback pages
+const FeedbackList = lazy(() => import("./pages/feedback/FeedbackList"));
+const SendFeedback = lazy(() => import("./pages/feedback/SendFeedback"));
+const FeedbackDetail = lazy(() => import("./pages/feedback/FeedbackDetail"));
+const SuperAdminFeedback = lazy(() => import("./pages/feedback/SuperAdminFeedback"));
+const SuperAdminFeedbackDetail = lazy(() => import("./pages/feedback/SuperAdminFeedbackDetail"));
+
+// Audit Logs page
+const AuditLogs = lazy(() => import("./pages/AuditLogs"));
+
 const LoadingSpinner = () => (
   <div className="flex items-center justify-center min-h-screen">
     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
@@ -142,6 +152,16 @@ function App() {
               <Route path="/subscriptions/plans" element={<ProtectedRoute allowedRoles={["admin", "technician"]}><AdminSubscriptionPlans /></ProtectedRoute>} />
               <Route path="/subscriptions/manage" element={<ProtectedRoute allowedRoles={["super-admin"]}><LabSubscriptions /></ProtectedRoute>} />
               <Route path="/revenue" element={<ProtectedRoute allowedRoles={["super-admin"]}><SuperAdminRevenue /></ProtectedRoute>} />
+
+              {/* Feedback Routes */}
+              <Route path="/feedback" element={<ProtectedRoute allowedRoles={["admin"]}><FeedbackList /></ProtectedRoute>} />
+              <Route path="/feedback/send" element={<ProtectedRoute allowedRoles={["admin"]}><SendFeedback /></ProtectedRoute>} />
+              <Route path="/feedback/:id" element={<ProtectedRoute allowedRoles={["admin", "super-admin"]}><FeedbackDetail /></ProtectedRoute>} />
+              <Route path="/super-admin/feedback" element={<ProtectedRoute allowedRoles={["super-admin"]}><SuperAdminFeedback /></ProtectedRoute>} />
+              <Route path="/feedback/super-admin/:id" element={<ProtectedRoute allowedRoles={["super-admin"]}><SuperAdminFeedbackDetail /></ProtectedRoute>} />
+
+              {/* Audit Logs - Super Admin Only */}
+              <Route path="/audit-logs" element={<ProtectedRoute allowedRoles={["super-admin"]}><AuditLogs /></ProtectedRoute>} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />

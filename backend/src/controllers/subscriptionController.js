@@ -4,6 +4,7 @@ const Subscription = require('../models/Subscription');
 const SubscriptionHistory = require('../models/SubscriptionHistory');
 const RevenueTransaction = require('../models/RevenueTransaction');
 const User = require('../models/User');
+const { createAuditLog } = require('../services/auditService');
 
 /**
  * @desc    Get all subscription plans (for Admin viewing)
@@ -257,6 +258,19 @@ exports.activateSubscription = async (req, res) => {
       activatedAt: startDate,
     });
 
+    // Audit Log
+    createAuditLog({
+      user: req.user._id,
+      role: req.user.role,
+      module: 'SUBSCRIPTIONS',
+      action: 'ACTIVATE',
+      entityId: subscription._id,
+      entityType: 'Subscription',
+      description: `${req.user.name} activated ${plan.name} Plan for ${lab.name}`,
+      newData: { planName: plan.name, labName: lab.name, amount: plan.price, endDate },
+      req,
+    });
+
     res.status(200).json({
       success: true,
       message: 'Subscription activated successfully',
@@ -325,6 +339,20 @@ exports.cancelSubscription = async (req, res) => {
       paymentDetails: {
         paymentMethod: 'Manual',
       },
+    });
+
+    // Audit Log
+    createAuditLog({
+      user: req.user._id,
+      role: req.user.role,
+      module: 'SUBSCRIPTIONS',
+      action: 'CANCEL',
+      entityId: labId,
+      entityType: 'Subscription',
+      description: `${req.user.name} cancelled subscription for ${lab.name}${reason ? ` — Reason: ${reason}` : ''}`,
+      oldData: { status: 'active', labName: lab.name },
+      newData: { status: 'cancelled' },
+      req,
     });
 
     res.status(200).json({
@@ -401,6 +429,19 @@ exports.extendSubscription = async (req, res) => {
       paymentDetails: {
         paymentMethod: 'Manual',
       },
+    });
+
+    // Audit Log
+    createAuditLog({
+      user: req.user._id,
+      role: req.user.role,
+      module: 'SUBSCRIPTIONS',
+      action: 'RENEW',
+      entityId: labId,
+      entityType: 'Subscription',
+      description: `${req.user.name} extended subscription for ${lab.name} by ${days} days`,
+      newData: { labName: lab.name, days, newExpiry },
+      req,
     });
 
     res.status(200).json({
@@ -503,6 +544,19 @@ exports.changePlan = async (req, res) => {
       amount: plan.price,
       activatedBy: req.user._id,
       activatedAt: startDate,
+    });
+
+    // Audit Log
+    createAuditLog({
+      user: req.user._id,
+      role: req.user.role,
+      module: 'SUBSCRIPTIONS',
+      action: 'PLAN_CHANGE',
+      entityId: subscription._id,
+      entityType: 'Subscription',
+      description: `${req.user.name} changed subscription plan for ${lab.name} to ${plan.name}`,
+      newData: { planName: plan.name, labName: lab.name, amount: plan.price },
+      req,
     });
 
     res.status(200).json({
