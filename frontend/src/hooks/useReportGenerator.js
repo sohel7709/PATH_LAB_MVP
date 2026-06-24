@@ -294,21 +294,13 @@ export const useReportGenerator = (
   const createHeader = (headerSettings) => {
     const wrapper = document.createElement("div");
 
-    if (headerSettings.headerMode === "image" && headerSettings.headerImage) {
-      const headerImg = document.createElement("img");
-      headerImg.src = headerSettings.headerImage;
-      headerImg.style.width = "100%";
-      wrapper.appendChild(headerImg);
-      return wrapper;
-    }
-
     if (headerSettings.headerMode === "none") return wrapper;
 
     const design = headerSettings.headerDesign || "classic";
     const {
       labName = "", doctorName = "", registrationNo = "",
       technicianName = "", technicianDesignation = "",
-      address = "", phone = "", email = "",
+      address = "", phone = "", email = "", tagline = "",
     } = headerSettings;
 
     const techBlock = (technicianName || technicianDesignation) ? `
@@ -340,61 +332,78 @@ export const useReportGenerator = (
         </div>`;
 
     } else if (design === "centered") {
-      // Everything centered
+      // Elegant centered letterhead: large lab name, tagline, accent rule,
+      // contact line, then doctor credentials.
+      const contactCentered = [
+        address ? address : "",
+        phone ? `&#128222; ${phone}` : "",
+        email ? `&#9993; ${email}` : "",
+      ].filter(Boolean).join(" &nbsp;&bull;&nbsp; ");
       html = `
-        <div style="text-align:center; padding-bottom:4mm; border-bottom:2.5px double #000; margin-bottom:4mm;">
-          <div style="font-size:24pt; font-weight:bold; color:#1d4ed8; letter-spacing:0.5px;">${labName}</div>
-          ${doctorName ? `<div style="font-size:12pt; font-weight:bold; margin-top:2px;">${doctorName}</div>` : ""}
-          ${registrationNo ? `<div style="font-size:8.5pt; color:#555;">Reg. No: ${registrationNo}</div>` : ""}
-          ${address ? `<div style="font-size:8.5pt; color:#444; margin-top:2px;">${address}</div>` : ""}
-          <div style="font-size:8.5pt; color:#444; margin-top:2px;">
-            ${phone ? `&#128222; ${phone}` : ""}
-            ${phone && email ? " &nbsp;|&nbsp; " : ""}
-            ${email ? `&#9993; ${email}` : ""}
-          </div>
-          ${(technicianName || technicianDesignation) ? `
-          <div style="margin-top:4px; font-size:8.5pt; color:#555; border-top:1px solid #ddd; padding-top:3px;">
-            Technician: ${technicianName}${technicianDesignation ? ` &bull; ${technicianDesignation}` : ""}
+        <div style="text-align:center; margin-bottom:4mm;">
+          <div style="font-size:25pt; font-weight:800; color:#1d4ed8; letter-spacing:1px; line-height:1.05;">${labName}</div>
+          ${tagline ? `<div style="font-size:9pt; color:#64748b; font-style:italic; margin-top:1px;">${tagline}</div>` : ""}
+          <div style="width:66px; height:2px; background:#1d4ed8; margin:5px auto 4px;"></div>
+          ${contactCentered ? `<div style="font-size:8.5pt; color:#475569;">${contactCentered}</div>` : ""}
+          ${(doctorName || registrationNo) ? `
+          <div style="font-size:9.5pt; color:#0f172a; margin-top:3px; font-weight:600;">
+            ${doctorName}${doctorName && registrationNo ? " &nbsp;&bull;&nbsp; " : ""}${registrationNo ? `Reg. No: ${registrationNo}` : ""}
           </div>` : ""}
+          ${(technicianName || technicianDesignation) ? `
+          <div style="font-size:8pt; color:#64748b; margin-top:1px;">${technicianName}${technicianDesignation ? ` &bull; ${technicianDesignation}` : ""}</div>` : ""}
+          <div style="height:2.5px; background:linear-gradient(to right, transparent, #1d4ed8 25%, #1d4ed8 75%, transparent); margin-top:4mm;"></div>
         </div>`;
 
     } else if (design === "modern") {
-      // Colored banner top, white split below
+      // Gradient banner card with contact strip below.
+      const techLight = (technicianName || technicianDesignation)
+        ? `<div style="font-size:7.5pt; opacity:0.85; margin-top:1px;">${technicianName}${technicianDesignation ? ` &bull; ${technicianDesignation}` : ""}</div>`
+        : "";
       html = `
-        <div style="margin-bottom:4mm;">
-          <div style="background:#1d4ed8; color:white; padding:4mm 6mm; display:flex; justify-content:space-between; align-items:center; border-radius:2px 2px 0 0;">
-            <div style="font-size:20pt; font-weight:bold; letter-spacing:0.5px;">${labName}</div>
-            <div style="text-align:right; font-size:8.5pt; opacity:0.9;">
-              ${phone ? `&#128222; ${phone}` : ""}
-              ${phone && email ? "<br>" : ""}
-              ${email ? `&#9993; ${email}` : ""}
+        <div style="margin-bottom:4mm; border-radius:7px; overflow:hidden; border:1px solid #dbeafe; box-shadow:0 1px 3px rgba(30,58,138,0.12);">
+          <div style="background:linear-gradient(135deg,#1e3a8a 0%,#2563eb 55%,#3b82f6 100%); color:#fff; padding:4.5mm 6mm; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-size:21pt; font-weight:800; letter-spacing:0.5px; line-height:1;">${labName}</div>
+              ${tagline ? `<div style="font-size:8.5pt; opacity:0.9; margin-top:2px;">${tagline}</div>` : ""}
+            </div>
+            <div style="text-align:right;">
+              ${doctorName ? `<div style="font-size:11pt; font-weight:700; line-height:1.1;">${doctorName}</div>` : ""}
+              ${registrationNo ? `<div style="font-size:7.5pt; opacity:0.85;">Reg. No: ${registrationNo}</div>` : ""}
+              ${techLight}
             </div>
           </div>
-          <div style="background:#eff6ff; padding:3mm 6mm; display:flex; justify-content:space-between; align-items:center; border:1px solid #bfdbfe; border-top:none; border-radius:0 0 2px 2px; margin-bottom:2mm;">
-            <div style="font-size:8.5pt; color:#374151;">${address}</div>
-            <div style="text-align:right;">
-              ${doctorName ? `<div style="font-size:10pt; font-weight:bold; color:#1d4ed8;">${doctorName}</div>` : ""}
-              ${registrationNo ? `<div style="font-size:7.5pt; color:#555;">Reg: ${registrationNo}</div>` : ""}
-              ${techBlock}
-            </div>
+          <div style="background:#eff6ff; padding:2.2mm 6mm; display:flex; justify-content:space-between; align-items:center; font-size:8.5pt; color:#1e3a5f; border-top:1px solid #dbeafe;">
+            <span>${address ? `&#128205; ${address}` : ""}</span>
+            <span>
+              ${phone ? `&#128222; ${phone}` : ""}${phone && email ? " &nbsp;&nbsp; " : ""}${email ? `&#9993; ${email}` : ""}
+            </span>
           </div>
         </div>`;
 
     } else if (design === "minimal") {
-      // Single thin line, compact
+      // Clean: accent bar + lab name left, doctor right, gradient rule, contact line.
       html = `
-        <div style="display:flex; justify-content:space-between; align-items:flex-end; padding-bottom:2mm; border-bottom:1.5px solid #374151; margin-bottom:4mm;">
-          <div>
-            <span style="font-size:18pt; font-weight:bold;">${labName}</span>
-            ${address ? `<span style="font-size:8pt; color:#6b7280; margin-left:8px;">${address}</span>` : ""}
-          </div>
-          <div style="text-align:right; font-size:8.5pt;">
-            ${doctorName ? `<div style="font-weight:bold;">${doctorName}${registrationNo ? ` &bull; ${registrationNo}` : ""}</div>` : ""}
-            <div style="color:#6b7280;">
-              ${phone || ""}${phone && email ? " | " : ""}${email || ""}
+        <div style="margin-bottom:4mm;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-end; padding-bottom:2mm;">
+            <div style="display:flex; align-items:center; gap:9px;">
+              <div style="width:5px; height:30px; background:#1d4ed8; border-radius:3px;"></div>
+              <div>
+                <div style="font-size:18pt; font-weight:700; color:#0f172a; line-height:1;">${labName}</div>
+                ${tagline ? `<div style="font-size:7.5pt; color:#94a3b8; letter-spacing:0.6px; text-transform:uppercase; margin-top:2px;">${tagline}</div>` : ""}
+              </div>
             </div>
-            ${(technicianName || technicianDesignation) ? `<div style="color:#6b7280;">${technicianName}${technicianDesignation ? ` &bull; ${technicianDesignation}` : ""}</div>` : ""}
+            <div style="text-align:right; font-size:8pt; color:#475569;">
+              ${doctorName ? `<div style="font-weight:700; color:#0f172a; font-size:9.5pt;">${doctorName}</div>` : ""}
+              ${registrationNo ? `<div>Reg. No: ${registrationNo}</div>` : ""}
+              ${(technicianName || technicianDesignation) ? `<div style="color:#94a3b8;">${technicianName}${technicianDesignation ? ` &bull; ${technicianDesignation}` : ""}</div>` : ""}
+            </div>
           </div>
+          <div style="height:1.5px; background:linear-gradient(to right, #1d4ed8, #93c5fd 55%, transparent);"></div>
+          ${(address || phone || email) ? `
+          <div style="display:flex; justify-content:space-between; font-size:7.5pt; color:#64748b; margin-top:2.5px;">
+            <span>${address || ""}</span>
+            <span>${phone ? `&#128222; ${phone}` : ""}${phone && email ? " &nbsp;&bull;&nbsp; " : ""}${email ? `&#9993; ${email}` : ""}</span>
+          </div>` : ""}
         </div>`;
     }
 
@@ -528,34 +537,6 @@ export const useReportGenerator = (
     const printContainer = document.createElement("div");
 
     printContainer.style.position = "relative";
-    // printContainer.style.padding = "10mm";
-
-    // if (
-    //   reportSettings?.watermark?.enabled &&
-    //   reportSettings?.watermark?.image
-    // ) {
-    //   const watermark = document.createElement("img");
-
-    //   watermark.src = reportSettings.watermark.image;
-
-    //   watermark.style.position = "absolute";
-
-    //   watermark.style.top = "50%";
-
-    //   watermark.style.left = "50%";
-
-    //   watermark.style.transform = "translate(-50%, -50%)";
-
-    //   watermark.style.width = "120mm";
-
-    //   watermark.style.opacity = "0.08";
-
-    //   watermark.style.pointerEvents = "none";
-
-    //   watermark.style.zIndex = "0";
-
-    //   printContainer.appendChild(watermark);
-    // }
 
     const headerSettings = reportSettings?.header || {};
     const footerSettings = reportSettings?.footer || {};
@@ -569,27 +550,6 @@ export const useReportGenerator = (
     printContainer.style.fontSize = "10pt";
     printContainer.style.color = "#0f172a";
     printContainer.style.lineHeight = "1.45";
-
-    // if (
-    //   reportSettings?.watermark?.enabled &&
-    //   reportSettings?.watermark?.image
-    // ) {
-    //   const watermark = document.createElement("img");
-
-    //   watermark.src = reportSettings.watermark.image;
-
-    //   watermark.style.position = "absolute";
-    //   watermark.style.top = "148.5mm";
-    //   watermark.style.left = "105mm";
-    //   watermark.style.transform = "translate(-50%, -50%)";
-
-    //   watermark.style.width = "120mm";
-    //   watermark.style.opacity = "0.08";
-    //   watermark.style.zIndex = "0";
-    //   watermark.style.pointerEvents = "none";
-
-    //   printContainer.appendChild(watermark);
-    // }
 
     //   if (headerSettings.headerMode === "image" && headerSettings.headerImage) {
     //     const headerImg = document.createElement("img");
@@ -1072,35 +1032,12 @@ export const useReportGenerator = (
         }
         // --- End Template-Specific Notes ---
 
-        // Watermark body: covers test results + footer only (after patient info)
         const bodyWrapper = document.createElement("div");
         bodyWrapper.style.position = "relative";
         bodyWrapper.style.overflow = "hidden";
 
-        if (
-          printMode === "official" &&
-          reportSettings?.watermark?.enabled &&
-          reportSettings?.watermark?.image
-        ) {
-          const watermark = document.createElement("img");
-          watermark.src = reportSettings.watermark.image;
-          watermark.style.position = "absolute";
-          watermark.style.top = "0";
-          watermark.style.left = "0";
-          watermark.style.width = "100%";
-          watermark.style.height = "100%";
-          watermark.style.objectFit = "contain";
-          watermark.style.objectPosition = "center center";
-          watermark.style.opacity = "0.08";
-          watermark.style.pointerEvents = "none";
-          watermark.style.zIndex = "0";
-          bodyWrapper.appendChild(watermark);
-        }
-
-        // Test results sit above watermark
         const bodyContent = document.createElement("div");
         bodyContent.style.position = "relative";
-        bodyContent.style.zIndex = "1";
         bodyContent.appendChild(testGroupDiv);
 
         if (printMode === "official") {

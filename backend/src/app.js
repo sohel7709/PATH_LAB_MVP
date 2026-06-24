@@ -141,7 +141,7 @@ app.use((req, res, next) => {
 const { protect, authorize } = require('./middleware/auth');
 const { getLabSettings, updateLabSettings } = require('./controllers/labController');
 
-// Report images (watermark, signature, header, footer) must be publicly accessible
+// Report images (signature, header, footer) must be publicly accessible
 // because <img> tags in printed/public reports cannot send Authorization headers.
 // Files use UUID-based paths so they are not guessable.
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));

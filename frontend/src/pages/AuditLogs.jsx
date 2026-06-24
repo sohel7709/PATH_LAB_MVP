@@ -1,8 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
-import { MagnifyingGlassIcon, FunnelIcon, ArrowDownTrayIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { useAuth } from '../context/AuthContext';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { MagnifyingGlassIcon, FunnelIcon, ArrowDownTrayIcon, XMarkIcon, ClipboardDocumentListIcon } from '@heroicons/react/24/outline';
+import { auditLogs } from '../utils/api';
 
 const MODULES = ['USERS', 'PATIENTS', 'REPORTS', 'TEMPLATES', 'SUBSCRIPTIONS', 'REVENUE', 'FEEDBACK', 'SETTINGS'];
 const ACTIONS = ['CREATE', 'UPDATE', 'DELETE', 'STATUS_CHANGE', 'PRINT', 'DOWNLOAD', 'ACTIVATE', 'DEACTIVATE', 'RENEW', 'CANCEL', 'SUBMIT', 'UPLOAD', 'ROLE_CHANGE', 'PLAN_CHANGE', 'VERIFY'];
@@ -13,35 +11,17 @@ const DATE_RANGES = [
   { label: 'Last 30 Days', value: '30days' },
 ];
 
-async function fetchWithAuth(url, options = {}) {
-  const token = localStorage.getItem('token');
-  const headers = {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...options.headers,
-  };
-  const res = await fetch(`${API_BASE}${url}`, { ...options, headers });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(err.message || 'Request failed');
-  }
-  const contentType = res.headers.get('content-type');
-  if (contentType && contentType.includes('text/csv')) {
-    return res.blob();
-  }
-  return res.json();
-}
-
 export default function AuditLogs() {
-  const { user } = useAuth();
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [selectedLog, setSelectedLog] = useState(null);
   const [showDetail, setShowDetail] = useState(false);
 
   // Filters
+  const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [moduleFilter, setModuleFilter] = useState('');
   const [actionFilter, setActionFilter] = useState('');
@@ -52,49 +32,58 @@ export default function AuditLogs() {
 
   const LIMIT = 50;
 
+  // Debounce search input so we don't hit the API on every keystroke
+  const debounceRef = useRef();
+  useEffect(() => {
+    debounceRef.current = setTimeout(() => {
+      setSearch(searchInput);
+      setPage(1);
+    }, 400);
+    return () => clearTimeout(debounceRef.current);
+  }, [searchInput]);
+
+  const buildFilters = useCallback(() => ({
+    search,
+    module: moduleFilter,
+    action: actionFilter,
+    range: dateRange,
+    startDate: customStart ? new Date(customStart).toISOString() : '',
+    endDate: customEnd ? new Date(customEnd + 'T23:59:59').toISOString() : '',
+  }), [search, moduleFilter, actionFilter, dateRange, customStart, customEnd]);
+
   const fetchLogs = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
-      params.append('page', page);
-      params.append('limit', LIMIT);
-      if (search) params.append('search', search);
-      if (moduleFilter) params.append('module', moduleFilter);
-      if (actionFilter) params.append('action', actionFilter);
-      if (dateRange) params.append('range', dateRange);
-      if (customStart) params.append('startDate', new Date(customStart).toISOString());
-      if (customEnd) params.append('endDate', new Date(customEnd + 'T23:59:59').toISOString());
-
-      const data = await fetchWithAuth(`/audit-logs?${params.toString()}`);
+      const data = await auditLogs.getAll({ page, limit: LIMIT, ...buildFilters() });
       setLogs(data.data || []);
       setTotal(data.total || 0);
     } catch (err) {
       console.error('Error fetching audit logs:', err);
+      setLogs([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
-  }, [page, search, moduleFilter, actionFilter, dateRange, customStart, customEnd]);
+  }, [page, buildFilters]);
 
   useEffect(() => {
     fetchLogs();
   }, [fetchLogs]);
 
-  const handleExportCSV = async () => {
-    try {
-      const params = new URLSearchParams();
-      params.append('format', 'csv');
-      if (search) params.append('search', search);
-      if (moduleFilter) params.append('module', moduleFilter);
-      if (actionFilter) params.append('action', actionFilter);
-      if (dateRange) params.append('range', dateRange);
-      if (customStart) params.append('startDate', new Date(customStart).toISOString());
-      if (customEnd) params.append('endDate', new Date(customEnd + 'T23:59:59').toISOString());
+  // Close the detail modal on Escape
+  useEffect(() => {
+    if (!showDetail) return;
+    const onKey = (e) => {
+      if (e.key === 'Escape') { setShowDetail(false); setSelectedLog(null); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showDetail]);
 
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${API_BASE}/audit-logs/export?${params.toString()}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      const blob = await res.blob();
+  const handleExportCSV = async () => {
+    setExporting(true);
+    try {
+      const blob = await auditLogs.exportCsv(buildFilters());
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -105,6 +94,8 @@ export default function AuditLogs() {
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error('Error exporting:', err);
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -144,21 +135,41 @@ export default function AuditLogs() {
     return `${base} bg-gray-100 text-gray-700`;
   };
 
+  const activeFilterCount = [moduleFilter, actionFilter, dateRange].filter(Boolean).length;
+  const hasAnyFilter = search || moduleFilter || actionFilter || dateRange || customStart || customEnd;
   const totalPages = Math.ceil(total / LIMIT);
 
+  const clearAll = () => {
+    setSearchInput('');
+    setSearch('');
+    setModuleFilter('');
+    setActionFilter('');
+    setDateRange('');
+    setCustomStart('');
+    setCustomEnd('');
+    setPage(1);
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Audit Logs</h1>
-          <p className="text-sm text-slate-500 mt-1">Complete activity trail across all modules</p>
+    <div className="p-6 max-w-7xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="rounded-2xl bg-gradient-to-r from-slate-800 to-slate-900 px-6 py-5 flex items-center justify-between shadow-sm">
+        <div className="flex items-center gap-4">
+          <div className="h-12 w-12 rounded-xl bg-white/10 flex items-center justify-center">
+            <ClipboardDocumentListIcon className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-white">Audit Logs</h1>
+            <p className="text-sm text-slate-300 mt-0.5">Complete activity trail across all modules</p>
+          </div>
         </div>
         <button
           onClick={handleExportCSV}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+          disabled={exporting}
+          className="flex items-center gap-2 px-4 py-2.5 bg-white text-slate-800 rounded-lg hover:bg-slate-100 transition-colors text-sm font-semibold disabled:opacity-60"
         >
           <ArrowDownTrayIcon className="h-4 w-4" />
-          Export CSV
+          {exporting ? 'Exporting…' : 'Export CSV'}
         </button>
       </div>
 
@@ -169,8 +180,8 @@ export default function AuditLogs() {
           <input
             type="text"
             placeholder="Search by user, patient ID, report ID, template..."
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
           />
         </div>
@@ -180,23 +191,15 @@ export default function AuditLogs() {
         >
           <FunnelIcon className="h-4 w-4" />
           Filters
-          {(moduleFilter || actionFilter || dateRange) && (
+          {activeFilterCount > 0 && (
             <span className="ml-1 bg-blue-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-              {[moduleFilter, actionFilter, dateRange].filter(Boolean).length}
+              {activeFilterCount}
             </span>
           )}
         </button>
-        {(search || moduleFilter || actionFilter || dateRange) && (
+        {hasAnyFilter && (
           <button
-            onClick={() => {
-              setSearch('');
-              setModuleFilter('');
-              setActionFilter('');
-              setDateRange('');
-              setCustomStart('');
-              setCustomEnd('');
-              setPage(1);
-            }}
+            onClick={clearAll}
             className="flex items-center gap-1 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
           >
             <XMarkIcon className="h-4 w-4" />
@@ -207,7 +210,7 @@ export default function AuditLogs() {
 
       {/* Extended Filters */}
       {showFilters && (
-        <div className="flex flex-wrap gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+        <div className="flex flex-wrap gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
           <div>
             <label className="block text-xs font-medium text-slate-500 mb-1">Module</label>
             <select
@@ -268,7 +271,7 @@ export default function AuditLogs() {
       )}
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-slate-50 border-b border-slate-200">
@@ -357,9 +360,15 @@ export default function AuditLogs() {
 
       {/* Detail Modal */}
       {showDetail && selectedLog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto m-4">
-            <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between rounded-t-xl">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+          onClick={() => { setShowDetail(false); setSelectedLog(null); }}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto m-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between rounded-t-2xl">
               <h3 className="text-lg font-semibold text-slate-900">Audit Log Detail</h3>
               <button
                 onClick={() => { setShowDetail(false); setSelectedLog(null); }}

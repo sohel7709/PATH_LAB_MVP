@@ -672,8 +672,42 @@ export const feedback = {
   },
 };
 
+// Audit Logs API calls
+const buildAuditParams = (filters = {}) => {
+  const params = new URLSearchParams();
+  if (filters.page) params.append('page', filters.page);
+  if (filters.limit) params.append('limit', filters.limit);
+  if (filters.search) params.append('search', filters.search);
+  if (filters.module) params.append('module', filters.module);
+  if (filters.action) params.append('action', filters.action);
+  if (filters.range) params.append('range', filters.range);
+  if (filters.startDate) params.append('startDate', filters.startDate);
+  if (filters.endDate) params.append('endDate', filters.endDate);
+  return params;
+};
+
+export const auditLogs = {
+  getAll: async (filters = {}) => {
+    const params = buildAuditParams(filters);
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/audit-logs?${params.toString()}`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  },
+  exportCsv: async (filters = {}) => {
+    const params = buildAuditParams(filters);
+    params.append('format', 'csv');
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/audit-logs/export?${params.toString()}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!response.ok) throw new Error('Failed to export audit logs');
+    return response.blob();
+  },
+};
+
 export default {
   auth, reports, lab, users, dashboard, patients, superAdmin, testTemplates,
   labReportSettings, doctors, plans, whatsappSettings, revenue, groupTestTemplates,
-  subscriptions, feedback
+  subscriptions, feedback, auditLogs
 };

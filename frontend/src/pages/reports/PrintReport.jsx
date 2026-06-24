@@ -191,7 +191,7 @@ export default function PrintReport() {
           {/* Print mode selector */}
           <div className="flex gap-3">
             {[
-              { value: "official", label: "Official", desc: "With header, footer & watermark", icon: "🏛️" },
+              { value: "official", label: "Official", desc: "With header & footer", icon: "🏛️" },
               { value: "plain",    label: "Plain",    desc: "For pre-printed letterhead",     icon: "📄" },
             ].map((m) => (
               <button

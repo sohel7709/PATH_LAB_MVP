@@ -53,7 +53,7 @@ export default function SuperAdminFeedback() {
     }
   };
 
-  const loadFeedback = async (page = 1) => {
+  const loadFeedback = async (page = 1, append = false) => {
     try {
       setLoading(true);
       const filters = { page, limit: 20 };
@@ -64,7 +64,7 @@ export default function SuperAdminFeedback() {
       if (filter.startDate) filters.startDate = filter.startDate;
       if (filter.endDate) filters.endDate = filter.endDate;
       const data = await feedback.getAllFeedback(filters);
-      setFeedbacks(data.data || []);
+      setFeedbacks((prev) => (append ? [...prev, ...(data.data || [])] : (data.data || [])));
       setPagination(data.pagination || {});
       setError('');
     } catch (err) {
@@ -93,15 +93,22 @@ export default function SuperAdminFeedback() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Feedback Management</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage all feedback tickets from all labs</p>
+      <div className="rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-5 flex items-center justify-between mb-6 shadow-sm">
+        <div className="flex items-center gap-4">
+          <div className="h-12 w-12 rounded-xl bg-white/15 flex items-center justify-center">
+            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+            </svg>
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-white">Feedback Management</h1>
+            <p className="text-sm text-indigo-100 mt-0.5">Manage all feedback tickets from all labs</p>
+          </div>
         </div>
         {hasActiveFilters && (
           <button
             onClick={clearFilters}
-            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+            className="text-sm text-white/90 hover:text-white font-medium bg-white/15 px-3 py-1.5 rounded-lg"
           >
             Clear Filters
           </button>
@@ -215,7 +222,7 @@ export default function SuperAdminFeedback() {
 
       {/* Table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        {loading ? (
+        {loading && feedbacks.length === 0 ? (
           <div className="flex items-center justify-center py-16">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           </div>
@@ -283,10 +290,11 @@ export default function SuperAdminFeedback() {
         {pagination.next && (
           <div className="px-6 py-3 border-t border-gray-200 flex justify-center">
             <button
-              onClick={() => loadFeedback(pagination.next.page)}
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              onClick={() => loadFeedback(pagination.next.page, true)}
+              disabled={loading}
+              className="text-sm text-blue-600 hover:text-blue-700 font-medium disabled:opacity-50"
             >
-              Load More
+              {loading ? 'Loading…' : 'Load More'}
             </button>
           </div>
         )}

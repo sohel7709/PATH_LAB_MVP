@@ -14,6 +14,11 @@ const labReportSettingsSchema = new mongoose.Schema(
         enum: ["generated", "image", "none"],
         default: "generated",
       },
+      headerDesign: {
+        type: String,
+        enum: ["classic", "centered", "modern", "minimal"],
+        default: "classic",
+      },
       tagline: {
         type: String,
         default: "",
@@ -55,14 +60,6 @@ const labReportSettingsSchema = new mongoose.Schema(
         type: String, // URL to the logo image
         default: "",
       },
-      headerImage: {
-        type: String, // URL to the header image
-        default: "",
-      },
-      headerImageType: {
-        type: String, // MIME type of the header image (image/png, image/jpeg)
-        default: "",
-      },
     },
     footer: {
       footerMode: {
@@ -93,22 +90,6 @@ const labReportSettingsSchema = new mongoose.Schema(
       footerImageType: {
         type: String, // MIME type of the footer image (image/png, image/jpeg)
         default: "",
-      },
-    },
-    watermark: {
-      image: {
-        type: String,
-        default: "",
-      },
-
-      imageType: {
-        type: String,
-        default: "",
-      },
-
-      enabled: {
-        type: Boolean,
-        default: true,
       },
     },
     styling: {

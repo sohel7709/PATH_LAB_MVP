@@ -121,8 +121,6 @@ const ReportSettings = () => {
       address: "",
       phone: "",
       email: "",
-      headerImage: "",
-      headerImageType: "",
     },
     footer: {
       footerMode: "generated",
@@ -133,7 +131,6 @@ const ReportSettings = () => {
       footerImage: "",
       footerImageType: "",
     },
-    watermark: { image: "", imageType: "", enabled: true },
     styling: {
       primaryColor: "#2563eb",
       secondaryColor: "#1e40af",
@@ -167,14 +164,10 @@ const ReportSettings = () => {
     try {
       const res = await labReportSettings.uploadImage(user.lab, file, type);
       if (res.success) {
-        if (type === "header")
-          setSettings((p) => ({ ...p, header: { ...p.header, headerImage: res.data.url, headerImageType: res.data.mimeType } }));
-        else if (type === "footer")
+        if (type === "footer")
           setSettings((p) => ({ ...p, footer: { ...p.footer, footerImage: res.data.url, footerImageType: res.data.mimeType } }));
         else if (type === "signature")
           setSettings((p) => ({ ...p, footer: { ...p.footer, signature: res.data.url, signatureType: res.data.mimeType } }));
-        else if (type === "watermark")
-          setSettings((p) => ({ ...p, watermark: { ...p.watermark, image: res.data.url, imageType: res.data.mimeType } }));
         setSuccess(`${type.charAt(0).toUpperCase() + type.slice(1)} uploaded successfully`);
         setTimeout(() => setSuccess(""), 3000);
       } else setError(`Failed to upload ${type}`);
@@ -198,8 +191,6 @@ const ReportSettings = () => {
           address: settings.header.address,
           phone: settings.header.phone,
           email: settings.header.email,
-          headerImage: settings.header.headerImage,
-          headerImageType: settings.header.headerImageType,
         },
         footer: {
           footerMode: settings.footer.footerMode,
@@ -210,7 +201,6 @@ const ReportSettings = () => {
           footerImage: settings.footer.footerImage,
           footerImageType: settings.footer.footerImageType,
         },
-        watermark: { image: settings.watermark.image, imageType: settings.watermark.imageType, enabled: settings.watermark.enabled },
         styling: { primaryColor: settings.styling.primaryColor, secondaryColor: settings.styling.secondaryColor, fontFamily: settings.styling.fontFamily, fontSize: settings.styling.fontSize },
       };
       const res = await labReportSettings.updateSettings(user.lab, payload);
@@ -230,10 +220,10 @@ const ReportSettings = () => {
   );
 
   const headerDesigns = [
-    { value: "classic",  label: "Classic",  desc: "Lab left · Doctor right",  preview: "🏛️" },
-    { value: "centered", label: "Centered", desc: "Centered layout",           preview: "📄" },
-    { value: "modern",   label: "Modern",   desc: "Blue banner + info bar",    preview: "🎨" },
-    { value: "minimal",  label: "Minimal",  desc: "Clean single line",         preview: "✨" },
+    { value: "classic",  label: "Classic",  desc: "Lab left · Doctor right",          preview: "🏛️" },
+    { value: "centered", label: "Centered", desc: "Centered name + accent rule",      preview: "📄" },
+    { value: "modern",   label: "Modern",   desc: "Gradient banner + contact bar",    preview: "🎨" },
+    { value: "minimal",  label: "Minimal",  desc: "Accent bar · gradient underline",  preview: "✨" },
   ];
 
   return (
@@ -291,7 +281,6 @@ const ReportSettings = () => {
                   className={selectCls}
                 >
                   <option value="generated">Generated (text-based)</option>
-                  <option value="image">Custom Image</option>
                   <option value="none">No Header</option>
                 </select>
               </Field>
@@ -380,15 +369,6 @@ const ReportSettings = () => {
               </div>
             </div>
 
-            {/* Header image upload */}
-            <ImageUpload
-              label="Header Image (used when mode is 'Custom Image')"
-              hint="Recommended: 2480 × 480 px @ 300 DPI · PNG or JPG"
-              value={settings.header.headerImage}
-              uploading={uploading}
-              onUpload={(f) => handleFileUpload("header", f)}
-              onRemove={() => { handleChange("header", "headerImage", ""); handleChange("header", "headerImageType", ""); }}
-            />
           </SectionCard>
 
           {/* ── FOOTER ── */}
@@ -438,32 +418,6 @@ const ReportSettings = () => {
                 onRemove={() => { handleChange("footer", "footerImage", ""); handleChange("footer", "footerImageType", ""); }}
               />
             </div>
-          </SectionCard>
-
-          {/* ── WATERMARK ── */}
-          <SectionCard icon={PhotoIcon} title="Watermark" subtitle="Semi-transparent background image on each page">
-            <div className="flex items-center gap-3 mb-5">
-              <button
-                type="button"
-                onClick={() => handleChange("watermark", "enabled", !settings.watermark.enabled)}
-                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${
-                  settings.watermark.enabled ? "bg-blue-600" : "bg-gray-200"
-                }`}
-              >
-                <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ${settings.watermark.enabled ? "translate-x-5" : "translate-x-0"}`} />
-              </button>
-              <span className="text-sm font-medium text-gray-700">
-                {settings.watermark.enabled ? "Watermark enabled" : "Watermark disabled"}
-              </span>
-            </div>
-            <ImageUpload
-              label="Watermark Image"
-              hint="Use a light-coloured or greyscale logo · PNG recommended"
-              value={settings.watermark.image}
-              uploading={uploading}
-              onUpload={(f) => handleFileUpload("watermark", f)}
-              onRemove={() => { handleChange("watermark", "image", ""); handleChange("watermark", "imageType", ""); }}
-            />
           </SectionCard>
 
           {/* ── STYLING ── */}

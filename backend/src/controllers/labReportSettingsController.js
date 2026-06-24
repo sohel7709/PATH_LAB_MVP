@@ -92,6 +92,10 @@ exports.updateLabReportSettings = asyncHandler(async (req, res) => {
           settings.header.headerMode = req.body.header.headerMode;
         }
 
+        if (req.body.header.headerDesign !== undefined) {
+          settings.header.headerDesign = req.body.header.headerDesign;
+        }
+
         if (req.body.header.labName !== undefined) {
           settings.header.labName = req.body.header.labName;
         }
@@ -119,14 +123,6 @@ exports.updateLabReportSettings = asyncHandler(async (req, res) => {
         if (req.body.header.email !== undefined) {
           settings.header.email = req.body.header.email;
         }
-
-        if (req.body.header.headerImage !== undefined) {
-          settings.header.headerImage = req.body.header.headerImage;
-        }
-
-        if (req.body.header.headerImageType !== undefined) {
-          settings.header.headerImageType = req.body.header.headerImageType;
-        }
       }
 
       if (req.body.footer) {
@@ -152,14 +148,6 @@ exports.updateLabReportSettings = asyncHandler(async (req, res) => {
         if (req.body.footer.footerImageType !== undefined) {
           settings.footer.footerImageType = req.body.footer.footerImageType;
         }
-      }
-
-      if (req.body.watermark) {
-        settings.watermark.image = req.body.watermark.image;
-
-        settings.watermark.imageType = req.body.watermark.imageType;
-
-        settings.watermark.enabled = req.body.watermark.enabled;
       }
 
       if (req.body.styling) {
@@ -273,8 +261,8 @@ const saveBase64Image = (base64Data, mimeType, labId, type) => {
       const filename = `${type}_${timestamp}.${extension}`;
       const filePath = path.join(labDir, filename);
 
-      // Validate image dimensions for header and footer
-      if (type === "header" || type === "footer") {
+      // Validate image dimensions for footer
+      if (type === "footer") {
         const validation = await validateImageDimensions(buffer, type);
         if (!validation.valid) {
           reject(new Error(validation.message));
@@ -302,10 +290,10 @@ exports.uploadImage = asyncHandler(async (req, res) => {
   const { type } = req.query; // 'logo', 'header', 'footer', or 'signature'
   const { imageData, mimeType } = req.body; // Base64 encoded image data and MIME type
 
-  if (!["logo", "header", "footer", "signature", "watermark"].includes(type)) {
+  if (!["logo", "footer", "signature"].includes(type)) {
     return next(
       new ErrorResponse(
-        "Please specify a valid image type (logo, header, footer, signature, or watermark)",
+        "Please specify a valid image type (logo, footer, or signature)",
         400,
       ),
     );
@@ -345,25 +333,19 @@ exports.uploadImage = asyncHandler(async (req, res) => {
 
     if (type === "logo") {
       settings.header.logo = imageUrl;
-    } else if (type === "header") {
-      settings.header.headerImage = imageUrl;
-      settings.header.headerImageType = mimeType;
     } else if (type === "footer") {
       settings.footer.footerImage = imageUrl;
       settings.footer.footerImageType = mimeType;
     } else if (type === "signature") {
       settings.footer.signature = imageUrl;
       settings.footer.signatureType = mimeType;
-    } else if (type === "watermark") {
-      settings.watermark.image = imageUrl;
-      settings.watermark.imageType = mimeType;
     }
 
 
     await settings.save();
 
     // Audit Log
-    const typeLabels = { logo: 'logo', header: 'report header image', footer: 'report footer image', signature: 'signature', watermark: 'watermark' };
+    const typeLabels = { logo: 'logo', footer: 'report footer image', signature: 'signature' };
     const typeLabel = typeLabels[type] || type;
     createAuditLog({
       user: req.user._id,

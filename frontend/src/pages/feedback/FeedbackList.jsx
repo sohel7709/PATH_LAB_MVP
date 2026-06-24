@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { feedback } from '../../utils/api';
 
 const STATUS_COLORS = {
@@ -21,6 +21,7 @@ const PRIORITY_COLORS = {
 };
 
 export default function FeedbackList() {
+  const navigate = useNavigate();
   const [feedbacks, setFeedbacks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -60,14 +61,21 @@ export default function FeedbackList() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Feedback & Support</h1>
-          <p className="text-sm text-gray-500 mt-1">Submit and track your feedback tickets</p>
+      <div className="rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-5 flex items-center justify-between mb-6 shadow-sm">
+        <div className="flex items-center gap-4">
+          <div className="h-12 w-12 rounded-xl bg-white/15 flex items-center justify-center">
+            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+            </svg>
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-white">Feedback &amp; Support</h1>
+            <p className="text-sm text-blue-100 mt-0.5">Submit and track your feedback tickets</p>
+          </div>
         </div>
         <Link
           to="/feedback/send"
-          className="inline-flex items-center px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+          className="inline-flex items-center px-4 py-2.5 bg-white text-blue-700 text-sm font-semibold rounded-lg hover:bg-blue-50 transition-colors shadow-sm"
         >
           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -172,7 +180,7 @@ export default function FeedbackList() {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {feedbacks.map((fb) => (
-                  <tr key={fb._id} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => window.location.href = `/feedback/${fb._id}`}>
+                  <tr key={fb._id} className="hover:bg-blue-50/50 transition-colors cursor-pointer" onClick={() => navigate(`/feedback/${fb._id}`)}>
                     <td className="px-4 py-3 whitespace-nowrap">
                       <span className="text-sm font-mono font-medium text-blue-600">{fb.feedbackId}</span>
                     </td>
