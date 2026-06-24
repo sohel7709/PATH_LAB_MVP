@@ -125,8 +125,7 @@ const prepareReportTemplateData = async (report, lab, labReportSettings, req, sh
 
     // Check if header and footer settings exist and should be shown
     const hasHeaderSettings = labReportSettings &&
-                             (labReportSettings.header.headerImage ||
-                              labReportSettings.header.labName ||
+                             (labReportSettings.header.labName ||
                               labReportSettings.header.doctorName);
 
     const hasFooterSettings = labReportSettings &&
@@ -143,8 +142,6 @@ const prepareReportTemplateData = async (report, lab, labReportSettings, req, sh
     const data = {
       // Header data - only include if settings exist and showHeader is true
       showHeader: showHeader && hasHeaderSettings,
-      headerImage: (showHeader && hasHeaderSettings && labReportSettings.header.headerImage) ?
-                   `${baseUrl}${labReportSettings.header.headerImage}` : '',
       labName: (showHeader && hasHeaderSettings) ?
                (labReportSettings.header.labName || lab.name || 'Pathology Laboratory') : '',
       doctorName: (showHeader && hasHeaderSettings) ?
