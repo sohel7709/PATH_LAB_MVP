@@ -596,7 +596,60 @@ export const groupTestTemplates = {
   getById: async (id) => { const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/group-test-templates/${id}`, { headers: getAuthHeaders() }); const result = await handleResponse(response); return result; }
 };
 
+// Feedback API calls
+export const feedback = {
+  getAll: async (filters = {}) => {
+    const queryParams = new URLSearchParams();
+    if (filters.status) queryParams.append('status', filters.status);
+    if (filters.priority) queryParams.append('priority', filters.priority);
+    if (filters.type) queryParams.append('type', filters.type);
+    if (filters.lab) queryParams.append('lab', filters.lab);
+    if (filters.page) queryParams.append('page', filters.page);
+    if (filters.limit) queryParams.append('limit', filters.limit);
+    if (filters.startDate) queryParams.append('startDate', filters.startDate);
+    if (filters.endDate) queryParams.append('endDate', filters.endDate);
+    const queryString = queryParams.toString();
+    const url = queryString
+      ? `${import.meta.env.VITE_API_BASE_URL}/feedback?${queryString}`
+      : `${import.meta.env.VITE_API_BASE_URL}/feedback`;
+    const response = await fetch(url, { headers: getAuthHeaders() });
+    return handleResponse(response);
+  },
+  getById: async (id) => {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/feedback/${id}`, { headers: getAuthHeaders() });
+    return handleResponse(response);
+  },
+  create: async (feedbackData) => {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/feedback`, {
+      method: 'POST', headers: getAuthHeaders(), body: JSON.stringify(feedbackData),
+    });
+    return handleResponse(response);
+  },
+  uploadImage: async (imageData) => {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/feedback/upload-image`, {
+      method: 'POST', headers: getAuthHeaders(), body: JSON.stringify({ imageData }),
+    });
+    return handleResponse(response);
+  },
+  update: async (id, updateData) => {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/feedback/${id}`, {
+      method: 'PUT', headers: getAuthHeaders(), body: JSON.stringify(updateData),
+    });
+    return handleResponse(response);
+  },
+  delete: async (id) => {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/feedback/${id}`, {
+      method: 'DELETE', headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  },
+  getStats: async () => {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/feedback/stats`, { headers: getAuthHeaders() });
+    return handleResponse(response);
+  },
+};
+
 export default {
   auth, reports, lab, users, dashboard, patients, superAdmin, testTemplates,
-  labReportSettings, doctors, plans, whatsappSettings, revenue, groupTestTemplates
+  labReportSettings, doctors, plans, whatsappSettings, revenue, groupTestTemplates, feedback
 };

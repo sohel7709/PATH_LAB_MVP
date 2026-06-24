@@ -66,6 +66,10 @@ const PlanManagement = lazy(() => import("./pages/plans/PlanManagement"));
 const AdminSubscriptionPlans = lazy(() => import("./pages/subscriptions/AdminSubscriptionPlans"));
 const LabSubscriptions = lazy(() => import("./pages/subscriptions/LabSubscriptions"));
 
+const FeedbackList = lazy(() => import("./pages/feedback/FeedbackList"));
+const CreateFeedback = lazy(() => import("./pages/feedback/CreateFeedback"));
+const FeedbackDetail = lazy(() => import("./pages/feedback/FeedbackDetail"));
+
 const LoadingSpinner = () => (
   <div className="flex items-center justify-center min-h-screen">
     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
@@ -142,6 +146,9 @@ function App() {
               <Route path="/subscriptions/plans" element={<ProtectedRoute allowedRoles={["admin", "technician"]}><AdminSubscriptionPlans /></ProtectedRoute>} />
               <Route path="/subscriptions/manage" element={<ProtectedRoute allowedRoles={["super-admin"]}><LabSubscriptions /></ProtectedRoute>} />
               <Route path="/revenue" element={<ProtectedRoute allowedRoles={["super-admin"]}><SuperAdminRevenue /></ProtectedRoute>} />
+              <Route path="/feedback" element={<ProtectedRoute allowedRoles={["admin", "super-admin"]}><FeedbackList /></ProtectedRoute>} />
+              <Route path="/feedback/new" element={<ProtectedRoute allowedRoles={["admin"]}><CreateFeedback /></ProtectedRoute>} />
+              <Route path="/feedback/:id" element={<ProtectedRoute allowedRoles={["admin", "super-admin"]}><FeedbackDetail /></ProtectedRoute>} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />

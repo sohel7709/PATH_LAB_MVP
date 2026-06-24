@@ -28,6 +28,7 @@ const superAdminRoutes = require('./routes/superAdminRoutes');
 const revenueRoutes = require('./routes/revenueRoutes');
 const subscriptionRoutes = require('./routes/subscriptionRoutes');
 const superAdminRevenueRoutes = require('./routes/superAdminRevenueRoutes');
+const feedbackRoutes = require('./routes/feedbackRoutes');
 
 const app = express();
 
@@ -163,6 +164,7 @@ app.use('/api/superadmin', superAdminRoutes);
 app.use('/api/revenue', revenueRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/super-admin/revenue', superAdminRevenueRoutes);
+app.use('/api/feedback', feedbackRoutes);
 app.get('/api/lab/settings', protect, authorize('admin', 'super-admin'), getLabSettings);
 app.put('/api/lab/settings', protect, authorize('admin', 'super-admin'), updateLabSettings);
 
