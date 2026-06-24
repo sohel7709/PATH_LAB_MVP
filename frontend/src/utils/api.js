@@ -596,7 +596,84 @@ export const groupTestTemplates = {
   getById: async (id) => { const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/group-test-templates/${id}`, { headers: getAuthHeaders() }); const result = await handleResponse(response); return result; }
 };
 
+// Feedback API calls
+export const feedback = {
+  // Admin endpoints
+  submit: async (formData) => {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/feedback`, {
+      method: 'POST',
+      headers: {
+        'Authorization': token ? `Bearer ${token}` : '',
+        // Do NOT set Content-Type for FormData; browser sets it with boundary
+      },
+      body: formData,
+    });
+    return handleResponse(response);
+  },
+
+  getMyFeedback: async (filters = {}) => {
+    const queryParams = new URLSearchParams();
+    if (filters.status) queryParams.append('status', filters.status);
+    if (filters.type) queryParams.append('type', filters.type);
+    if (filters.priority) queryParams.append('priority', filters.priority);
+    if (filters.page) queryParams.append('page', filters.page);
+    if (filters.limit) queryParams.append('limit', filters.limit);
+    const queryString = queryParams.toString();
+    const url = queryString
+      ? `${import.meta.env.VITE_API_BASE_URL}/feedback?${queryString}`
+      : `${import.meta.env.VITE_API_BASE_URL}/feedback`;
+    const response = await fetch(url, { headers: getAuthHeaders() });
+    return handleResponse(response);
+  },
+
+  getById: async (id) => {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/feedback/${id}`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  },
+
+  // Super Admin endpoints
+  getAllFeedback: async (filters = {}) => {
+    const queryParams = new URLSearchParams();
+    if (filters.status) queryParams.append('status', filters.status);
+    if (filters.type) queryParams.append('type', filters.type);
+    if (filters.priority) queryParams.append('priority', filters.priority);
+    if (filters.lab) queryParams.append('lab', filters.lab);
+    if (filters.startDate) queryParams.append('startDate', filters.startDate);
+    if (filters.endDate) queryParams.append('endDate', filters.endDate);
+    if (filters.page) queryParams.append('page', filters.page);
+    if (filters.limit) queryParams.append('limit', filters.limit);
+    const queryString = queryParams.toString();
+    const url = queryString
+      ? `${import.meta.env.VITE_API_BASE_URL}/feedback/super-admin/all?${queryString}`
+      : `${import.meta.env.VITE_API_BASE_URL}/feedback/super-admin/all`;
+    const response = await fetch(url, { headers: getAuthHeaders() });
+    return handleResponse(response);
+  },
+
+  updateStatus: async (id, status, note) => {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/feedback/super-admin/${id}/status`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ status, note }),
+    });
+    return handleResponse(response);
+  },
+
+  addInternalNote: async (id, notes) => {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/feedback/super-admin/${id}/notes`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ notes }),
+    });
+    return handleResponse(response);
+  },
+};
+
 export default {
   auth, reports, lab, users, dashboard, patients, superAdmin, testTemplates,
-  labReportSettings, doctors, plans, whatsappSettings, revenue, groupTestTemplates
+  labReportSettings, doctors, plans, whatsappSettings, revenue, groupTestTemplates,
+  subscriptions, feedback
 };

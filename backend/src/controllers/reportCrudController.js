@@ -1,5 +1,6 @@
 const Report = require('../models/Report');
 const Lab = require('../models/Lab');
+const { createAuditLog } = require('../services/auditService');
 const User = require('../models/User'); // Needed for population/modification tracking
 const Doctor = require('../models/Doctor'); // Needed for doctor notification
 const TestTemplate = require('../models/TestTemplate'); // Needed for populating template names
@@ -94,6 +95,19 @@ exports.createReport = async (req, res, next) => {
 
 
     const report = await Report.create(reportDataToCreate);
+
+    // Audit Log
+    createAuditLog({
+      user: req.user._id,
+      role: req.user.role,
+      module: 'REPORTS',
+      action: 'CREATE',
+      entityId: report._id,
+      entityType: 'Report',
+      description: `${req.user.name} created report for ${report.patientInfo?.name || 'Unknown'} — ${report.testInfo?.name || 'Test'}`,
+      newData: { patientName: report.patientInfo?.name, testName: report.testInfo?.name },
+      req,
+    });
 
     // Update lab statistics and totalReportsCreated counter
     await Lab.findByIdAndUpdate(req.user.lab, {
@@ -514,6 +528,12 @@ exports.updateReport = async (req, res, next) => {
 
 
 
+    const oldReportData = {
+      patientName: report.patientInfo?.name,
+      testName: report.testInfo?.name,
+      status: report.status,
+    };
+
     const updatedReport = await Report.findByIdAndUpdate(req.params.id, updateData, {
       new: true, // Return the modified document
       runValidators: true // Ensure schema validation runs
@@ -523,6 +543,23 @@ exports.updateReport = async (req, res, next) => {
          // Should not happen if findById found it earlier, but good practice
          return res.status(404).json({ success: false, message: 'Report not found after update attempt.' });
     }
+
+    // Audit Log
+    const statusChanged = req.body.status && req.body.status !== oldReportData.status;
+    createAuditLog({
+      user: req.user._id,
+      role: req.user.role,
+      module: 'REPORTS',
+      action: statusChanged ? 'STATUS_CHANGE' : 'UPDATE',
+      entityId: updatedReport._id,
+      entityType: 'Report',
+      description: statusChanged
+        ? `${req.user.name} changed report status: ${oldReportData.status} → ${req.body.status} for ${updatedReport.patientInfo?.name || 'Unknown'}`
+        : `${req.user.name} updated report for ${updatedReport.patientInfo?.name || 'Unknown'}`,
+      oldData: oldReportData,
+      newData: { patientName: updatedReport.patientInfo?.name, testName: updatedReport.testInfo?.name, status: updatedReport.status },
+      req,
+    });
 
     res.status(200).json({
       success: true,
@@ -556,7 +593,25 @@ exports.deleteReport = async (req, res, next) => {
       });
     }
 
+    const reportData = {
+      patientName: report.patientInfo?.name,
+      testName: report.testInfo?.name,
+    };
+
     await Report.findByIdAndDelete(report._id);
+
+    // Audit Log
+    createAuditLog({
+      user: req.user._id,
+      role: req.user.role,
+      module: 'REPORTS',
+      action: 'DELETE',
+      entityId: req.params.id,
+      entityType: 'Report',
+      description: `${req.user.name} deleted report for ${reportData.patientName || 'Unknown'}`,
+      oldData: reportData,
+      req,
+    });
 
     // Update lab statistics
     await Lab.findByIdAndUpdate(req.user.lab, {

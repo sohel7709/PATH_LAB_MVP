@@ -1,4 +1,5 @@
 const TestTemplate = require('../models/TestTemplate');
+const { createAuditLog } = require('../services/auditService');
 
 exports.createTestTemplate = async (req, res, next) => {
   try {
@@ -12,16 +13,34 @@ exports.createTestTemplate = async (req, res, next) => {
       delete req.body.fields;
     }
     
+    let templateType = null;
     if (req.user.role === 'super-admin') {
       req.body.templateType = req.body.templateType || 'global';
       req.body.lab = null;
       if (req.body.templateType === 'default') req.body.isDefault = true;
+      templateType = req.body.templateType;
     } else if (req.user.role === 'admin') {
       req.body.templateType = 'local';
       req.body.lab = req.user.lab;
       if (!req.user.lab) return res.status(400).json({ success: false, message: 'Admin has no lab assigned' });
+      templateType = 'local';
     }
     const template = await TestTemplate.create(req.body);
+
+    // Audit Log
+    const typeLabel = templateType === 'global' ? 'Global Template' : 'Local Template';
+    createAuditLog({
+      user: req.user._id,
+      role: req.user.role,
+      module: 'TEMPLATES',
+      action: 'CREATE',
+      entityId: template._id,
+      entityType: 'TestTemplate',
+      description: `${req.user.name} created ${typeLabel}: ${template.templateName || template.name}`,
+      newData: { templateName: template.templateName, templateType, lab: template.lab },
+      req,
+    });
+
     res.status(201).json({ success: true, data: template });
   } catch (error) {
     if (error.name === 'ValidationError') {
@@ -58,7 +77,6 @@ exports.getTestTemplate = async (req, res, next) => {
     if (req.user.role !== 'super-admin') {
       const isPublic = template.templateType === 'default' || template.templateType === 'global' || template.isDefault || (!template.lab && !template.templateType);
       if (!isPublic) {
-        // .populate makes template.lab an object { _id, name }, extract the _id
         const templateLabId = template.lab?._id?.toString() || template.lab?.toString();
         const userLabId = req.user.lab?.toString();
         if (!templateLabId || templateLabId !== userLabId) {
@@ -74,6 +92,9 @@ exports.updateTestTemplate = async (req, res, next) => {
   try {
     let template = await TestTemplate.findById(req.params.id);
     if (!template) return res.status(404).json({ success: false, message: 'Test template not found' });
+
+    const oldData = { templateName: template.templateName, templateType: template.templateType };
+
     if (req.user.role !== 'super-admin') {
       if (template.templateType === 'default' || template.templateType === 'global' || template.isDefault) return res.status(403).json({ success: false, message: 'Cannot modify default or global templates' });
       const templateLabId = template.lab?._id?.toString() || template.lab?.toString();
@@ -84,6 +105,22 @@ exports.updateTestTemplate = async (req, res, next) => {
     const updateData = { ...req.body };
     if (req.user.role !== 'super-admin') { updateData.templateType = template.templateType; updateData.lab = template.lab; updateData.isDefault = template.isDefault; updateData.createdBy = template.createdBy; }
     template = await TestTemplate.findByIdAndUpdate(req.params.id, updateData, { new: true, runValidators: true });
+
+    // Audit Log
+    const typeLabel = template.templateType === 'global' ? 'Global Template' : 'Local Template';
+    createAuditLog({
+      user: req.user._id,
+      role: req.user.role,
+      module: 'TEMPLATES',
+      action: 'UPDATE',
+      entityId: template._id,
+      entityType: 'TestTemplate',
+      description: `${req.user.name} updated ${typeLabel}: ${template.templateName || template.name}`,
+      oldData,
+      newData: { templateName: template.templateName, templateType: template.templateType },
+      req,
+    });
+
     res.status(200).json({ success: true, data: template });
   } catch (error) { next(error); }
 };
@@ -92,12 +129,33 @@ exports.deleteTestTemplate = async (req, res, next) => {
   try {
     const template = await TestTemplate.findById(req.params.id);
     if (!template) return res.status(404).json({ success: false, message: 'Test template not found' });
+
+    const templateData = {
+      templateName: template.templateName || template.name,
+      templateType: template.templateType,
+    };
+
     if (req.user.role !== 'super-admin') {
       if (template.templateType === 'default' || template.templateType === 'global' || template.isDefault) return res.status(403).json({ success: false, message: 'Cannot delete default or global templates' });
       const templateLabId = template.lab?._id?.toString() || template.lab?.toString();
       if (templateLabId && templateLabId !== req.user.lab?.toString()) return res.status(403).json({ success: false, message: 'Not authorized to delete this template' });
     }
     await TestTemplate.findByIdAndDelete(template._id);
+
+    // Audit Log
+    const typeLabel = templateData.templateType === 'global' ? 'Global Template' : 'Local Template';
+    createAuditLog({
+      user: req.user._id,
+      role: req.user.role,
+      module: 'TEMPLATES',
+      action: 'DELETE',
+      entityId: template._id,
+      entityType: 'TestTemplate',
+      description: `${req.user.name} deleted ${typeLabel}: ${templateData.templateName}`,
+      oldData: templateData,
+      req,
+    });
+
     res.status(200).json({ success: true, message: 'Template deleted' });
   } catch (error) { next(error); }
 };
@@ -110,6 +168,19 @@ exports.createDefaultTemplates = async (req, res, next) => {
     if (!defaultTemplates || !Array.isArray(defaultTemplates) || defaultTemplates.length === 0) return res.status(400).json({ success: false, message: 'No templates found' });
     const templatesWithDefaults = defaultTemplates.map(t => ({ ...t, templateType: 'default', isDefault: true, createdBy: req.user.id, createdByRole: 'super-admin' }));
     const createdTemplates = await TestTemplate.create(templatesWithDefaults);
+
+    // Audit Log
+    createAuditLog({
+      user: req.user._id,
+      role: req.user.role,
+      module: 'TEMPLATES',
+      action: 'CREATE',
+      entityType: 'TestTemplate',
+      description: `${req.user.name} created ${createdTemplates.length} default templates`,
+      newData: { count: createdTemplates.length },
+      req,
+    });
+
     res.status(201).json({ success: true, count: createdTemplates.length, data: createdTemplates });
   } catch (error) { next(error); }
 };

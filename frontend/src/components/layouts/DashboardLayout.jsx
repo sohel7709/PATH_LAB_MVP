@@ -13,6 +13,7 @@ import {
   DocumentDuplicateIcon,
   ChartBarIcon,
   CreditCardIcon,
+  ChatBubbleLeftRightIcon,
 } from '@heroicons/react/24/outline';
 import { ChevronDownIcon } from '@heroicons/react/20/solid';
 import { useAuth } from '../../context/AuthContext';
@@ -34,6 +35,7 @@ const getNavigationItems = (role) => {
     { name: 'Notification Settings', href: '/settings/notifications', icon: CogIcon },
     { name: 'Revenue', href: '/revenue', icon: ChartBarIcon },
     { name: 'Audit Logs', href: '/audit-logs', icon: DocumentTextIcon },
+    { name: 'Feedback Management', href: '/super-admin/feedback', icon: ChatBubbleLeftRightIcon },
   ];
 
   const adminItems = [
@@ -48,6 +50,7 @@ const getNavigationItems = (role) => {
     { name: 'Revenue Dashboard', href: '/finance/revenue', icon: ChartBarIcon },
     { name: 'Technicians', href: '/users', icon: UserGroupIcon },
     { name: 'Inventory', href: '/inventory', icon: BeakerIcon },
+    { name: 'Feedback', href: '/feedback', icon: ChatBubbleLeftRightIcon },
   ];
 
   const technicianItems = [

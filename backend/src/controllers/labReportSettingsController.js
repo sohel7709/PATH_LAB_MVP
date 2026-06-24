@@ -1,6 +1,7 @@
 const LabReportSettings = require("../models/LabReportSettings");
 const Lab = require("../models/Lab");
 const asyncHandler = require("express-async-handler");
+const { createAuditLog } = require("../services/auditService");
 const fs = require("fs");
 const path = require("path");
 const sharp = require("sharp");
@@ -179,6 +180,19 @@ exports.updateLabReportSettings = asyncHandler(async (req, res) => {
       await settings.save();
     }
 
+    // Audit Log
+    const labName = lab.name || 'Lab';
+    createAuditLog({
+      user: req.user._id,
+      role: req.user.role,
+      module: 'SETTINGS',
+      action: 'UPDATE',
+      entityId: settings._id,
+      entityType: 'LabReportSettings',
+      description: `${req.user.name} updated report settings for ${labName}`,
+      req,
+    });
+
     res.status(200).json({
       success: true,
       data: settings,
@@ -347,6 +361,21 @@ exports.uploadImage = asyncHandler(async (req, res) => {
 
 
     await settings.save();
+
+    // Audit Log
+    const typeLabels = { logo: 'logo', header: 'report header image', footer: 'report footer image', signature: 'signature', watermark: 'watermark' };
+    const typeLabel = typeLabels[type] || type;
+    createAuditLog({
+      user: req.user._id,
+      role: req.user.role,
+      module: 'SETTINGS',
+      action: 'UPLOAD',
+      entityId: settings._id,
+      entityType: 'LabReportSettings',
+      description: `${req.user.name} updated ${typeLabel} for report settings`,
+      newData: { type, imageUrl },
+      req,
+    });
 
     // For the frontend, we need to return the full URL
     const fullUrl = `${req.protocol}://${req.get("host")}${imageUrl}`;
