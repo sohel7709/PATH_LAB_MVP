@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { getAbnormalFlag } = require('../utils/reportUtils');
 
 const reportSchema = new mongoose.Schema({
   patientInfo: {
@@ -220,39 +221,21 @@ reportSchema.index({ createdAt: -1 });
 reportSchema.pre('save', function(next) {
   this.reportMeta.lastModifiedAt = Date.now();
   
-  // Validate and update flags for results
+  // Validate and update flags for results.
+  // Use the shared gender-aware helper so gender-specific reference ranges
+  // (e.g. "M - 13.5 - 18.0\nF - 11.5 - 16.4") are evaluated against the range
+  // that matches THIS patient's gender — not just the first (male) range.
   if (this.results && this.results.length > 0) {
+    const patientGender = this.patientInfo && this.patientInfo.gender;
     this.results.forEach(result => {
       if (!result.flag) {
         // Set default flag to normal
         result.flag = 'normal';
       }
-      
-      // If value and reference range exist, determine if it's normal or not
+
+      // If value and reference range exist, determine the gender-aware flag
       if (result.value && result.referenceRange) {
-        const numValue = parseFloat(result.value.toString().replace(/,/g, ''));
-        
-        if (!isNaN(numValue)) {
-          // Clean the reference range by removing commas
-          const cleanRange = result.referenceRange.replace(/,/g, '');
-          
-          // Handle numeric ranges like "10-20" or "10–20" (with en dash)
-          const numericMatch = cleanRange.match(/(\d+\.?\d*)\s*[–-]\s*(\d+\.?\d*)/);
-          if (numericMatch) {
-            const min = parseFloat(numericMatch[1]);
-            const max = parseFloat(numericMatch[2]);
-            
-            if (!isNaN(min) && !isNaN(max)) {
-              if (numValue < min) {
-                result.flag = 'low';
-              } else if (numValue > max) {
-                result.flag = 'high';
-              } else {
-                result.flag = 'normal';
-              }
-            }
-          }
-        }
+        result.flag = getAbnormalFlag(result.value, result.referenceRange, patientGender);
       }
     });
   }

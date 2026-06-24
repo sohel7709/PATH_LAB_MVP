@@ -29,3 +29,6 @@ backend/uploads/
 # Windows temp files
 CUsers*
 .gstack/
+
+# Claude Code agent worktrees (local only)
+.claude/worktrees/

@@ -13,24 +13,7 @@ import {
 import { reports } from '../../utils/api';
 import { formatDate, getStatusColor } from '../../utils/helpers';
 import { REPORT_STATUS } from '../../utils/constants';
-
-// Check if a value is outside the reference range
-const isOutsideRange = (value, referenceRange) => {
-  if (!value || !referenceRange) return false;
-  const numValue = parseFloat(value);
-  if (isNaN(numValue)) return false;
-  try {
-    if (referenceRange.includes('-')) {
-      const [min, max] = referenceRange.split('-').map(Number);
-      return numValue < min || numValue > max;
-    } else if (referenceRange.startsWith('<')) {
-      return numValue >= parseFloat(referenceRange.substring(1));
-    } else if (referenceRange.startsWith('>')) {
-      return numValue <= parseFloat(referenceRange.substring(1));
-    }
-  } catch (error) {}
-  return false;
-};
+import { isOutsideRange } from '../../utils/reportUtils';
 
 export default function ViewReport() {
   const { id } = useParams();
@@ -268,7 +251,7 @@ export default function ViewReport() {
             <tbody>
               {report.results && report.results.length > 0 ? (
                 report.results.map((param, index) => {
-                  const isAbnormal = isOutsideRange(param.value, param.referenceRange);
+                  const isAbnormal = isOutsideRange(param.value, param.referenceRange, report.patientInfo?.gender);
                   return (
                     <tr
                       key={index}

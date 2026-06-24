@@ -1,9 +1,36 @@
+// Resolve a gender-specific reference range to a plain "min - max" range string.
+// Supports both formats used across the templates:
+//   - "Male: 4620 - 11500 U/L\nFemale: 3930 - 10800 U/L"
+//   - "M - 13.5 - 18.0\nF - 11.5 - 16.4"  and  "M -00 -08mm , F- 00-20 mm"
+// Returns the original range unchanged when no gender block is present.
+const resolveGenderRange = (referenceRange, gender) => {
+  if (!referenceRange) return referenceRange;
+  const range = String(referenceRange);
+
+  const maleMatch = range.match(/(?:^|[^a-z])(?:male|m)\s*[-:]?\s*(\d+\.?\d*)\s*[-–]\s*(\d+\.?\d*)/i);
+  const femaleMatch = range.match(/(?:^|[^a-z])(?:female|f)\s*[-:]?\s*(\d+\.?\d*)\s*[-–]\s*(\d+\.?\d*)/i);
+
+  if (!maleMatch || !femaleMatch) return referenceRange;
+
+  const maleMin = parseFloat(maleMatch[1]);
+  const maleMax = parseFloat(maleMatch[2]);
+  const femaleMin = parseFloat(femaleMatch[1]);
+  const femaleMax = parseFloat(femaleMatch[2]);
+
+  const g = String(gender || '').toLowerCase();
+  if (g === 'male') return `${maleMin} - ${maleMax}`;
+  if (g === 'female') return `${femaleMin} - ${femaleMax}`;
+  return `${Math.min(maleMin, femaleMin)} - ${Math.max(maleMax, femaleMax)}`;
+};
+
 // Helper function to determine abnormal flag based on value and reference range
 const getAbnormalFlag = (value, referenceRange, gender) => {
   if (value === null || value === undefined || value === '' || !referenceRange) return 'normal'; // Handle empty/null values
 
   const valueStr = String(value).toLowerCase().trim();
-  const trimmedRange = String(referenceRange).trim();
+  // Resolve any gender-specific block (both "Male:/Female:" and "M -/F -" formats)
+  // to a plain "min - max" range that matches the patient's gender.
+  const trimmedRange = String(resolveGenderRange(referenceRange, gender)).trim();
   const rangeStr = trimmedRange.toLowerCase();
 
   // --- Handle Specific Abnormal Text Values FIRST ---
@@ -147,4 +174,5 @@ const getAbnormalFlag = (value, referenceRange, gender) => {
 
 module.exports = {
   getAbnormalFlag,
+  resolveGenderRange,
 };

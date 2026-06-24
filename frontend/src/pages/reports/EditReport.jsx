@@ -97,7 +97,7 @@ export default function EditReport() {
         notes: formData.notes,
         results: formData.testParameters.map(p => ({
           parameter: p.name, value: p.value, unit: p.unit, referenceRange: p.referenceRange,
-          flag: isOutsideRange(p.value, p.referenceRange) ? 'abnormal' : 'normal',
+          flag: isOutsideRange(p.value, p.referenceRange, formData.patientGender) ? 'abnormal' : 'normal',
         })),
       });
       navigate(`/reports/${id}/print`);
@@ -191,7 +191,7 @@ export default function EditReport() {
               </thead>
               <tbody>
                 {formData.testParameters.map((param, i) => {
-                  const abnormal = isOutsideRange(param.value, param.referenceRange);
+                  const abnormal = isOutsideRange(param.value, param.referenceRange, formData.patientGender);
                   return (
                     <tr key={i} className={`border-b border-slate-100 ${abnormal ? 'bg-amber-50' : 'hover:bg-slate-50'}`}>
                       <td className="py-2 px-3 text-slate-700 font-medium">{param.name}</td>

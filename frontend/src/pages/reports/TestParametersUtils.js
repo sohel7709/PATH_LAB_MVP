@@ -1,6 +1,7 @@
 /**
  * Utility functions for test parameters validation and formatting
  */
+import { resolveGenderRange } from '../../utils/reportUtils';
 
 /**
  * Check if value is within normal range
@@ -49,8 +50,11 @@ export const isValueNormal = (paramName, value, referenceRange, patientGender, p
   // Normalize patientAge to number if possible
   const ageNum = typeof patientAge === 'string' ? parseInt(patientAge, 10) : patientAge;
 
-  // Trim referenceRange to avoid whitespace issues
-  const trimmedRange = referenceRange.trim();
+  // Trim referenceRange to avoid whitespace issues.
+  // Resolve any gender-specific block (both "Male:/Female:" and "M -/F -" formats)
+  // to a plain "min - max" range so the numeric parsing below uses the range that
+  // matches the patient's gender.
+  const trimmedRange = resolveGenderRange(referenceRange.trim(), patientGender);
 
   // Special handling for SERUM ALK.PHOSPHATASE reference range with Adults and Children
   if (trimmedRange.includes('Adults') && trimmedRange.includes('Children')) {
@@ -73,35 +77,8 @@ export const isValueNormal = (paramName, value, referenceRange, patientGender, p
     }
   }
 
-  // Handle gender-specific ranges like "M - 13.5 - 18.0\nF - 11.5 - 16.4" or "M -00 -08mm , F- 00-20 mm"
-  // Regex breakdown:
-  // Male:\s*(\d+\.?\d*)\s*-\s*(\d+\.?\d*) - Captures Male min and max
-  // .*\n? - Matches any characters (like units) and optional newline
-  // Female:\s*(\d+\.?\d*)\s*-\s*(\d+\.?\d*) - Captures Female min and max
-  const genderMatch = trimmedRange.match(/Male:\s*(\d+\.?\d*)\s*-\s*(\d+\.?\d*).*\n?Female:\s*(\d+\.?\d*)\s*-\s*(\d+\.?\d*)/i);
-  if (genderMatch) {
-    // Groups are 1-based index
-    const maleMin = parseFloat(genderMatch[1]);
-    const maleMax = parseFloat(genderMatch[2]);
-    const femaleMin = parseFloat(genderMatch[3]);
-    const femaleMax = parseFloat(genderMatch[4]);
-    
-        
-    // Use the appropriate range based on patient gender
-    if (patientGender === 'male' && !isNaN(maleMin) && !isNaN(maleMax)) {
-      return numValue >= maleMin && numValue <= maleMax;
-    } else if (patientGender === 'female' && !isNaN(femaleMin) && !isNaN(femaleMax)) {
-      return numValue >= femaleMin && numValue <= femaleMax;
-    } else {
-      // If gender is not specified or is 'other', use the wider range
-      const minValue = Math.min(maleMin, femaleMin);
-      const maxValue = Math.max(maleMax, femaleMax);
-      
-      if (!isNaN(minValue) && !isNaN(maxValue)) {
-        return numValue >= minValue && numValue <= maxValue;
-      }
-    }
-  }
+  // Gender-specific ranges are already resolved into trimmedRange above via
+  // resolveGenderRange, so the generic numeric handling below applies.
 
   // Specific check for CRP: "N -less than 6 mg/lt" means abnormal if >= 6
   if (paramName === "SERUM FOR C - REACTIVE PROTEINS" && trimmedRange.toLowerCase().includes("less than 6")) {
