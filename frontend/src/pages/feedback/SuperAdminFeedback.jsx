@@ -105,27 +105,37 @@ export default function SuperAdminFeedback() {
             <p className="text-sm text-indigo-100 mt-0.5">Manage all feedback tickets from all labs</p>
           </div>
         </div>
-        {hasActiveFilters && (
-          <button
-            onClick={clearFilters}
-            className="text-sm text-white/90 hover:text-white font-medium bg-white/15 px-3 py-1.5 rounded-lg"
-          >
-            Clear Filters
-          </button>
-        )}
+        <div className="flex items-center gap-2 text-white/70 text-sm font-medium">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+          {pagination.total != null ? `${pagination.total} tickets` : ''}
+        </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Filter icon label */}
+          <div className="flex items-center gap-1.5 text-gray-400 pr-1 border-r border-gray-200 mr-1">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
+            </svg>
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Filters</span>
+          </div>
+
+          {/* Status */}
+          <div className="relative">
             <select
               value={filter.status}
               onChange={(e) => setFilter({ ...filter, status: e.target.value })}
-              className="w-full rounded-md border-gray-300 shadow-sm text-xs focus:border-blue-500 focus:ring-blue-500"
+              className={`appearance-none pl-3 pr-8 py-2 rounded-lg border text-xs font-medium cursor-pointer transition-all outline-none
+                ${filter.status
+                  ? 'border-indigo-400 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-300'
+                  : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'
+                }`}
             >
-              <option value="">All</option>
+              <option value="">Status · All</option>
               <option value="Pending">Pending</option>
               <option value="Read">Read</option>
               <option value="Working On It">Working On It</option>
@@ -135,15 +145,23 @@ export default function SuperAdminFeedback() {
               <option value="Duplicate Request">Duplicate</option>
               <option value="Planned For Future Release">Planned</option>
             </select>
+            <svg className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+            </svg>
           </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Type</label>
+
+          {/* Type */}
+          <div className="relative">
             <select
               value={filter.type}
               onChange={(e) => setFilter({ ...filter, type: e.target.value })}
-              className="w-full rounded-md border-gray-300 shadow-sm text-xs focus:border-blue-500 focus:ring-blue-500"
+              className={`appearance-none pl-3 pr-8 py-2 rounded-lg border text-xs font-medium cursor-pointer transition-all outline-none
+                ${filter.type
+                  ? 'border-purple-400 bg-purple-50 text-purple-700 ring-1 ring-purple-300'
+                  : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'
+                }`}
             >
-              <option value="">All</option>
+              <option value="">Type · All</option>
               <option value="Bug Report">Bug Report</option>
               <option value="Feature Request">Feature Request</option>
               <option value="Improvement Suggestion">Suggestion</option>
@@ -151,52 +169,100 @@ export default function SuperAdminFeedback() {
               <option value="Performance Issue">Performance</option>
               <option value="Other">Other</option>
             </select>
+            <svg className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+            </svg>
           </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Priority</label>
+
+          {/* Priority */}
+          <div className="relative">
             <select
               value={filter.priority}
               onChange={(e) => setFilter({ ...filter, priority: e.target.value })}
-              className="w-full rounded-md border-gray-300 shadow-sm text-xs focus:border-blue-500 focus:ring-blue-500"
+              className={`appearance-none pl-3 pr-8 py-2 rounded-lg border text-xs font-medium cursor-pointer transition-all outline-none
+                ${filter.priority
+                  ? 'border-orange-400 bg-orange-50 text-orange-700 ring-1 ring-orange-300'
+                  : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'
+                }`}
             >
-              <option value="">All</option>
+              <option value="">Priority · All</option>
               <option value="Low">Low</option>
               <option value="Medium">Medium</option>
               <option value="High">High</option>
               <option value="Critical">Critical</option>
             </select>
+            <svg className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+            </svg>
           </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Lab</label>
+
+          {/* Lab */}
+          <div className="relative">
             <select
               value={filter.lab}
               onChange={(e) => setFilter({ ...filter, lab: e.target.value })}
-              className="w-full rounded-md border-gray-300 shadow-sm text-xs focus:border-blue-500 focus:ring-blue-500"
+              className={`appearance-none pl-3 pr-8 py-2 rounded-lg border text-xs font-medium cursor-pointer transition-all outline-none
+                ${filter.lab
+                  ? 'border-teal-400 bg-teal-50 text-teal-700 ring-1 ring-teal-300'
+                  : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'
+                }`}
             >
-              <option value="">All Labs</option>
+              <option value="">Lab · All</option>
               {labs.map((lab) => (
                 <option key={lab._id} value={lab._id}>{lab.name}</option>
               ))}
             </select>
+            <svg className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+            </svg>
           </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">From</label>
-            <input
-              type="date"
-              value={filter.startDate}
-              onChange={(e) => setFilter({ ...filter, startDate: e.target.value })}
-              className="w-full rounded-md border-gray-300 shadow-sm text-xs focus:border-blue-500 focus:ring-blue-500"
-            />
+
+          {/* Divider */}
+          <div className="h-6 w-px bg-gray-200 mx-0.5" />
+
+          {/* Date range */}
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <input
+                type="date"
+                value={filter.startDate}
+                onChange={(e) => setFilter({ ...filter, startDate: e.target.value })}
+                className={`pl-3 pr-3 py-2 rounded-lg border text-xs font-medium cursor-pointer transition-all outline-none
+                  ${filter.startDate
+                    ? 'border-blue-400 bg-blue-50 text-blue-700 ring-1 ring-blue-300'
+                    : 'border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-300 hover:bg-white'
+                  }`}
+                placeholder="From"
+              />
+            </div>
+            <span className="text-gray-300 text-xs font-medium">—</span>
+            <div className="relative">
+              <input
+                type="date"
+                value={filter.endDate}
+                onChange={(e) => setFilter({ ...filter, endDate: e.target.value })}
+                className={`pl-3 pr-3 py-2 rounded-lg border text-xs font-medium cursor-pointer transition-all outline-none
+                  ${filter.endDate
+                    ? 'border-blue-400 bg-blue-50 text-blue-700 ring-1 ring-blue-300'
+                    : 'border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-300 hover:bg-white'
+                  }`}
+                placeholder="To"
+              />
+            </div>
           </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">To</label>
-            <input
-              type="date"
-              value={filter.endDate}
-              onChange={(e) => setFilter({ ...filter, endDate: e.target.value })}
-              className="w-full rounded-md border-gray-300 shadow-sm text-xs focus:border-blue-500 focus:ring-blue-500"
-            />
-          </div>
+
+          {/* Clear button */}
+          {hasActiveFilters && (
+            <button
+              onClick={clearFilters}
+              className="ml-auto flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-red-600 bg-gray-100 hover:bg-red-50 border border-transparent hover:border-red-200 px-3 py-2 rounded-lg transition-all"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Clear
+            </button>
+          )}
         </div>
       </div>
 
