@@ -1,288 +1,323 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
-  ArrowLeftIcon,
-  PencilIcon,
-  DocumentTextIcon,
-  EyeIcon,
-  PrinterIcon,
-  PhoneIcon,
-  EnvelopeIcon,
-  MapPinIcon,
-  UserIcon,
-  CalendarIcon,
-  ExclamationCircleIcon,
+  ArrowLeftIcon, PencilIcon, DocumentTextIcon,
+  EyeIcon, PrinterIcon, PhoneIcon, EnvelopeIcon,
+  MapPinIcon, UserIcon, CalendarIcon, ExclamationCircleIcon,
+  BeakerIcon, PlusIcon,
 } from '@heroicons/react/24/outline';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { formatDate } from '../../utils/helpers';
 import { DATE_FORMATS } from '../../utils/constants';
 
-const statusColors = {
-  verified: 'badge-green',
-  completed: 'badge-blue',
-  pending: 'badge-yellow',
+const STATUS_STYLES = {
+  pending:       'bg-yellow-100 text-yellow-700 border-yellow-200',
+  'in-progress': 'bg-blue-100 text-blue-700 border-blue-200',
+  completed:     'bg-green-100 text-green-700 border-green-200',
+  verified:      'bg-indigo-100 text-indigo-700 border-indigo-200',
+  delivered:     'bg-teal-100 text-teal-700 border-teal-200',
+  cancelled:     'bg-red-100 text-red-700 border-red-200',
 };
+
+const GENDER_GRADIENT = {
+  male:   'from-blue-600 to-indigo-600',
+  female: 'from-pink-500 to-rose-500',
+  other:  'from-slate-600 to-gray-700',
+};
+
+const InfoRow = ({ icon: Icon, label, value }) => (
+  <div className="flex items-start gap-3 py-3 border-b border-gray-50 last:border-0">
+    <div className="h-8 w-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+      <Icon className="h-4 w-4 text-gray-500" />
+    </div>
+    <div className="flex-1 min-w-0">
+      <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">{label}</p>
+      <p className="text-sm font-semibold text-gray-800 mt-0.5 break-words">{value || '—'}</p>
+    </div>
+  </div>
+);
 
 export default function PatientDetails() {
   const { id: patientMongoId } = useParams();
-  const [patient, setPatient] = useState(null);
-  const [reports, setReports] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [patient, setPatient]         = useState(null);
+  const [reports, setReports]         = useState([]);
+  const [isLoading, setIsLoading]     = useState(true);
+  const [error, setError]             = useState(null);
   const [reportsLoading, setReportsLoading] = useState(true);
-  const [reportsError, setReportsError] = useState(null);
+  const [reportsError, setReportsError]     = useState(null);
 
   useEffect(() => {
-    const fetchDetailsAndReports = async () => {
+    const load = async () => {
       if (!patientMongoId) return;
-      setIsLoading(true);
-      setReportsLoading(true);
-      setError(null);
-      setPatient(null);
-      setReports([]);
-
+      setIsLoading(true); setReportsLoading(true);
+      setError(null); setPatient(null); setReports([]);
       try {
         const { default: api } = await import('../../utils/api');
         const patientData = await api.patients.getById(patientMongoId);
         setPatient(patientData);
-
-        if (patientData && patientData.patientId) {
+        if (patientData?.patientId) {
           try {
-            const reportsResponse = await api.reports.getByPatientId(patientData.patientId);
-            setReports(reportsResponse.data);
-            setReportsError(null);
-          } catch (reportsErrInner) {
-            setReportsError(reportsErrInner.message || 'Failed to fetch patient reports');
-          }
-        } else if (patientData) {
-          setReports([]);
-          setReportsError('Patient string ID not found.');
-        } else {
-          setError('Patient not found.');
+            const res = await api.reports.getByPatientId(patientData.patientId);
+            setReports(res.data || []);
+          } catch (e) { setReportsError(e.message || 'Failed to fetch reports'); }
         }
-      } catch (err) {
-        setError(err.message || 'Failed to fetch patient details.');
-      } finally {
-        setIsLoading(false);
-        setReportsLoading(false);
-      }
+      } catch (e) { setError(e.message || 'Failed to fetch patient details'); }
+      finally { setIsLoading(false); setReportsLoading(false); }
     };
-
-    fetchDetailsAndReports();
+    load();
   }, [patientMongoId]);
 
-  if (isLoading) {
-    return (
-      <div className="page-enter max-w-4xl mx-auto px-4 py-8 space-y-4">
-        <div className="skeleton h-24 rounded-xl" />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="skeleton h-40 rounded-xl" />
-          <div className="skeleton h-40 rounded-xl" />
-        </div>
-        <div className="skeleton h-48 rounded-xl" />
+  /* ── Loading ── */
+  if (isLoading) return (
+    <div className="p-6 max-w-4xl mx-auto space-y-4">
+      <div className="h-40 rounded-2xl bg-gray-100 animate-pulse" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="h-52 rounded-xl bg-gray-100 animate-pulse" />
+        <div className="h-52 rounded-xl bg-gray-100 animate-pulse" />
       </div>
-    );
-  }
+      <div className="h-64 rounded-xl bg-gray-100 animate-pulse" />
+    </div>
+  );
 
-  if (error && !patient) {
-    return (
-      <div className="page-enter max-w-4xl mx-auto px-4 py-8">
-        <div className="alert alert-error flex items-start gap-3">
-          <ExclamationCircleIcon className="h-5 w-5 shrink-0 mt-0.5" />
-          <div>
-            <p className="font-medium">Error loading patient</p>
-            <p className="text-sm mt-1">{error}</p>
-          </div>
-        </div>
-        <Link to="/patients" className="btn btn-secondary mt-4 inline-flex items-center gap-2">
-          <ArrowLeftIcon className="h-4 w-4" /> Back to Patient List
-        </Link>
+  /* ── Error ── */
+  if (error && !patient) return (
+    <div className="p-6 max-w-4xl mx-auto">
+      <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4">
+        <ExclamationCircleIcon className="h-5 w-5 text-red-500 shrink-0" />
+        <p className="text-sm text-red-700">{error}</p>
       </div>
-    );
-  }
+      <Link to="/patients" className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-gray-900">
+        <ArrowLeftIcon className="h-4 w-4" /> Back to Patients
+      </Link>
+    </div>
+  );
 
-  if (!patient) {
-    return (
-      <div className="page-enter max-w-4xl mx-auto px-4 py-8">
-        <div className="empty-state">
-          <UserIcon className="h-12 w-12 mx-auto mb-3" style={{ color: 'var(--text-muted)' }} />
-          <p className="font-medium" style={{ color: 'var(--text)' }}>Patient not found</p>
-          <Link to="/patients" className="btn btn-primary mt-4">Back to Patient List</Link>
-        </div>
-      </div>
-    );
-  }
+  if (!patient) return null;
 
   const initials = (patient.fullName || 'P')
-    .split(' ')
-    .map(n => n[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
+    .split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+
+  const gradient = GENDER_GRADIENT[patient.gender] || GENDER_GRADIENT.other;
+  const totalReports   = reports.length;
+  const lastReport     = reports[0];
+  const pendingReports = reports.filter(r => r.status === 'pending').length;
+  const completedReports = reports.filter(r => ['completed','verified','delivered'].includes(r.status)).length;
 
   return (
-    <div className="page-enter max-w-4xl mx-auto px-4 py-6 space-y-5">
-      {/* Back link */}
-      <Link to="/patients" className="inline-flex items-center gap-1.5 text-sm font-medium" style={{ color: 'var(--primary)' }}>
-        <ArrowLeftIcon className="h-4 w-4" /> Back to Patient List
-      </Link>
+    <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-5">
 
-      {/* Patient header card */}
-      <div className="card p-5">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+      {/* ── Header banner ── */}
+      <div className={`rounded-2xl bg-gradient-to-r ${gradient} px-6 py-6 shadow-sm`}>
+        {/* Back */}
+        <Link to="/patients" className="inline-flex items-center gap-1.5 text-xs font-medium text-white/70 hover:text-white mb-4 transition-colors">
+          <ArrowLeftIcon className="h-3.5 w-3.5" /> Back to Patients
+        </Link>
+
+        <div className="flex flex-col sm:flex-row sm:items-center gap-5">
           {/* Avatar */}
-          <div className="flex-shrink-0 h-16 w-16 rounded-full flex items-center justify-center text-xl font-bold text-white"
-            style={{ background: 'var(--primary)' }}>
-            {initials}
+          <div className="h-20 w-20 rounded-2xl bg-white/20 flex items-center justify-center flex-shrink-0 shadow-sm">
+            <span className="text-2xl font-bold text-white">{initials}</span>
           </div>
-          {/* Name + badges */}
+
+          {/* Info */}
           <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-bold truncate" style={{ color: 'var(--text)' }}>{patient.fullName}</h1>
-            <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>ID: {patient.patientId || 'N/A'}</p>
-            <div className="flex flex-wrap gap-2 mt-2">
+            <h1 className="text-2xl font-bold text-white leading-tight">{patient.fullName}</h1>
+            <p className="text-white/70 text-sm mt-0.5 font-mono">{patient.patientId || 'No ID'}</p>
+            <div className="flex flex-wrap gap-2 mt-3">
               {patient.age && (
-                <span className="badge badge-gray">{patient.age} yrs</span>
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-white/20 text-white">
+                  {patient.age} years
+                </span>
               )}
               {patient.gender && (
-                <span className="badge badge-blue capitalize">{patient.gender}</span>
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-white/20 text-white capitalize">
+                  {patient.gender}
+                </span>
               )}
               {patient.phone && (
-                <span className="badge badge-gray flex items-center gap-1">
-                  <PhoneIcon className="h-3 w-3" />{patient.phone}
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-white/20 text-white">
+                  <PhoneIcon className="h-3 w-3" /> {patient.phone}
                 </span>
               )}
             </div>
           </div>
-          {/* Action buttons */}
-          <div className="flex flex-wrap gap-2 shrink-0">
-            <Link to={`/patients/${patient._id}/edit`} className="btn btn-secondary btn-sm inline-flex items-center gap-1.5">
+
+          {/* Actions */}
+          <div className="flex gap-2.5 flex-shrink-0">
+            <Link
+              to={`/patients/${patient._id}/edit`}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-white/15 hover:bg-white/25 text-white text-sm font-semibold rounded-xl transition-colors"
+            >
               <PencilIcon className="h-4 w-4" /> Edit
             </Link>
-            <Link to={`/reports/create?patientId=${patient._id}`} className="btn btn-primary btn-sm inline-flex items-center gap-1.5">
-              <DocumentTextIcon className="h-4 w-4" /> Create Report
+            <Link
+              to={`/reports/create?patientId=${patient._id}`}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-white text-gray-800 text-sm font-bold rounded-xl hover:bg-gray-50 transition-colors shadow-sm"
+            >
+              <PlusIcon className="h-4 w-4" /> New Report
             </Link>
           </div>
         </div>
+
+        {/* Stats strip */}
+        <div className="grid grid-cols-3 gap-3 mt-5">
+          {[
+            { label: 'Total Reports', value: totalReports },
+            { label: 'Pending',       value: pendingReports },
+            { label: 'Completed',     value: completedReports },
+          ].map(s => (
+            <div key={s.label} className="bg-white/15 rounded-xl px-4 py-3 text-center">
+              <p className="text-2xl font-bold text-white">{s.value}</p>
+              <p className="text-xs text-white/70 font-medium mt-0.5">{s.label}</p>
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* Info cards grid */}
+      {/* ── Info cards ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Contact Info */}
-        <div className="card p-5">
-          <h2 className="text-sm font-semibold uppercase tracking-wider mb-4 flex items-center gap-2" style={{ color: 'var(--text-muted)' }}>
-            <PhoneIcon className="h-4 w-4" /> Contact Info
-          </h2>
-          <dl className="space-y-3">
-            <div className="detail-row">
-              <dt className="detail-label flex items-center gap-1"><EnvelopeIcon className="h-3.5 w-3.5" /> Email</dt>
-              <dd className="detail-value">{patient.email || 'N/A'}</dd>
+
+        {/* Contact */}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="h-7 w-7 rounded-lg bg-blue-100 flex items-center justify-center">
+              <PhoneIcon className="h-4 w-4 text-blue-600" />
             </div>
-            <div className="detail-row">
-              <dt className="detail-label flex items-center gap-1"><PhoneIcon className="h-3.5 w-3.5" /> Phone</dt>
-              <dd className="detail-value">{patient.phone || 'N/A'}</dd>
-            </div>
-            <div className="detail-row">
-              <dt className="detail-label flex items-center gap-1"><MapPinIcon className="h-3.5 w-3.5" /> Address</dt>
-              <dd className="detail-value">{patient.address || 'N/A'}</dd>
-            </div>
-          </dl>
+            <h2 className="text-sm font-bold text-gray-800">Contact Information</h2>
+          </div>
+          <InfoRow icon={PhoneIcon}   label="Phone"   value={patient.phone} />
+          <InfoRow icon={EnvelopeIcon} label="Email"  value={patient.email} />
+          <InfoRow icon={MapPinIcon}  label="Address" value={patient.address} />
         </div>
 
-        {/* Medical Info */}
-        <div className="card p-5">
-          <h2 className="text-sm font-semibold uppercase tracking-wider mb-4 flex items-center gap-2" style={{ color: 'var(--text-muted)' }}>
-            <UserIcon className="h-4 w-4" /> Medical Info
-          </h2>
-          <dl className="space-y-3">
-            <div className="detail-row">
-              <dt className="detail-label">Age</dt>
-              <dd className="detail-value">{patient.age || 'N/A'}</dd>
+        {/* Medical */}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="h-7 w-7 rounded-lg bg-purple-100 flex items-center justify-center">
+              <UserIcon className="h-4 w-4 text-purple-600" />
             </div>
-            <div className="detail-row">
-              <dt className="detail-label">Gender</dt>
-              <dd className="detail-value capitalize">{patient.gender || 'N/A'}</dd>
-            </div>
-            <div className="detail-row">
-              <dt className="detail-label flex items-center gap-1"><CalendarIcon className="h-3.5 w-3.5" /> Registered</dt>
-              <dd className="detail-value">{formatDate(patient.createdAt, DATE_FORMATS.DD_MM_YYYY)}</dd>
-            </div>
-            <div className="detail-row">
-              <dt className="detail-label">Referred By</dt>
-              <dd className="detail-value">{patient.referringDoctor?.name || 'N/A'}</dd>
-            </div>
-          </dl>
+            <h2 className="text-sm font-bold text-gray-800">Patient Details</h2>
+          </div>
+          <InfoRow icon={UserIcon}    label="Full Name"    value={`${patient.designation || ''} ${patient.fullName || ''}`.trim()} />
+          <InfoRow icon={CalendarIcon} label="Age"         value={patient.age ? `${patient.age} years` : null} />
+          <InfoRow icon={UserIcon}    label="Gender"       value={<span className="capitalize">{patient.gender}</span>} />
+          <InfoRow icon={CalendarIcon} label="Registered"  value={patient.createdAt ? formatDate(patient.createdAt, DATE_FORMATS.DD_MM_YYYY) : null} />
+          {patient.lastTestType && (
+            <InfoRow icon={BeakerIcon} label="Last Test"   value={patient.lastTestType} />
+          )}
         </div>
       </div>
 
-      {/* Recent Reports */}
-      <div className="card overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
-          <h2 className="text-base font-semibold" style={{ color: 'var(--text)' }}>Recent Reports</h2>
-          {reports.length > 0 && (
-            <Link to={`/patients/${patientMongoId}/reports`} className="text-sm font-medium" style={{ color: 'var(--primary)' }}>
-              View All &rarr;
-            </Link>
-          )}
+      {/* ── Reports ── */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
+          <h2 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+            <DocumentTextIcon className="h-4 w-4 text-blue-500" />
+            Reports
+            {totalReports > 0 && (
+              <span className="ml-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">{totalReports}</span>
+            )}
+          </h2>
+          <Link
+            to={`/reports/create?patientId=${patient._id}`}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <PlusIcon className="h-3.5 w-3.5" /> New Report
+          </Link>
         </div>
-        <div className="p-5">
-          {reportsLoading && (
-            <div className="space-y-3">
-              {[...Array(3)].map((_, i) => <div key={i} className="skeleton h-12 rounded" />)}
+
+        {/* Loading */}
+        {reportsLoading && (
+          <div className="p-5 space-y-3">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-gray-100 animate-pulse flex-shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-3.5 bg-gray-100 rounded w-1/3 animate-pulse" />
+                  <div className="h-3 bg-gray-100 rounded w-1/4 animate-pulse" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Error */}
+        {reportsError && !reportsLoading && (
+          <div className="flex items-center gap-2 m-5 bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700">
+            <ExclamationCircleIcon className="h-4 w-4 flex-shrink-0" />
+            {reportsError}
+          </div>
+        )}
+
+        {/* Empty */}
+        {!reportsLoading && !reportsError && reports.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="h-14 w-14 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+              <DocumentTextIcon className="h-7 w-7 text-gray-400" />
             </div>
-          )}
-          {reportsError && (
-            <div className="alert alert-error text-sm">{reportsError}</div>
-          )}
-          {!reportsLoading && !reportsError && reports.length === 0 && (
-            <div className="empty-state py-8">
-              <DocumentTextIcon className="h-10 w-10 mx-auto mb-2" style={{ color: 'var(--text-muted)' }} />
-              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No reports found for this patient.</p>
-              <Link to={`/reports/create?patientId=${patient._id}`} className="btn btn-primary btn-sm mt-3">
-                Create First Report
-              </Link>
-            </div>
-          )}
-          {!reportsLoading && !reportsError && reports.length > 0 && (
-            <ul className="divide-y" style={{ borderColor: 'var(--border)' }}>
-              {reports.slice(0, 5).map(report => (
-                <li key={report._id} className="py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <div className="min-w-0">
-                    <Link
-                      to={`/reports/${report._id}`}
-                      className="text-sm font-medium hover:underline"
-                      style={{ color: 'var(--primary)' }}
-                    >
-                      {report.testInfo?.name || `Report ID: ${report.reportId || report._id}`}
-                    </Link>
-                    <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                      {formatDate(report.testInfo?.sampleCollectionDate || report.createdAt, DATE_FORMATS.DD_MM_YYYY)}
-                    </p>
+            <p className="text-sm font-semibold text-gray-700">No reports yet</p>
+            <p className="text-xs text-gray-400 mt-1 mb-4">Create the first report for this patient</p>
+            <Link
+              to={`/reports/create?patientId=${patient._id}`}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors"
+            >
+              <PlusIcon className="h-4 w-4" /> Create Report
+            </Link>
+          </div>
+        )}
+
+        {/* Reports list */}
+        {!reportsLoading && !reportsError && reports.length > 0 && (
+          <div className="divide-y divide-gray-50">
+            {reports.map((report, idx) => {
+              const statusStyle = STATUS_STYLES[report.status] || 'bg-gray-100 text-gray-600 border-gray-200';
+              const testName = report.testInfo?.name || `Report #${report.reportId || idx + 1}`;
+              const date = formatDate(report.testInfo?.sampleCollectionDate || report.createdAt, DATE_FORMATS.DD_MM_YYYY);
+              return (
+                <div key={report._id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50/60 transition-colors group">
+                  {/* Icon */}
+                  <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
+                    <BeakerIcon className="h-5 w-5 text-blue-500" />
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className={`badge ${statusColors[report.status] || 'badge-gray'} capitalize`}>
-                      {report.status || 'N/A'}
-                    </span>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
                     <Link
                       to={`/reports/${report._id}`}
-                      className="btn-icon"
-                      title="View Report"
+                      className="text-sm font-semibold text-gray-900 hover:text-blue-600 transition-colors truncate block"
+                    >
+                      {testName}
+                    </Link>
+                    <p className="text-xs text-gray-400 mt-0.5">{date}</p>
+                  </div>
+
+                  {/* Status */}
+                  <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold border capitalize flex-shrink-0 ${statusStyle}`}>
+                    {report.status || 'N/A'}
+                  </span>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <Link
+                      to={`/reports/${report._id}`}
+                      title="View"
+                      className="h-8 w-8 rounded-lg flex items-center justify-center text-blue-500 bg-blue-50 hover:bg-blue-100 transition-colors"
                     >
                       <EyeIcon className="h-4 w-4" />
                     </Link>
                     <Link
                       to={`/reports/${report._id}/print`}
                       target="_blank"
-                      className="btn-icon"
-                      title="Print Report"
+                      title="Print"
+                      className="h-8 w-8 rounded-lg flex items-center justify-center text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors"
                     >
                       <PrinterIcon className="h-4 w-4" />
                     </Link>
                   </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

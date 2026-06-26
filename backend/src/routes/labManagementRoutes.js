@@ -9,7 +9,8 @@ const {
   deleteLab,
   getLabStats,
   assignPlanToLab,
-  getSubscriptionHistoryForLab
+  getSubscriptionHistoryForLab,
+  addWhatsAppCredits
 } = require('../controllers/labController');
 
 // All routes require authentication
@@ -30,6 +31,7 @@ router.get('/:id/stats', authorize('super-admin', 'admin'), checkLabAccess, getL
 
 // Subscription management routes (Super Admin only)
 router.post('/:id/assign-plan', authorize('super-admin'), assignPlanToLab); // Assign plan to lab
+router.post('/:id/whatsapp-credits', authorize('super-admin'), addWhatsAppCredits); // Top up WhatsApp credits
 router.get('/:id/subscription-history', authorize('super-admin', 'admin'), checkLabAccess, getSubscriptionHistoryForLab); // Get subscription history
 
 module.exports = router;

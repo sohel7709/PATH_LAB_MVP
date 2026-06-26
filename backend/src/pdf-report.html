@@ -229,17 +229,18 @@
             </div>
 
             {{#if this.templateSpecificNotes}}
-            <div style="margin-top: 8px; padding-top: 5px; border-top: 0.5px solid #eee;">
-                <p style="font-size: 10px; white-space: pre-wrap;"><em>{{this.templateSpecificNotes}}</em></p>
+            <div style="margin-top: 10px; padding: 6px 10px; border-left: 3px solid #555; background: #f9f9f9;">
+                <p style="font-size: 10.5px; font-weight: 600; margin: 0 0 2px 0; color: #333;">Note:</p>
+                <p style="font-size: 10.5px; white-space: pre-wrap; margin: 0; color: #444; line-height: 1.5;">{{this.templateSpecificNotes}}</p>
             </div>
             {{/if}}
         </div>
         {{/each}}
 
         {{#if testNotes}}
-        <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid black;">
-            <h4 style="font-size: 12px; font-weight: bold; margin-bottom: 5px;">General Notes:</h4>
-            <p style="font-size: 11px; white-space: pre-wrap;">{{testNotes}}</p>
+        <div style="margin-top: 15px; padding: 7px 10px; border-left: 3px solid #555; background: #f9f9f9;">
+            <p style="font-size: 10.5px; font-weight: 600; margin: 0 0 2px 0; color: #333;">Note:</p>
+            <p style="font-size: 10.5px; white-space: pre-wrap; margin: 0; color: #444; line-height: 1.5;">{{testNotes}}</p>
         </div>
         {{/if}}
 

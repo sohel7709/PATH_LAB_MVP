@@ -29,6 +29,30 @@ const LabDetail = () => {
   const [error, setError] = useState(null);
   const [stats, setStats] = useState({ totalUsers: 0, totalPatients: 0, totalReports: 0 });
   const [labUsers, setLabUsers] = useState([]);
+  const [creditAmount, setCreditAmount] = useState('');
+  const [addingCredits, setAddingCredits] = useState(false);
+  const [creditMsg, setCreditMsg] = useState(null);
+
+  const handleAddCredits = async () => {
+    const amount = parseInt(creditAmount, 10);
+    if (!Number.isInteger(amount) || amount <= 0) {
+      setCreditMsg({ type: 'error', text: 'Enter a positive number of credits' });
+      return;
+    }
+    try {
+      setAddingCredits(true);
+      setCreditMsg(null);
+      const res = await superAdmin.addWhatsAppCredits(id, amount);
+      const newBalance = res?.data?.whatsappCredits;
+      setLab((prev) => (prev ? { ...prev, whatsappCredits: newBalance } : prev));
+      setCreditAmount('');
+      setCreditMsg({ type: 'success', text: res.message || `Added ${amount} credits` });
+    } catch (err) {
+      setCreditMsg({ type: 'error', text: err.message || 'Failed to add credits' });
+    } finally {
+      setAddingCredits(false);
+    }
+  };
 
   useEffect(() => {
     const fetchLabDetails = async () => {
@@ -234,6 +258,49 @@ const LabDetail = () => {
             </div>
           </dl>
         </div>
+      </div>
+
+      {/* WhatsApp Credits */}
+      <div className="card p-5">
+        <h2 className="text-sm font-semibold uppercase tracking-wider mb-4" style={{ color: 'var(--text-muted)' }}>WhatsApp Message Credits</h2>
+        <div className="flex flex-wrap items-end gap-6">
+          <div>
+            <p className="text-xs uppercase tracking-wider mb-1 font-medium" style={{ color: 'var(--text-muted)' }}>Current Balance</p>
+            <p className="text-3xl font-bold" style={{ color: (lab.whatsappCredits ?? 0) > 0 ? 'var(--primary)' : '#ef4444' }}>
+              {lab.whatsappCredits ?? 0}
+              <span className="text-sm font-normal ml-1" style={{ color: 'var(--text-muted)' }}>credits</span>
+            </p>
+          </div>
+          <div className="flex items-end gap-2">
+            <div>
+              <label className="block text-xs uppercase tracking-wider mb-1 font-medium" style={{ color: 'var(--text-muted)' }}>Add Credits</label>
+              <input
+                type="number"
+                min="1"
+                value={creditAmount}
+                onChange={(e) => setCreditAmount(e.target.value)}
+                placeholder="e.g. 100"
+                className="w-32 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+              />
+            </div>
+            <button
+              onClick={handleAddCredits}
+              disabled={addingCredits}
+              className="inline-flex items-center gap-1 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+            >
+              <PlusIcon className="h-4 w-4" />
+              {addingCredits ? 'Adding…' : 'Add'}
+            </button>
+          </div>
+          {creditMsg && (
+            <p className={`text-sm ${creditMsg.type === 'error' ? 'text-red-600' : 'text-green-600'}`}>
+              {creditMsg.text}
+            </p>
+          )}
+        </div>
+        <p className="text-xs mt-3" style={{ color: 'var(--text-muted)' }}>
+          1 credit is deducted per report notification (covering patient and doctor together). Notifications are skipped when the balance reaches 0, and a credit is automatically refunded if the message fails to send.
+        </p>
       </div>
 
       {/* Stats */}

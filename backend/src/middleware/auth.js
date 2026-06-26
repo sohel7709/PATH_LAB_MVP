@@ -224,8 +224,7 @@ exports.checkLabAccess = async (req, res, next) => {
 
     // For patient and report operations, we need to check if the patient/report belongs to the user's lab
     // This will be handled in the respective controllers
-    if ((req.originalUrl.includes('/patients/') || req.originalUrl.includes('/reports/')) && 
-        (req.method === 'DELETE' || req.method === 'GET' || req.method === 'PUT')) {
+    if (req.originalUrl.includes('/patients/') || req.originalUrl.includes('/reports/')) {
       req.labId = req.user.lab;
       return next();
     }

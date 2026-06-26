@@ -1,64 +1,83 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { whatsappSettings } from '../../utils/api';
 
-const WhatsAppNotificationSettings = () => {
+const DEFAULT_SETTINGS = {
+  enabled: false,
+  sendToPatientOnReportComplete: true,
+  sendToDoctorOnReportComplete: false,
+  patientTemplateName: 'report_ready',
+  doctorTemplateName: 'doctor_report_ready',
+  templateLanguage: 'en_US',
+  sendGoogleReviewOnDelivery: false,
+  googleReviewTemplateName: 'google_review_request',
+  googleReviewUrl: '',
+};
+
+const Toggle = ({ checked, onChange, disabled }) => (
+  <button
+    type="button"
+    role="switch"
+    aria-checked={checked}
+    disabled={disabled}
+    onClick={() => !disabled && onChange(!checked)}
+    className={`relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none
+      ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}
+      ${checked ? 'bg-green-500' : 'bg-gray-300'}`}
+  >
+    <span
+      className="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow transition duration-200"
+      style={{ transform: checked ? 'translateX(1.25rem)' : 'translateX(0)' }}
+    />
+  </button>
+);
+
+const Field = ({ label, hint, children }) => (
+  <div>
+    <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+    {hint && <p className="text-xs text-gray-400 mb-1.5">{hint}</p>}
+    {children}
+  </div>
+);
+
+export default function WhatsAppNotificationSettings() {
   const { user } = useAuth();
-  const [settings, setSettings] = useState({
-    enabled: false,
-    messageTemplate: 'Dear {patientName}, your {testName} report is ready. View your report here: {reportLink} - {labName}',
-    sendToPatientOnReportComplete: true,
-    sendToDoctorOnReportComplete: false
-  });
+  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(false);
-  const [previewMessage, setPreviewMessage] = useState('');
+  const [saved, setSaved] = useState(false);
 
-  useEffect(() => {
-    fetchSettings();
-  }, []);
-
-  useEffect(() => {
-    // Generate preview whenever template changes
-    const preview = settings.messageTemplate
-      .replace(/{patientName}/g, 'John Doe')
-      .replace(/{testName}/g, 'Blood Test')
-      .replace(/{reportLink}/g, 'https://labnexus.in/view-report/abc123')
-      .replace(/{labName}/g, user?.name || 'Pathology Lab')
-      .replace(/{doctorName}/g, 'Dr. Smith');
-    setPreviewMessage(preview);
-  }, [settings.messageTemplate, user?.name]);
+  useEffect(() => { fetchSettings(); }, []);
 
   const fetchSettings = async () => {
     try {
       setLoading(true);
-      const response = await whatsappSettings.getSettings(user?.lab);
-      const data = response.data || response;
-      if (data && data._id) {
+      const res = await whatsappSettings.getSettings(user?.lab);
+      const data = res.data || res;
+      if (data) {
         setSettings({
-          enabled: data.enabled || false,
-          messageTemplate: data.messageTemplate || 'Dear {patientName}, your {testName} report is ready. View your report here: {reportLink} - {labName}',
+          enabled: data.enabled ?? false,
           sendToPatientOnReportComplete: data.sendToPatientOnReportComplete !== false,
-          sendToDoctorOnReportComplete: data.sendToDoctorOnReportComplete || false
+          sendToDoctorOnReportComplete: data.sendToDoctorOnReportComplete ?? false,
+          patientTemplateName: data.patientTemplateName || 'report_ready',
+          doctorTemplateName: data.doctorTemplateName || 'doctor_report_ready',
+          templateLanguage: data.templateLanguage || 'en_US',
+          sendGoogleReviewOnDelivery: data.sendGoogleReviewOnDelivery ?? false,
+          googleReviewTemplateName: data.googleReviewTemplateName || 'google_review_request',
+          googleReviewUrl: data.googleReviewUrl || '',
         });
       }
-      setLoading(false);
-    } catch (err) {
-            setError('Failed to load WhatsApp notification settings');
+    } catch {
+      setError('Failed to load settings');
+    } finally {
       setLoading(false);
     }
   };
 
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setSettings({
-      ...settings,
-      [name]: type === 'checkbox' ? checked : value
-    });
-    // Clear success when user makes changes
-    if (success) setSuccess(false);
+  const set = (key, value) => {
+    setSettings((prev) => ({ ...prev, [key]: value }));
+    setSaved(false);
   };
 
   const handleSubmit = async (e) => {
@@ -66,265 +85,145 @@ const WhatsAppNotificationSettings = () => {
     try {
       setSaving(true);
       setError(null);
-      setSuccess(false);
-      
+      setSaved(false);
       await whatsappSettings.updateSettings(settings, user?.lab);
-      
-      setSuccess(true);
-      setSaving(false);
-    } catch (err) {
-            setError('Failed to save WhatsApp notification settings');
+      setSaved(true);
+    } catch {
+      setError('Failed to save settings');
+    } finally {
       setSaving(false);
     }
   };
 
-  if (!user || !['admin', 'super-admin'].includes(user.role)) {
-    return null;
-  }
-
-  const insertPlaceholder = (placeholder) => {
-    setSettings({
-      ...settings,
-      messageTemplate: settings.messageTemplate + placeholder
-    });
-  };
+  if (!user || !['admin', 'super-admin'].includes(user.role)) return null;
 
   if (loading) {
     return (
-      <div className="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
-        <div className="px-4 py-5 border-b border-gray-200 sm:px-6 bg-blue-600">
-          <h3 className="text-lg leading-6 font-medium text-white">
-            WhatsApp Notification Settings
-          </h3>
-        </div>
-        <div className="px-4 py-5 sm:p-6">
-          <div className="animate-pulse flex space-x-4">
-            <div className="flex-1 space-y-4 py-1">
-              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-              <div className="h-4 bg-gray-200 rounded"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-            </div>
-          </div>
-        </div>
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 animate-pulse space-y-3">
+        <div className="h-5 bg-gray-200 rounded w-1/3" />
+        <div className="h-4 bg-gray-100 rounded w-2/3" />
+        <div className="h-4 bg-gray-100 rounded w-1/2" />
       </div>
     );
   }
 
   return (
-    <div className="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
-      <div className="px-4 py-5 border-b border-gray-200 sm:px-6 bg-blue-600">
-        <h3 className="text-lg leading-6 font-medium text-white">
-          WhatsApp Notification Settings
-        </h3>
-        <p className="mt-1 text-sm text-blue-100">
-          Configure WhatsApp notifications sent to patients when reports are created. 
-          The API key and sender number are configured in the server environment variables.
-        </p>
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-4 flex items-center gap-3">
+        <div className="h-9 w-9 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0">
+          <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+          </svg>
+        </div>
+        <div>
+          <h3 className="text-base font-semibold text-white">WhatsApp Notifications</h3>
+          <p className="text-xs text-green-100 mt-0.5">Meta Business API — sends report links to patients &amp; doctors</p>
+        </div>
+        <div className="ml-auto">
+          <Toggle
+            checked={settings.enabled}
+            onChange={(v) => set('enabled', v)}
+          />
+        </div>
       </div>
-      <div className="px-4 py-5 sm:p-6">
+
+      <form onSubmit={handleSubmit} className="p-6 space-y-6">
         {error && (
-          <div className="rounded-md bg-red-50 p-4 mb-4">
-            <div className="flex">
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">{error}</h3>
-              </div>
-            </div>
+          <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            {error}
           </div>
         )}
-        
-        {success && (
-          <div className="rounded-md bg-green-50 p-4 mb-4">
-            <div className="flex">
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-green-800">Settings saved successfully!</h3>
-              </div>
-            </div>
+        {saved && (
+          <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            Settings saved successfully
           </div>
         )}
-        
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Enable/Disable Toggle */}
-          <div className="relative flex items-start">
-            <div className="flex items-center h-5">
-              <input
-                id="whatsapp-enabled"
-                name="enabled"
-                type="checkbox"
-                checked={settings.enabled}
-                onChange={handleChange}
-                className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded cursor-pointer"
-              />
+
+        {/* Who to notify */}
+        <div className="space-y-3">
+          <p className="text-sm font-semibold text-gray-700">Notify on report creation</p>
+
+          <div className="flex items-center justify-between p-3 rounded-lg border border-gray-100 bg-gray-50">
+            <div>
+              <p className="text-sm font-medium text-gray-700">Patients</p>
+              <p className="text-xs text-gray-400">Patient must also have WhatsApp opt-in enabled on their profile</p>
             </div>
-            <div className="ml-3 text-sm">
-              <label htmlFor="whatsapp-enabled" className="font-medium text-gray-700 cursor-pointer">
-                Enable WhatsApp Notifications
-              </label>
-              <p className="text-gray-500 text-xs">
-                Master toggle for all WhatsApp notifications. When disabled, no WhatsApp messages will be sent.
-              </p>
-            </div>
+            <Toggle
+              checked={settings.sendToPatientOnReportComplete}
+              onChange={(v) => set('sendToPatientOnReportComplete', v)}
+              disabled={!settings.enabled}
+            />
           </div>
 
-          {/* Send to Patient Toggle */}
-          <div className="relative flex items-start">
-            <div className="flex items-center h-5">
-              <input
-                id="sendToPatientOnReportComplete"
-                name="sendToPatientOnReportComplete"
-                type="checkbox"
-                checked={settings.sendToPatientOnReportComplete}
-                onChange={handleChange}
-                disabled={!settings.enabled}
-                className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded cursor-pointer"
-              />
+          <div className="flex items-center justify-between p-3 rounded-lg border border-gray-100 bg-gray-50">
+            <div>
+              <p className="text-sm font-medium text-gray-700">Referring Doctors</p>
+              <p className="text-xs text-gray-400">Doctor must have a phone number saved in the Doctors directory</p>
             </div>
-            <div className="ml-3 text-sm">
-              <label htmlFor="sendToPatientOnReportComplete" className={`font-medium ${settings.enabled ? 'text-gray-700 cursor-pointer' : 'text-gray-400'}`}>
-                Send Notifications to Patients
-              </label>
-              <p className="text-gray-500 text-xs">
-                When enabled, patients who have opted in will receive WhatsApp notifications when their reports are ready.
-              </p>
-            </div>
+            <Toggle
+              checked={settings.sendToDoctorOnReportComplete}
+              onChange={(v) => set('sendToDoctorOnReportComplete', v)}
+              disabled={!settings.enabled}
+            />
           </div>
+        </div>
 
-          {/* Send to Doctor Toggle */}
-          <div className="relative flex items-start">
-            <div className="flex items-center h-5">
-              <input
-                id="sendToDoctorOnReportComplete"
-                name="sendToDoctorOnReportComplete"
-                type="checkbox"
-                checked={settings.sendToDoctorOnReportComplete}
-                onChange={handleChange}
-                disabled={!settings.enabled}
-                className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded cursor-pointer"
-              />
-            </div>
-            <div className="ml-3 text-sm">
-              <label htmlFor="sendToDoctorOnReportComplete" className={`font-medium ${settings.enabled ? 'text-gray-700 cursor-pointer' : 'text-gray-400'}`}>
-                Send Notifications to Referring Doctors
-              </label>
-              <p className="text-gray-500 text-xs">
-                When enabled, referring doctors will receive WhatsApp notifications when their patients' reports are ready.
-              </p>
-            </div>
-          </div>
-
-          {/* Message Template */}
-          <div>
-            <label htmlFor="messageTemplate" className="block text-sm font-medium text-gray-700">
-              Custom Message Template
-            </label>
-            <div className="mt-1">
-              <textarea
-                id="messageTemplate"
-                name="messageTemplate"
-                rows={3}
-                value={settings.messageTemplate}
-                onChange={handleChange}
-                disabled={!settings.enabled}
-                className={`shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md ${!settings.enabled ? 'bg-gray-100 text-gray-500' : ''}`}
-                placeholder="Enter your custom message template..."
-              />
-            </div>
-            
-            {/* Placeholder Buttons */}
-            <div className="mt-2 flex flex-wrap gap-2">
-              <span className="text-xs text-gray-500 mr-1 self-center">Insert placeholder:</span>
-              <button
-                type="button"
-                onClick={() => insertPlaceholder('{patientName}')}
-                disabled={!settings.enabled}
-                className="inline-flex items-center px-2 py-1 border border-gray-300 text-xs font-medium rounded bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {'{patientName}'}
-              </button>
-              <button
-                type="button"
-                onClick={() => insertPlaceholder('{testName}')}
-                disabled={!settings.enabled}
-                className="inline-flex items-center px-2 py-1 border border-gray-300 text-xs font-medium rounded bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {'{testName}'}
-              </button>
-              <button
-                type="button"
-                onClick={() => insertPlaceholder('{reportLink}' )}
-                disabled={!settings.enabled}
-                className="inline-flex items-center px-2 py-1 border border-gray-300 text-xs font-medium rounded bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {'{reportLink}'}
-              </button>
-              <button
-                type="button"
-                onClick={() => insertPlaceholder('{labName}')}
-                disabled={!settings.enabled}
-                className="inline-flex items-center px-2 py-1 border border-gray-300 text-xs font-medium rounded bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {'{labName}'}
-              </button>
-              <button
-                type="button"
-                onClick={() => insertPlaceholder('{doctorName}')}
-                disabled={!settings.enabled}
-                className="inline-flex items-center px-2 py-1 border border-gray-300 text-xs font-medium rounded bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {'{doctorName}'}
-              </button>
-            </div>
-            <p className="mt-2 text-xs text-gray-500">
-              Available placeholders: {'{patientName}'}, {'{testName}'}, {'{reportLink}'}, {'{labName}'}, {'{doctorName}'}
-            </p>
-          </div>
-
-          {/* Preview */}
-          {settings.messageTemplate && (
-            <div className="bg-gray-50 rounded-md p-4 border border-gray-200">
-              <h4 className="text-sm font-medium text-gray-700 mb-2">Message Preview:</h4>
-              <div className="bg-white rounded p-3 border border-gray-200">
-                <p className="text-sm text-gray-600 whitespace-pre-wrap">{previewMessage}</p>
+        {/* Google Review */}
+        <div className="rounded-xl border border-yellow-200 bg-yellow-50 overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-yellow-200">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">⭐</span>
+              <div>
+                <p className="text-sm font-semibold text-yellow-800">Google Review Request</p>
+                <p className="text-xs text-yellow-600">Sent automatically when a report is marked as <strong>Delivered</strong></p>
               </div>
-              <p className="mt-1 text-xs text-gray-400">
-                This is a preview using sample data. Actual messages will use real patient and report information.
-              </p>
             </div>
-          )}
-
-          {/* Info Box */}
-          <div className="bg-blue-50 rounded-md p-4 border border-blue-200">
-            <h4 className="text-sm font-medium text-blue-800 mb-1">How it works:</h4>
-            <ul className="text-xs text-blue-700 space-y-1 list-disc pl-4">
-              <li>The WhatsApp API key and sender number are configured in the server environment variables.</li>
-              <li>Notifications are only sent to patients who have enabled WhatsApp notifications (per patient setting).</li>
-              <li>The report link sent is the same as the QR code link: <code className="bg-blue-100 px-1 rounded">https://labnexus.in/view-report/REPORT_ID</code></li>
-              <li>Update the message template to customize what patients receive.</li>
-            </ul>
+            <Toggle
+              checked={settings.sendGoogleReviewOnDelivery}
+              onChange={(v) => set('sendGoogleReviewOnDelivery', v)}
+              disabled={!settings.enabled}
+            />
           </div>
 
-          <div className="pt-5">
-            <div className="flex justify-end">
-              <button
-                type="submit"
-                disabled={saving || !settings.enabled}
-                className="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {saving ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Saving...
-                  </>
-                ) : 'Save Settings'}
-              </button>
-            </div>
+          <div className="p-4 space-y-4">
+            <Field
+              label="Your Google Review Link"
+              hint="Go to your Google Business Profile → Get more reviews → copy the link"
+            >
+              <input
+                type="url"
+                value={settings.googleReviewUrl}
+                onChange={(e) => set('googleReviewUrl', e.target.value)}
+                disabled={!settings.enabled || !settings.sendGoogleReviewOnDelivery}
+                placeholder="https://g.page/r/your-review-link/review"
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100 disabled:bg-gray-50 disabled:text-gray-400"
+              />
+            </Field>
           </div>
-        </form>
-      </div>
+        </div>
+
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            disabled={saving}
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white text-sm font-semibold rounded-xl hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+          >
+            {saving ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                Saving…
+              </>
+            ) : 'Save Settings'}
+          </button>
+        </div>
+      </form>
     </div>
   );
-};
-
-export default WhatsAppNotificationSettings;
+}

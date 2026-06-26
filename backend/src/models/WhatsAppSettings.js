@@ -11,10 +11,6 @@ const whatsAppSettingsSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-  messageTemplate: {
-    type: String,
-    default: 'Dear {patientName}, your {testName} report is ready. View your report here: {reportLink} - {labName}',
-  },
   sendToPatientOnReportComplete: {
     type: Boolean,
     default: true,
@@ -23,21 +19,35 @@ const whatsAppSettingsSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-  createdAt: {
-    type: Date,
-    default: Date.now,
+  // Meta WhatsApp Business API — approved template names
+  patientTemplateName: {
+    type: String,
+    default: 'test_results_uploaded',
   },
-  updatedAt: {
-    type: Date,
-    default: Date.now,
+  doctorTemplateName: {
+    type: String,
+    default: 'doctor_report_ready',
+  },
+  templateLanguage: {
+    type: String,
+    default: 'en_US',
+  },
+
+  // Google Review request — sent when report status → delivered
+  sendGoogleReviewOnDelivery: {
+    type: Boolean,
+    default: false,
+  },
+  googleReviewTemplateName: {
+    type: String,
+    default: 'google_review_request',
+  },
+  googleReviewUrl: {
+    type: String,
+    default: '',
   },
 }, {
   timestamps: true,
-});
-
-whatsAppSettingsSchema.pre('save', function(next) {
-  this.updatedAt = Date.now();
-  next();
 });
 
 module.exports = mongoose.model('WhatsAppSettings', whatsAppSettingsSchema);

@@ -4,9 +4,9 @@ const { createAuditLog } = require('../services/auditService');
 const User = require('../models/User'); // Needed for population/modification tracking
 const Doctor = require('../models/Doctor'); // Needed for doctor notification
 const TestTemplate = require('../models/TestTemplate'); // Needed for populating template names
-const Patient = require('../models/Patient'); // Needed to check patient's WhatsApp preference
 const WhatsAppSettings = require('../models/WhatsAppSettings'); // Needed for custom message template
 const whatsappService = require('../utils/whatsappService');
+const whatsappCreditService = require('../services/whatsappCreditService');
 const { getAbnormalFlag } = require('../utils/reportUtils'); // Import from the new utility file
 
 // @desc    Create new report
@@ -114,82 +114,6 @@ exports.createReport = async (req, res, next) => {
       $inc: { 'stats.totalReports': 1, 'totalReportsCreated': 1 },
       $set: { 'stats.lastReportDate': Date.now() }
     });
-
-    // Get lab details for notification
-    const lab = await Lab.findById(req.user.lab);
-
-    // Send WhatsApp notification logic...
-    try {
-      // Load WhatsApp settings for this lab to get custom message template
-      const whatsAppSettings = await WhatsAppSettings.findOne({ lab: req.user.lab });
-      const isWhatsAppEnabled = whatsAppSettings && whatsAppSettings.enabled === true;
-
-      // Check the patient's phone from the report's patientInfo
-      const patientPhone = report.patientInfo?.contact?.phone;
-      
-      if (patientPhone && isWhatsAppEnabled) {
-        // Find the patient record to check their notification preference
-        const patientRecord = await Patient.findOne({ 
-          patientId: report.patientInfo.patientId,
-          labId: req.user.lab
-        });
-
-        // Only send if patient has enabled WhatsApp notifications
-        const shouldNotifyPatient = patientRecord && patientRecord.whatsappNotificationEnabled === true;
-
-        if (shouldNotifyPatient) {
-          const baseUrl = process.env.CLIENT_URL || `${req.protocol}://${req.get('host')}`;
-          const reportLink = `${baseUrl}/view-report/${report._id}`;
-          
-          const customMessage = whatsAppSettings.messageTemplate || '';
-          
-          await whatsappService.sendReportNotification(
-            patientPhone,
-            report.patientInfo.name,
-            report.testInfo.name,
-            reportLink,
-            lab.name,
-            customMessage
-          );
-          // Update delivery status
-          const createdReport = await Report.findById(report._id);
-          if (createdReport) {
-              createdReport.reportMeta.deliveryStatus = {
-                  ...(createdReport.reportMeta.deliveryStatus || {}),
-                  whatsapp: {
-                      sent: true,
-                      sentAt: Date.now(),
-                      recipient: patientPhone
-                  }
-              };
-              await createdReport.save();
-          }
-        } else {
-        }
-      }
-
-      // Doctor notification logic
-      if (report.testInfo && report.testInfo.referenceDoctor && isWhatsAppEnabled) {
-        const doctor = await Doctor.findOne({ name: report.testInfo.referenceDoctor, lab: req.user.lab });
-        if (doctor && doctor.phone) {
-          const baseUrl = process.env.CLIENT_URL || `${req.protocol}://${req.get('host')}`;
-          const reportLink = `${baseUrl}/view-report/${report._id}`;
-          
-          const customMessage = whatsAppSettings.messageTemplate || '';
-          
-          await whatsappService.sendDoctorNotification(
-            doctor.phone, 
-            doctor.name, 
-            report.patientInfo.name, 
-            report.testInfo.name, 
-            reportLink, 
-            lab.name,
-            customMessage
-          );
-        }
-      }
-    } catch (notificationError) {
-    }
 
     res.status(201).json({
       success: true,
@@ -560,6 +484,154 @@ exports.updateReport = async (req, res, next) => {
       newData: { patientName: updatedReport.patientInfo?.name, testName: updatedReport.testInfo?.name, status: updatedReport.status },
       req,
     });
+
+    // WhatsApp — fire when status changes to 'completed', then auto-set to 'delivered'
+    if (statusChanged && req.body.status === 'completed') {
+      try {
+        const whatsAppSettings = await WhatsAppSettings.findOne({ lab: req.user.lab });
+        const isEnabled = whatsAppSettings?.enabled === true;
+
+        if (isEnabled && whatsappService.isConfigured()) {
+          const lab = await Lab.findById(req.user.lab);
+          const baseUrl = process.env.CLIENT_URL || `${req.protocol}://${req.get('host')}`;
+          const reportLink = `${baseUrl}/view-report/${updatedReport._id}`;
+          const deliveryStatus = {};
+
+          const patientPhone = updatedReport.patientInfo?.contact?.phone;
+          const shouldNotifyPatient = whatsAppSettings.sendToPatientOnReportComplete !== false;
+          const shouldNotifyDoctor = whatsAppSettings.sendToDoctorOnReportComplete === true;
+
+          let doctor = null;
+          if (shouldNotifyDoctor && updatedReport.testInfo?.referenceDoctor) {
+            doctor = await Doctor.findOne({ name: updatedReport.testInfo.referenceDoctor, lab: req.user.lab });
+          }
+
+          const willNotifyPatient = shouldNotifyPatient && Boolean(patientPhone);
+          const willNotifyDoctor = Boolean(doctor?.phone);
+          let patientWASent = false;
+
+          if (willNotifyPatient || willNotifyDoctor) {
+            const credit = await whatsappCreditService.tryConsumeCredit({
+              labId: req.user.lab,
+              relatedReport: updatedReport._id,
+              recipientType: 'report',
+            });
+
+            if (!credit.ok) {
+              if (willNotifyPatient) deliveryStatus.whatsapp = { sent: false, reason: 'insufficient_credits' };
+              if (willNotifyDoctor) deliveryStatus.whatsappDoctor = { sent: false, reason: 'insufficient_credits' };
+            } else {
+              let anySent = false;
+
+              if (willNotifyPatient) {
+                try {
+                  await whatsappService.sendReportNotification(
+                    patientPhone,
+                    updatedReport.patientInfo.name,
+                    reportLink,
+                    whatsAppSettings.patientTemplateName,
+                    whatsAppSettings.templateLanguage,
+                  );
+                  deliveryStatus.whatsapp = { sent: true, sentAt: new Date(), recipient: patientPhone };
+                  patientWASent = true;
+                  anySent = true;
+                } catch (sendErr) {
+                  deliveryStatus.whatsapp = { sent: false, reason: 'send_failed' };
+                  console.error('Patient WhatsApp send failed:', sendErr?.response?.data || sendErr.message);
+                }
+              }
+
+              if (willNotifyDoctor) {
+                try {
+                  await whatsappService.sendDoctorNotification(
+                    doctor.phone,
+                    doctor.name,
+                    updatedReport.patientInfo.name,
+                    updatedReport.testInfo.name,
+                    reportLink,
+                    lab.name,
+                    whatsAppSettings.doctorTemplateName,
+                    whatsAppSettings.templateLanguage,
+                  );
+                  deliveryStatus.whatsappDoctor = { sent: true, sentAt: new Date(), recipient: doctor.phone };
+                  anySent = true;
+                } catch (sendErr) {
+                  deliveryStatus.whatsappDoctor = { sent: false, reason: 'send_failed' };
+                  console.error('Doctor WhatsApp send failed:', sendErr?.response?.data || sendErr.message);
+                }
+              }
+
+              if (!anySent) {
+                await whatsappCreditService.refundCredit({
+                  labId: req.user.lab,
+                  relatedReport: updatedReport._id,
+                  recipientType: 'report',
+                });
+              }
+            }
+          }
+
+          // Build the DB update — delivery status fields + auto-set 'delivered' if patient WA sent
+          const dbSet = Object.fromEntries(
+            Object.entries(deliveryStatus).map(([k, v]) => [`reportMeta.deliveryStatus.${k}`, v])
+          );
+          if (patientWASent) {
+            dbSet.status = 'delivered';
+            updatedReport.status = 'delivered';
+          }
+
+          if (Object.keys(dbSet).length > 0) {
+            await Report.findByIdAndUpdate(updatedReport._id, { $set: dbSet });
+          }
+        }
+      } catch (waError) {
+        console.error('WhatsApp on complete error:', waError?.response?.data || waError.message);
+      }
+    }
+
+    // Google Review WhatsApp — fire when status changes to 'delivered'
+    if (statusChanged && req.body.status === 'delivered') {
+      try {
+        const whatsAppSettings = await WhatsAppSettings.findOne({ lab: req.user.lab });
+        const shouldSend = whatsAppSettings?.enabled &&
+          whatsAppSettings?.sendGoogleReviewOnDelivery &&
+          whatsAppSettings?.googleReviewUrl &&
+          whatsappService.isConfigured();
+
+        if (shouldSend) {
+          const patientPhone = updatedReport.patientInfo?.contact?.phone;
+          if (patientPhone) {
+            const credit = await whatsappCreditService.tryConsumeCredit({
+              labId: req.user.lab,
+              relatedReport: updatedReport._id,
+              recipientType: 'review',
+            });
+            if (credit.ok) {
+              try {
+                const lab = await Lab.findById(req.user.lab);
+                await whatsappService.sendGoogleReviewRequest(
+                  patientPhone,
+                  updatedReport.patientInfo.name,
+                  lab?.name || '',
+                  whatsAppSettings.googleReviewUrl,
+                  whatsAppSettings.googleReviewTemplateName,
+                  whatsAppSettings.templateLanguage,
+                );
+              } catch (sendErr) {
+                await whatsappCreditService.refundCredit({
+                  labId: req.user.lab,
+                  relatedReport: updatedReport._id,
+                  recipientType: 'review',
+                });
+                throw sendErr;
+              }
+            }
+          }
+        }
+      } catch (reviewError) {
+        console.error('Google Review WhatsApp error:', reviewError?.response?.data || reviewError.message);
+      }
+    }
 
     res.status(200).json({
       success: true,

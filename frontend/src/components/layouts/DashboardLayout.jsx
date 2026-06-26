@@ -14,6 +14,7 @@ import {
   ChartBarIcon,
   CreditCardIcon,
   ChatBubbleLeftRightIcon,
+  ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
 import { ChevronDownIcon } from '@heroicons/react/20/solid';
 import { useAuth } from '../../context/AuthContext';
@@ -75,6 +76,7 @@ export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [labName, setLabName] = useState('PathLab');
+  const [waCredits, setWaCredits] = useState(null);
   const location = useLocation();
   const { user, logout } = useAuth();
 
@@ -100,6 +102,9 @@ export default function DashboardLayout() {
       const response = await superAdmin.getLab(labId);
       if (response && response.data) {
         setLabName(response.data.name);
+        if (typeof response.data.whatsappCredits === 'number') {
+          setWaCredits(response.data.whatsappCredits);
+        }
       }
     } catch {
       setLabName('PathLab');
@@ -302,6 +307,34 @@ export default function DashboardLayout() {
 
         <main className="py-6">
           <div className="px-4 sm:px-6 lg:px-8">
+            {/* WhatsApp credit warning — visible app-wide for lab staff */}
+            {user?.role !== 'super-admin' && waCredits !== null && waCredits <= 10 && (
+              <div
+                className={classNames(
+                  'mb-5 flex items-start gap-3 rounded-xl border px-4 py-3',
+                  waCredits === 0
+                    ? 'bg-red-50 border-red-200 text-red-800'
+                    : 'bg-amber-50 border-amber-200 text-amber-800'
+                )}
+              >
+                <ExclamationTriangleIcon className="h-5 w-5 shrink-0 mt-0.5" />
+                <div className="text-sm">
+                  {waCredits === 0 ? (
+                    <>
+                      <span className="font-semibold">WhatsApp messages are paused.</span>{' '}
+                      Your lab is out of message credits, so patients and doctors will not receive
+                      report notifications. Please contact your administrator to add more credits.
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-semibold">Low WhatsApp balance:</span>{' '}
+                      only <span className="font-semibold">{waCredits}</span> message credit{waCredits === 1 ? '' : 's'} left.
+                      Notifications will pause once they run out — contact your administrator to top up.
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
             <div className="page-enter">
               <Outlet />
             </div>

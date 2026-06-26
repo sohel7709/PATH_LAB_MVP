@@ -202,6 +202,15 @@ export const reports = {
     });
     return handleResponse(response);
   },
+
+  resendWhatsApp: async (id, target = 'patient') => {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/reports/${id}/whatsapp/resend`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ target }),
+    });
+    return handleResponse(response);
+  },
 };
 
 // Lab Settings API calls
@@ -354,6 +363,14 @@ export const superAdmin = {
       method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify(subscriptionData),
+    });
+    return handleResponse(response);
+  },
+  addWhatsAppCredits: async (id, amount, reason) => {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/lab-management/${id}/whatsapp-credits`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ amount, reason }),
     });
     return handleResponse(response);
   },

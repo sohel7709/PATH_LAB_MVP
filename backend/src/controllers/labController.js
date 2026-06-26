@@ -4,6 +4,7 @@ const Report = require('../models/Report');
 const { createAuditLog } = require('../services/auditService');
 const Plan = require('../models/Plan'); // Import Plan model
 const SubscriptionHistory = require('../models/SubscriptionHistory'); // Import SubscriptionHistory model
+const whatsappCreditService = require('../services/whatsappCreditService'); // WhatsApp credit balance operations
 const mongoose = require('mongoose'); // Needed for ObjectId validation
 
 // @desc    Create new lab
@@ -361,6 +362,54 @@ exports.assignPlanToLab = async (req, res, next) => {
         }
         next(error); // Pass other errors to the global error handler
     }
+};
+
+// @desc    Add WhatsApp message credits to a lab
+// @route   POST /api/v1/lab-management/:id/whatsapp-credits
+// @access  Private (Super Admin)
+exports.addWhatsAppCredits = async (req, res, next) => {
+  const labId = req.params.id;
+  const { amount, reason } = req.body;
+
+  if (!mongoose.Types.ObjectId.isValid(labId)) {
+    return res.status(400).json({ success: false, message: 'Invalid Lab ID format' });
+  }
+
+  const credits = Math.floor(Number(amount));
+  if (!Number.isFinite(credits) || credits <= 0) {
+    return res.status(400).json({ success: false, message: 'A positive credit amount is required' });
+  }
+
+  try {
+    const { lab, balanceAfter } = await whatsappCreditService.addCredits({
+      labId,
+      amount: credits,
+      performedBy: req.user._id,
+      reason: reason || '',
+    });
+
+    createAuditLog({
+      user: req.user._id,
+      role: req.user.role,
+      module: 'SETTINGS',
+      action: 'ADJUSTMENT',
+      entityId: lab._id,
+      entityType: 'Lab',
+      description: `${req.user.name} added ${credits} WhatsApp credit(s) to lab '${lab.name}' (new balance: ${balanceAfter})`,
+      req,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `Added ${credits} WhatsApp credit(s). New balance: ${balanceAfter}.`,
+      data: { whatsappCredits: balanceAfter, lab },
+    });
+  } catch (error) {
+    if (error.message === 'Lab not found') {
+      return res.status(404).json({ success: false, message: 'Lab not found' });
+    }
+    next(error);
+  }
 };
 
 // @desc    Get subscription history for a specific lab

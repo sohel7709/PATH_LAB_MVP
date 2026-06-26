@@ -59,6 +59,12 @@ const labSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  // WhatsApp message credit balance. Each sent WhatsApp notification deducts 1.
+  whatsappCredits: {
+    type: Number,
+    default: 100,
+    min: 0,
+  },
   // Overall status of the lab account
   status: {
     type: String,

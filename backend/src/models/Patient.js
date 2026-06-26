@@ -55,7 +55,7 @@ const PatientSchema = new mongoose.Schema({
   },
   whatsappNotificationEnabled: {
     type: Boolean,
-    default: false
+    default: true
   },
   lastTestType: {
     type: String,

@@ -181,6 +181,11 @@ const reportSchema = new mongoose.Schema({
         sent: Boolean,
         sentAt: Date,
         recipient: String
+      },
+      whatsappDoctor: {
+        sent: Boolean,
+        sentAt: Date,
+        recipient: String
       }
     }
   }

@@ -11,7 +11,8 @@ const {
 } = require('../controllers/reportCrudController'); // Import CRUD functions
 const {
   verifyReport,
-  addComment
+  addComment,
+  resendWhatsApp,
 } = require('../controllers/reportActionsController'); // Import action functions
 const {
   generateHtmlReport,
@@ -40,6 +41,9 @@ router.put('/:id/verify', authorize('admin'), checkLabAccess, verifyReport);
 
 // Comment routes (both Admin and Technician)
 router.post('/:id/comments', authorize('admin', 'technician'), checkLabAccess, addComment);
+
+// WhatsApp resend
+router.post('/:id/whatsapp/resend', authorize('admin', 'technician'), checkLabAccess, resendWhatsApp);
 
 // Report generation routes (both Admin and Technician)
 router.get('/:id/html', authorize('admin', 'technician'), checkLabAccess, generateHtmlReport);
