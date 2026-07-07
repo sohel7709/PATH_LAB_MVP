@@ -1,9 +1,13 @@
 import { useState } from 'react';
 
 // Custom hook to handle PDF generation, printing, and downloading
-export const useReportPdf = (report, reportHtml) => {
+export const useReportPdf = (report, reportHtml, printMode = "official", plainTopMargin = 40) => {
   const [isPrinting, setIsPrinting] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+
+  // "plain" mode leaves blank space at the top for pre-printed letterhead;
+  // match the PDF export margin to the on-screen plain-mode margin the user set.
+  const topMargin = printMode === "plain" ? plainTopMargin : 5;
 
   // Function to load the html2pdf library dynamically
   const loadHtml2Pdf = async () => {
@@ -22,7 +26,7 @@ export const useReportPdf = (report, reportHtml) => {
 
   // Common PDF generation options
   const getPdfOptions = (filename) => ({
-    margin: [5, 0, 5, 0], // Small equal top/bottom margins; content height drives page count
+    margin: [topMargin, 0, 5, 0], // Top adapts to print mode; content height drives page count
     filename: filename || 'Report.pdf',
     image: { type: 'jpeg', quality: 0.98 },
     html2canvas: {
