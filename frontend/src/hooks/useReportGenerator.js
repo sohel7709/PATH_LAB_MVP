@@ -167,7 +167,7 @@ export const useReportGenerator = (
           gap: 2px;
         ">
           <img
-            src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=https://labnexus.in/view-report/${currentReport._id}"
+            src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=https://lab.buildsoftit.com/view-report/${currentReport._id}"
             style="width:18mm; height:18mm;"
             crossorigin="anonymous"
           />
@@ -278,7 +278,7 @@ export const useReportGenerator = (
           gap: 2px;
         ">
           <img
-            src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&color=000000&bgcolor=ffffff&data=https://labnexus.in/view-report/${currentReport._id}"
+            src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&color=000000&bgcolor=ffffff&data=https://lab.buildsoftit.com/view-report/${currentReport._id}"
             style="width:19mm; height:19mm; display:block;"
             crossorigin="anonymous"
           />
