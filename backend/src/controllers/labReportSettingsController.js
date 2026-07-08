@@ -232,6 +232,26 @@ const verifyImageMagicBytes = (buffer) => {
   return null;
 };
 
+// Signature scans normally come in on a white (or near-white) page background.
+// Fade each pixel's alpha in proportion to how bright/white it is, so the page
+// background disappears and only the ink strokes are left — with smooth,
+// anti-aliased edges rather than a hard cutout. Always emits PNG since
+// transparency requires an alpha channel.
+const removeSignatureBackground = async (buffer) => {
+  const { data, info } = await sharp(buffer)
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+
+  const { width, height, channels } = info;
+  for (let i = 0; i < data.length; i += channels) {
+    const luminance = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+    data[i + 3] = Math.min(data[i + 3], Math.max(0, Math.round(255 - luminance)));
+  }
+
+  return sharp(data, { raw: { width, height, channels } }).png().toBuffer();
+};
+
 // Helper function to save base64 image to file
 const saveBase64Image = (base64Data, mimeType, labId, type) => {
   return new Promise(async (resolve, reject) => {
@@ -246,29 +266,36 @@ const saveBase64Image = (base64Data, mimeType, labId, type) => {
       }
 
       // Convert base64 to buffer first so we can verify magic bytes
-      const buffer = Buffer.from(base64Data, "base64");
+      const rawBuffer = Buffer.from(base64Data, "base64");
 
       // Verify actual file type via magic bytes — client can lie about mimeType
-      const actualType = verifyImageMagicBytes(buffer);
+      const actualType = verifyImageMagicBytes(rawBuffer);
       if (!actualType) {
         reject(new Error('Invalid image file: not a recognized PNG or JPEG'));
         return;
       }
 
-      // Generate a unique filename using verified extension
-      const timestamp = Date.now();
-      const extension = actualType === "image/png" ? "png" : "jpg";
-      const filename = `${type}_${timestamp}.${extension}`;
-      const filePath = path.join(labDir, filename);
-
-      // Validate image dimensions for footer
+      // Validate image dimensions for footer (before any signature processing)
       if (type === "footer") {
-        const validation = await validateImageDimensions(buffer, type);
+        const validation = await validateImageDimensions(rawBuffer, type);
         if (!validation.valid) {
           reject(new Error(validation.message));
           return;
         }
       }
+
+      let buffer = rawBuffer;
+      let extension = actualType === "image/png" ? "png" : "jpg";
+
+      if (type === "signature") {
+        buffer = await removeSignatureBackground(rawBuffer);
+        extension = "png"; // transparency requires PNG regardless of the source format
+      }
+
+      // Generate a unique filename using the resolved extension
+      const timestamp = Date.now();
+      const filename = `${type}_${timestamp}.${extension}`;
+      const filePath = path.join(labDir, filename);
 
       // Save to file
       fs.writeFileSync(filePath, buffer);
@@ -320,6 +347,9 @@ exports.uploadImage = asyncHandler(async (req, res) => {
   try {
     // Save the image to the file system
     const imageUrl = await saveBase64Image(imageData, mimeType, labId, type);
+    // Signatures are always re-encoded as transparent PNG regardless of the
+    // uploaded format (see removeSignatureBackground)
+    const savedMimeType = type === "signature" ? "image/png" : mimeType;
 
     // Update the settings with the new image URL and type
     let settings = await LabReportSettings.findOne({ lab: labId });
@@ -335,10 +365,10 @@ exports.uploadImage = asyncHandler(async (req, res) => {
       settings.header.logo = imageUrl;
     } else if (type === "footer") {
       settings.footer.footerImage = imageUrl;
-      settings.footer.footerImageType = mimeType;
+      settings.footer.footerImageType = savedMimeType;
     } else if (type === "signature") {
       settings.footer.signature = imageUrl;
-      settings.footer.signatureType = mimeType;
+      settings.footer.signatureType = savedMimeType;
     }
 
 
@@ -367,7 +397,7 @@ exports.uploadImage = asyncHandler(async (req, res) => {
       data: {
         url: fullUrl,
         type,
-        mimeType,
+        mimeType: savedMimeType,
       },
     });
   } catch (error) {
