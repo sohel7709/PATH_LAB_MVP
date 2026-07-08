@@ -262,6 +262,10 @@ exports.updateDetails = async (req, res, next) => {
       phone: req.body.phone,
     };
 
+    if (req.body.plainTopMargin !== undefined) {
+      fieldsToUpdate.plainTopMargin = req.body.plainTopMargin;
+    }
+
     // Only super-admin can update email
     if (currentUser.role === "super-admin") {
       fieldsToUpdate.email = req.body.email;

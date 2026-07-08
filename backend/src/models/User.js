@@ -45,6 +45,12 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
+  // Remembered per-user so the pre-printed-letterhead top margin doesn't
+  // reset to the default every time this user prints a plain-mode report.
+  plainTopMargin: {
+    type: Number,
+    default: 40
+  },
   resetPasswordToken: String,
   resetPasswordExpire: Date,
   loginAttempts: { type: Number, default: 0 },

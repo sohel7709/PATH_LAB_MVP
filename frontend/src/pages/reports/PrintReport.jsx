@@ -6,7 +6,7 @@ import {
   ArrowDownTrayIcon,
   PencilSquareIcon,
 } from "@heroicons/react/24/outline";
-import { reports as apiReports, labReportSettings } from "../../utils/api";
+import { reports as apiReports, labReportSettings, auth } from "../../utils/api";
 import { useReportGenerator } from "../../hooks/useReportGenerator"; // Import the generator hook
 import { useReportPdf } from "../../hooks/useReportPdf"; // Import the PDF hook
 
@@ -21,6 +21,35 @@ export default function PrintReport() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const reportRef = useRef(null); // Ref for the container div (keep if needed for other purposes)
+  const marginLoadedRef = useRef(false); // guards against saving before the user's saved value has loaded
+  const marginSaveTimerRef = useRef(null);
+
+  // Load this user's remembered top margin so it doesn't reset to the default every print
+  useEffect(() => {
+    (async () => {
+      try {
+        const profile = await auth.getProfile();
+        const savedMargin = (profile.data || profile)?.plainTopMargin;
+        if (typeof savedMargin === "number") {
+          setPlainTopMargin(savedMargin);
+        }
+      } catch (err) {
+      } finally {
+        marginLoadedRef.current = true;
+      }
+    })();
+  }, []);
+
+  // Persist changes back to the user's profile, debounced so dragging the slider
+  // doesn't fire a request on every tick
+  useEffect(() => {
+    if (!marginLoadedRef.current) return;
+    clearTimeout(marginSaveTimerRef.current);
+    marginSaveTimerRef.current = setTimeout(() => {
+      auth.updateProfile({ plainTopMargin }).catch(() => {});
+    }, 600);
+    return () => clearTimeout(marginSaveTimerRef.current);
+  }, [plainTopMargin]);
 
   // Use the custom hooks
   // REMOVED hideTableHeadingAndReference variable definition
