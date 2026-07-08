@@ -178,15 +178,16 @@ sudo systemctl reload nginx
 
 ## 11. Future redeploys
 
-Push to `main` locally, then on the server:
+Push to `master` locally. A GitHub Actions workflow (`.github/workflows/deploy.yml`)
+SSHes into the server and runs `deploy/deploy.sh` automatically on every push. To
+redeploy manually instead:
 
 ```bash
-cd /var/www/PATH_LAB_MVP && bash deploy/deploy.sh
+cd /home/ubuntu/apps/PATH_LAB_MVP && bash deploy/deploy.sh
 ```
 
 That's a git pull, dependency install, frontend rebuild, and a zero-downtime PM2
-reload in one command. Wrap it in a GitHub Actions SSH step later if you want
-push-to-deploy — the script itself doesn't need to change.
+reload in one command.
 
 ---
 

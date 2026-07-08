@@ -7,7 +7,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
 echo "== Pulling latest code =="
-git pull origin main
+git pull origin master
 
 echo "== Installing backend dependencies =="
 cd "$REPO_ROOT/backend"
