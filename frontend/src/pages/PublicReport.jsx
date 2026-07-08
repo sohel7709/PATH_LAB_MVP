@@ -5,6 +5,7 @@ import { useReportGenerator } from "../hooks/useReportGenerator";
 import { useReportPdf } from "../hooks/useReportPdf";
 
 const API = import.meta.env.VITE_API_BASE_URL || "/api";
+const A4_WIDTH_PX = 793.7; // 210mm at 96dpi — matches the fixed width baked into reportHtml
 
 export default function PublicReport() {
   const { id } = useParams();
@@ -13,9 +14,44 @@ export default function PublicReport() {
   const [isLoading, setIsLoading]       = useState(true);
   const [error, setError]               = useState("");
   const reportRef = useRef(null);
+  const sheetWrapRef = useRef(null);
+  const [scale, setScale] = useState(1);
+  const [naturalHeight, setNaturalHeight] = useState(0);
 
   const reportHtml = useReportGenerator(report, reportSettings, "official");
   const { downloadPdf, printPdf, isDownloading } = useReportPdf(report, reportHtml);
+
+  // The generated report HTML has a fixed 210mm (A4) width for print/PDF fidelity.
+  // On phones that's wider than the viewport, so scale it down to fit instead of
+  // letting it overflow — the wrapper below reserves the post-scale height so
+  // nothing overlaps.
+  useEffect(() => {
+    const el = sheetWrapRef.current;
+    if (!el) return; // not mounted yet (still loading/error state)
+    const recomputeScale = () => {
+      const available = el.clientWidth;
+      if (!available) return;
+      setScale(available < A4_WIDTH_PX ? available / A4_WIDTH_PX : 1);
+    };
+    recomputeScale();
+    const ro = new ResizeObserver(recomputeScale);
+    ro.observe(el);
+    window.addEventListener("resize", recomputeScale);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", recomputeScale);
+    };
+  }, [report]);
+
+  useEffect(() => {
+    const el = reportRef.current;
+    if (!el) return;
+    const update = () => setNaturalHeight(el.scrollHeight);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [reportHtml]);
 
   useEffect(() => {
     const load = async () => {
@@ -84,16 +120,16 @@ export default function PublicReport() {
 
       {/* ── Top bar ── */}
       <div className="print:hidden" style={styles.topBar}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: "1 1 auto" }}>
           {/* Lab icon */}
-          <div style={{ width: 38, height: 38, borderRadius: 8, background: "#eff6ff", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ width: 38, height: 38, borderRadius: 8, background: "#eff6ff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#3b82f6" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           </div>
-          <div>
-            <p style={{ fontWeight: 700, fontSize: 14, color: "#1e293b", lineHeight: 1.2 }}>{labName}</p>
-            <p style={{ fontSize: 12, color: "#64748b" }}>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontWeight: 700, fontSize: 14, color: "#1e293b", lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{labName}</p>
+            <p style={{ fontSize: 12, color: "#64748b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {patientName && <span>{patientName} · </span>}
               {reportDate}
             </p>
@@ -101,16 +137,16 @@ export default function PublicReport() {
         </div>
 
         {/* Actions */}
-        <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
           <button onClick={downloadPdf} disabled={isDownloading} style={styles.btnOutline}>
             <ArrowDownTrayIcon style={{ width: 15, height: 15 }} />
-            {isDownloading ? "Downloading…" : "Download PDF"}
+            <span className="hidden sm:inline">{isDownloading ? "Downloading…" : "Download PDF"}</span>
           </button>
           <button onClick={printPdf} style={styles.btnPrimary}
             onMouseEnter={e => e.currentTarget.style.background = "#2563eb"}
             onMouseLeave={e => e.currentTarget.style.background = "#3b82f6"}>
             <PrinterIcon style={{ width: 15, height: 15 }} />
-            Print
+            <span className="hidden sm:inline">Print</span>
           </button>
         </div>
       </div>
@@ -120,27 +156,48 @@ export default function PublicReport() {
 
         {/* Verified ribbon */}
         <div className="print:hidden" style={styles.ribbon}>
-          <ShieldCheckIcon style={{ width: 15, height: 15, color: "#16a34a" }} />
+          <ShieldCheckIcon style={{ width: 15, height: 15, color: "#16a34a", flexShrink: 0 }} />
           <span style={{ fontSize: 12, fontWeight: 600, color: "#16a34a" }}>Digitally Verified Report</span>
-          <span style={{ fontSize: 11, color: "#86efac" }}>·</span>
-          <span style={{ fontSize: 11, color: "#15803d" }}>Scan QR code to re-verify authenticity</span>
+          <span style={{ fontSize: 11, color: "#86efac" }} className="hidden sm:inline">·</span>
+          <span style={{ fontSize: 11, color: "#15803d" }} className="hidden sm:inline">Scan QR code to re-verify authenticity</span>
         </div>
 
-        {/* A4 paper */}
+        {/* A4 paper — scaled to fit the viewport on mobile */}
         <div
-          ref={reportRef}
+          ref={sheetWrapRef}
           style={{
-            width: "210mm",
-            minHeight: "297mm",
-            background: "#fff",
-            boxShadow: "0 4px 32px rgba(0,0,0,0.12)",
-            borderRadius: 4,
-            overflow: "hidden",
-            maxWidth: "100%",
+            width: "100%",
+            maxWidth: "210mm",
             marginTop: 12,
           }}
-          dangerouslySetInnerHTML={{ __html: reportHtml }}
-        />
+        >
+          <div
+            style={{
+              position: "relative",
+              width: A4_WIDTH_PX * scale,
+              height: naturalHeight ? naturalHeight * scale : undefined,
+              margin: "0 auto",
+            }}
+          >
+            <div
+              ref={reportRef}
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "210mm",
+                minHeight: "297mm",
+                background: "#fff",
+                boxShadow: "0 4px 32px rgba(0,0,0,0.12)",
+                borderRadius: 4,
+                overflow: "hidden",
+                transform: `scale(${scale})`,
+                transformOrigin: "top left",
+              }}
+              dangerouslySetInnerHTML={{ __html: reportHtml }}
+            />
+          </div>
+        </div>
 
         {/* Bottom trust badge */}
         <div className="print:hidden" style={styles.trustBadge}>
@@ -176,12 +233,14 @@ const styles = {
     boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
   },
   ribbon: {
-    display: "flex", alignItems: "center", gap: 6,
+    display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap",
+    justifyContent: "center", maxWidth: "100%", textAlign: "center",
     padding: "6px 16px", borderRadius: 50,
     background: "#f0fdf4", border: "1px solid #86efac",
   },
   trustBadge: {
-    marginTop: 20, display: "flex", alignItems: "center", gap: 8,
+    marginTop: 20, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap",
+    justifyContent: "center", maxWidth: "100%", textAlign: "center",
     padding: "9px 20px", borderRadius: 50,
     background: "#f0fdf4", border: "1px solid #86efac",
   },

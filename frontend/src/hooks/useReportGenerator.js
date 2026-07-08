@@ -450,6 +450,26 @@ export const useReportGenerator = (
     return wrapper;
   };
 
+  // Plain mode (pre-printed letterhead) skips the generated header/footer/disclaimer
+  // — that's already on the paper — but the signature is per-report, not part of the
+  // letterhead, so it still needs to print here.
+  const createSignatureBlock = (footerSettings, isBW) => {
+    const wrapper = document.createElement("div");
+    if (!footerSettings.signature) return wrapper;
+
+    wrapper.style.marginTop = "6mm";
+    wrapper.style.display = "flex";
+    wrapper.style.justifyContent = "flex-end";
+    wrapper.innerHTML = `
+      <div style="text-align:center;">
+        <img src="${footerSettings.signature}" style="max-width:120px; max-height:60px; display:block; margin:0 auto; ${isBW ? "filter:grayscale(1) contrast(1.3);" : ""}" />
+        <div style="font-weight:bold; font-size:9pt; color:${isBW ? "#000" : "#0f172a"};">${footerSettings.verifiedBy || ""}</div>
+        <div style="font-size:8.5pt; color:${isBW ? "#000" : "#475569"};">${footerSettings.designation || ""}</div>
+      </div>
+    `;
+    return wrapper;
+  };
+
   // if (printMode === "official") {
   //   const createFooter = (footerSettings) => {
   //     const wrapper = document.createElement("div");
@@ -1042,6 +1062,8 @@ export const useReportGenerator = (
 
         if (printMode === "official") {
           bodyContent.appendChild(createFooter(footerSettings));
+        } else if (footerSettings.signature) {
+          bodyContent.appendChild(createSignatureBlock(footerSettings, isBW));
         }
 
         bodyWrapper.appendChild(bodyContent);
