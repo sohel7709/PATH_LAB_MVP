@@ -36,7 +36,8 @@ const app = express();
 const allowedOrigins = [
   'http://localhost:5173',
   'https://labnexus.in',
-  'https://www.labnexus.in'
+  'https://www.labnexus.in',
+  'https://lab.buildsoftit.com'
 ];
 
 const corsOptions = {
